@@ -1,0 +1,819 @@
+{
+  "last_node_id": 83,
+  "last_link_id": 116,
+  "nodes": [
+    {
+      "id": 61,
+      "type": "Note",
+      "pos": [
+        44.9991455078125,
+        69.52601623535156
+      ],
+      "size": [
+        424.21630859375,
+        140.3336181640625
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "卡卡布提示",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "\n  这里设置出土尺寸。默认比例1：1为1024*1024，可根据自己需要进行尺寸设置。\n  建议使用以下尺寸生成图像:\n  - 768 x 1344：竖版 (9:16)\n  - 915 x 1144：肖像 (4:5)\n  - 1024 x 1024：方形 1:1\n  - 1182 x 886：照片 (4:3)\n  - 1254 x 836：风景 (3:2)\n  - 1344 x 768：宽屏 (16:9)\n  - 1564 x 670：电影 (21:9)\n"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 68,
+      "type": "SizeNode",
+      "pos": [
+        530.3235473632812,
+        131.43714904785156
+      ],
+      "size": [
+        315,
+        194
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SizeNode"
+      },
+      "widgets_values": [
+        "preset",
+        "1:1",
+        512,
+        512,
+        1
+      ]
+    },
+    {
+      "id": 69,
+      "type": "InputNode",
+      "pos": [
+        526.8023681640625,
+        512.2694091796875
+      ],
+      "size": [
+        400,
+        370
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output_1",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_1",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_1",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "string_output_2",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_2",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_2",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "InputNode"
+      },
+      "widgets_values": [
+        "STRING",
+        "",
+        0,
+        0,
+        "STRING",
+        "",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 70,
+      "type": "ReplaceNode",
+      "pos": [
+        976.465576171875,
+        527.7688598632812
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "replaced_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "replace_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ReplaceNode"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        true
+      ]
+    },
+    {
+      "id": 71,
+      "type": "SomethingToAny",
+      "pos": [
+        1413.8819580078125,
+        530.57275390625
+      ],
+      "size": [
+        400,
+        236
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SomethingToAny"
+      },
+      "widgets_values": [
+        "STRING",
+        "STRING",
+        "",
+        0,
+        0,
+        false
+      ]
+    },
+    {
+      "id": 72,
+      "type": "StringMergeNode",
+      "pos": [
+        1878.9178466796875,
+        535.1668701171875
+      ],
+      "size": [
+        400,
+        250
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "merged_string",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringMergeNode"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": 73,
+      "type": "StringNode",
+      "pos": [
+        2321.544677734375,
+        537.0098876953125
+      ],
+      "size": [
+        335.115234375,
+        82
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNode"
+      },
+      "widgets_values": [
+        "",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 74,
+      "type": "StringNodeAdvanced",
+      "pos": [
+        2738.619873046875,
+        541.576904296875
+      ],
+      "size": [
+        353.6536865234375,
+        142
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "trimmed_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "removed_chars",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNodeAdvanced"
+      },
+      "widgets_values": [
+        "",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 75,
+      "type": "AIPromptOptimizerNode",
+      "pos": [
+        545.0051879882812,
+        1031.6864013671875
+      ],
+      "size": [
+        400,
+        286
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "optimized_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "optimization_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AIPromptOptimizerNode"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "medium",
+        "realistic",
+        true,
+        "",
+        500
+      ]
+    },
+    {
+      "id": 76,
+      "type": "BatchPrompt",
+      "pos": [
+        1000.46044921875,
+        1034.7713623046875
+      ],
+      "size": [
+        315,
+        190
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "batch_index",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "total_batches",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "file_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchPrompt"
+      },
+      "widgets_values": [
+        "",
+        "single_file",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 77,
+      "type": "MathExpressionNode",
+      "pos": [
+        553.4639282226562,
+        1537.61181640625
+      ],
+      "size": [
+        400,
+        236
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "float_result",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "int_result",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "string_result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MathExpressionNode"
+      },
+      "widgets_values": [
+        "a + b",
+        0,
+        0,
+        0,
+        0,
+        6
+      ]
+    },
+    {
+      "id": 78,
+      "type": "RegexNode",
+      "pos": [
+        1019.9135131835938,
+        1549.3717041015625
+      ],
+      "size": [
+        288.7764587402344,
+        102
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "pattern"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNode"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "match",
+        ""
+      ]
+    },
+    {
+      "id": 79,
+      "type": "RegexNodeAdvanced",
+      "pos": [
+        1376.93896484375,
+        1555.5166015625
+      ],
+      "size": [
+        334.3427429199219,
+        166
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "pattern"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "match_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "matched_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNodeAdvanced"
+      },
+      "widgets_values": [
+        "",
+        "",
+        "match",
+        "",
+        "none"
+      ]
+    },
+    {
+      "id": 80,
+      "type": "GetImage",
+      "pos": [
+        579.2686157226562,
+        1984.1507568359375
+      ],
+      "size": [
+        214.20001220703125,
+        46
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImage"
+      }
+    },
+    {
+      "id": 81,
+      "type": "ImageFrame",
+      "pos": [
+        893.271240234375,
+        1974.4239501953125
+      ],
+      "size": [
+        315,
+        362
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image3",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageFrame"
+      },
+      "widgets_values": [
+        2,
+        100,
+        50,
+        20,
+        "horizontal",
+        "#FFFFFF",
+        "#000000",
+        10,
+        "Arial",
+        "图像1",
+        "图像2",
+        "图像3"
+      ]
+    },
+    {
+      "id": 82,
+      "type": "PadImageToCanvas",
+      "pos": [
+        1328.5933837890625,
+        1985.004150390625
+      ],
+      "size": [
+        327.5999755859375,
+        178
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageToCanvas"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "#FFFFFF",
+        true,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 83,
+      "type": "Resize",
+      "pos": [
+        1754.219970703125,
+        1981.148193359375
+      ],
+      "size": [
+        315,
+        150
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Resize"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "stretch",
+        "lanczos"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 4,
+      "title": "尺寸设置",
+      "bounding": [
+        498.32586669921875,
+        40.148948669433594,
+        390.54351806640625,
+        371.2598571777344
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.37190082644628325,
+      "offset": [
+        1676.5758178762283,
+        128.10916303816472
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "09c8b93e0809b57a89506708880d3c6cd038a898"
+    }
+  },
+  "version": 0.4
+}
