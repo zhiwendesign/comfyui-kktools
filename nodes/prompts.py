@@ -7,6 +7,7 @@ import requests
 import json
 import os
 import glob
+import re
 
 class BatchPrompt:
     """批量提示词节点 - 用于批量加载和处理提示词"""
@@ -152,27 +153,24 @@ class AIPromptOptimizerNode:
                     "multiline": False,
                     "placeholder": "输入DeepSeek API Key"
                 }),
-                "optimization_level": (["light", "medium", "heavy"], {
-                    "default": "medium"
-                }),
-                "target_style": (["realistic", "anime", "artistic", "cinematic", "photographic", "painting"], {
-                    "default": "realistic"
-                }),
-                "include_technical": ("BOOLEAN", {
-                    "default": True
+                "system_message": ("STRING", {
+                    "default": "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
+                    "multiline": True,
+                    "placeholder": "输入系统角色设定"
                 }),
             },
             "optional": {
-                "reference_prompt": ("STRING", {
-                    "default": "",
-                    "multiline": True,
-                    "placeholder": "参考提示词（可选）"
-                }),
                 "max_length": ("INT", {
                     "default": 500,
                     "min": 50,
                     "max": 2000,
                     "step": 50
+                }),
+                "temperature": ("FLOAT", {
+                    "default": 0.7,
+                    "min": 0.1,
+                    "max": 1.0,
+                    "step": 0.1
                 }),
             }
         }
@@ -182,18 +180,16 @@ class AIPromptOptimizerNode:
     FUNCTION = "optimize_prompt"
     CATEGORY = "kktools/Prompt"
     
-    def optimize_prompt(self, base_prompt, api_key, optimization_level, target_style, include_technical, reference_prompt="", max_length=500):
+    def optimize_prompt(self, base_prompt, api_key, system_message, max_length=500, temperature=0.7):
         """
         通过DeepSeek API优化提示词
         
         Args:
             base_prompt: 基础提示词
             api_key: DeepSeek API密钥
-            optimization_level: 优化级别
-            target_style: 目标风格
-            include_technical: 是否包含技术细节
-            reference_prompt: 参考提示词（可选）
+            system_message: 系统角色设定
             max_length: 最大长度
+            temperature: 生成温度
             
         Returns:
             (优化后的提示词, 原始提示词, 优化信息)
@@ -205,18 +201,16 @@ class AIPromptOptimizerNode:
             if not api_key.strip():
                 return (base_prompt, base_prompt, "警告: 未提供API密钥，返回原始提示词")
             
-            # 构建优化指令
-            optimization_instructions = self._build_optimization_instructions(
-                optimization_level, target_style, include_technical, reference_prompt, max_length
-            )
+            # 构建用户消息
+            user_message = self._build_user_message(base_prompt, max_length)
             
             # 调用DeepSeek API
             optimized_prompt = self._call_deepseek_api(
-                base_prompt, optimization_instructions, api_key, max_length
+                base_prompt, system_message, user_message, api_key, max_length, temperature
             )
             
             if optimized_prompt:
-                info = f"优化完成 - 级别: {optimization_level}, 风格: {target_style}"
+                info = "优化完成"
                 return (optimized_prompt, base_prompt, info)
             else:
                 return (base_prompt, base_prompt, "API调用失败，返回原始提示词")
@@ -226,45 +220,11 @@ class AIPromptOptimizerNode:
             print(f"AIPromptOptimizer Error: {error_msg}")
             return (base_prompt, base_prompt, f"错误: {error_msg}")
     
-    def _build_optimization_instructions(self, optimization_level, target_style, include_technical, reference_prompt, max_length):
-        """构建优化指令"""
-        instructions = []
-        
-        # 优化级别
-        if optimization_level == "light":
-            instructions.append("对以下AI绘画提示词进行轻度优化，保持原意但提升表达流畅度")
-        elif optimization_level == "medium":
-            instructions.append("对以下AI绘画提示词进行中等程度优化，改善结构和关键词组织")
-        else:  # heavy
-            instructions.append("对以下AI绘画提示词进行全面优化，彻底重构并增强表现力")
-        
-        # 目标风格
-        style_mapping = {
-            "realistic": "写实风格",
-            "anime": "动漫风格", 
-            "artistic": "艺术风格",
-            "cinematic": "电影风格",
-            "photographic": "摄影风格",
-            "painting": "绘画风格"
-        }
-        instructions.append(f"目标风格: {style_mapping.get(target_style, target_style)}")
-        
-        # 技术细节
-        if include_technical:
-            instructions.append("包含适当的技术细节和画质描述")
-        
-        # 参考提示词
-        if reference_prompt.strip():
-            instructions.append(f"参考以下提示词风格: {reference_prompt}")
-        
-        # 长度限制
-        instructions.append(f"输出长度不超过{max_length}字符")
-        
-        instructions.append("直接输出优化后的提示词，不要添加任何解释或标记")
-        
-        return "。".join(instructions)
+    def _build_user_message(self, base_prompt, max_length):
+        """构建用户消息"""
+        return f"请优化以下AI绘画提示词，使其更加详细、具有表现力，包含适当的技术细节和画质描述，保持核心内容不变但提升整体质量。输出长度不超过{max_length}字符：\n\n{base_prompt}"
     
-    def _call_deepseek_api(self, base_prompt, instructions, api_key, max_length):
+    def _call_deepseek_api(self, base_prompt, system_message, user_message, api_key, max_length, temperature):
         """调用DeepSeek API"""
         try:
             url = "https://api.deepseek.com/chat/completions"
@@ -273,8 +233,6 @@ class AIPromptOptimizerNode:
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
             }
-            
-            system_message = "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词。"
             
             payload = {
                 "model": "deepseek-chat",
@@ -285,15 +243,22 @@ class AIPromptOptimizerNode:
                     },
                     {
                         "role": "user", 
-                        "content": f"{instructions}\n\n需要优化的提示词:\n{base_prompt}"
+                        "content": user_message
                     }
                 ],
                 "max_tokens": max_length,
-                "temperature": 0.7,
+                "temperature": temperature,
                 "stream": False
             }
             
+            # 使用导入的requests库
             response = requests.post(url, headers=headers, json=payload, timeout=30)
+            
+            # 添加402错误处理
+            if response.status_code == 402:
+                print("DeepSeek API 需要付费，使用本地优化作为备选方案")
+                return self._local_prompt_optimization(base_prompt)
+            
             response.raise_for_status()
             
             result = response.json()
@@ -306,20 +271,37 @@ class AIPromptOptimizerNode:
             print(f"AIPromptOptimizer API Call:")
             print(f"  Original Length: {len(base_prompt)}")
             print(f"  Optimized Length: {len(optimized_prompt)}")
-            print(f"  Original: {base_prompt[:100]}...")
-            print(f"  Optimized: {optimized_prompt[:100]}...")
+            print(f"  System Message: {system_message[:50]}...")
+            print(f"  User Message: {user_message[:50]}...")
             
             return optimized_prompt
             
         except requests.exceptions.RequestException as e:
-            print(f"DeepSeek API请求错误: {e}")
-            return None
-        except (KeyError, IndexError) as e:
-            print(f"DeepSeek API响应解析错误: {e}")
-            return None
+            print(f"DeepSeek API请求错误: {e}，使用本地优化")
+            return self._local_prompt_optimization(base_prompt)
         except Exception as e:
-            print(f"DeepSeek API调用未知错误: {e}")
-            return None
+            print(f"DeepSeek API调用错误: {e}，使用本地优化")
+            return self._local_prompt_optimization(base_prompt)
+    
+    def _local_prompt_optimization(self, base_prompt):
+        """本地提示词优化备选方案"""
+        try:
+            # 基础清理和简单优化
+            optimized = ' '.join(base_prompt.split())
+            
+            # 添加通用质量提升关键词
+            optimized += ", masterpiece, best quality, highly detailed, high resolution, 8K"
+            
+            # 移除可能的重复逗号
+            optimized = re.sub(r',+', ',', optimized)
+            optimized = optimized.strip(',').strip()
+            
+            print(f"Local Optimization Applied: {optimized[:100]}...")
+            return optimized[:500]  # 限制长度
+            
+        except Exception as e:
+            print(f"Local optimization error: {e}")
+            return base_prompt
     
     def _clean_prompt(self, prompt):
         """清理提示词，移除可能的标记和解释"""
@@ -332,6 +314,9 @@ class AIPromptOptimizerNode:
         # 移除可能的代码块标记
         if prompt.startswith("```text") or prompt.startswith("```prompt"):
             prompt = prompt.split("```", 2)[-1].strip()
+        
+        # 移除引号
+        prompt = prompt.strip('"').strip("'")
         
         return prompt
 
@@ -348,4 +333,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "AIPromptOptimizerNode": "AI Prompt Optimizer (AI提示词优化)",
 }
 
-__all__ = ['BatchPrompt', 'AIPromptOptimizerNode']
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
