@@ -11,6 +11,7 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 ## 🖼️ 图像处理模块 (image.py)
 
 ### 1. Pad Image to Canvas (图像填充到画布)
+<img width="1874" height="924" alt="image" src="https://github.com/user-attachments/assets/f16f9de3-c9b6-4aeb-bd2c-5459ac0290ee" />
 
 #### 功能描述
 将任意尺寸的图像放置到指定大小的画布上，支持自定义背景色和精确定位。
@@ -32,6 +33,7 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 - 精确控制图像在画布中的位置
 
 ### 2. Image Frame (图像边框)
+<img width="2702" height="882" alt="image" src="https://github.com/user-attachments/assets/22f81cba-bdfd-4e67-8521-00e2b6d693f8" />
 
 #### 功能描述
 将 1-3 张图像进行并排显示，添加标签和边框，适合效果对比展示。
@@ -112,6 +114,8 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 
 ## 🔢 数学运算模块 (Math.py)
 
+<img width="2504" height="1170" alt="image" src="https://github.com/user-attachments/assets/9b7fa0fa-3ac2-4cd4-8720-8beeb9523cb8" />
+
 ### 1. 运算（数学表达式）
 
 #### 功能描述
@@ -148,7 +152,7 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 - **`replace`**：替换所有匹配的文本
 
 ### 3. 运算（正则表达式高级）
-
+<img width="2082" height="1364" alt="image" src="https://github.com/user-attachments/assets/55841da7-7a7e-4891-a0ce-51626e184278" />
 #### 增强功能
 - **多标志支持**：
   - `IGNORECASE`：忽略大小写
@@ -272,6 +276,7 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 合并后的字符串
 
 ### 4. 输入节点（多类型输入）
+<img width="2068" height="930" alt="image" src="https://github.com/user-attachments/assets/b580ae77-0905-4bfa-8762-325c619fa668" />
 
 #### 功能描述
 可以输入 2 组字符串、整数或浮点数，自动类型转换。
