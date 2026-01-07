@@ -2,9 +2,50 @@
 
 欢迎合作交流微信【XingYueAiArt】
 共创：KK HL
+
 ## 📋 概述
 
-kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理、数学运算、提示词优化、尺寸生成和字符串处理五大模块，为工作流提供强大的扩展功能。
+kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理、数学运算、提示词优化、尺寸生成、字符串处理与随机选择等模块，为工作流提供强大的扩展功能。节点会被 ComfyUI 自动发现并注册，显示名包含中文说明，便于检索与使用（自动注册逻辑见 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py#L41-L175)）。
+
+## 🚀 安装
+
+- 将本项目目录放入 ComfyUI/custom_nodes 下（目录名任意，建议使用 comfyui-kktools-main）。
+- 启动 ComfyUI 后，节点会自动加载，日志中可见注册详情与数量。
+- 字体：如需在图像标注中显示中文/自定义字体，将字体文件放至 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts) 目录（支持 .ttf/.otf/.ttc）。
+
+## 📦 依赖与环境
+
+- ComfyUI 基础环境：Python、torch、numpy、Pillow 通常随 ComfyUI 提供。
+- 额外依赖：requests（用于网络访问与提示词优化）。
+- 提示词优化：DeepSeek API Key 直接在节点参数中输入，无需环境变量。
+
+## 🧭 快速上手
+
+- 在 ComfyUI 的节点面板中搜索“kktools”或中文说明（如“图像填充到画布”、“正则表达式-高级”）。
+- 加载示例工作流：打开 [kktools_workflow_-all.json](file:///Users/bytedance/Downloads/comfyui-kktools-main/workflows/kktools_workflow_-all.json) 体验全部节点的组合用法。
+- 图像对比标注：使用 ImageFrame 节点时，请在 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts) 目录放置合适字体以确保标签正常渲染。
+
+## 🧩 节点索引与源码位置
+
+- 图像处理模块：[image.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/image.py)
+- 数学与正则模块：[Math.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/Math.py)
+- 提示词模块：[prompts.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/prompts.py)
+- 尺寸生成模块：[size.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/size.py)
+- 字符串模块：[string.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/string.py)
+- 随机选择器：[RandomSelector.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/RandomSelector.py)
+
+## 🔑 DeepSeek 提示词优化使用说明
+
+- 节点：AI Prompt Optimizer (AI提示词优化)（见 [prompts.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/prompts.py#L139-L334)）
+- 在节点的 api_key 参数中填写你的 DeepSeek API Key；未提供时将返回原始提示词并给出提示。
+- 若 API 返回 402 或网络错误，节点会启用本地优化备选方案，保证工作流不间断。
+
+## 📁 目录结构速览
+
+- 根目录：自动发现与注册节点逻辑 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py)
+- nodes：各功能模块源码（见上方节点索引）
+- fonts：示例字体文件，支持中文标签与对比说明
+- workflows：示例工作流 JSON 文件
 
 ---
 
@@ -200,7 +241,7 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 - **`max_length`**：最大长度限制
 
 #### 使用要求
-- 需要 DeepSeek API Key
+- 需要 DeepSeek API Key（在节点参数中直接填写）
 - 支持参考提示词输入
 
 #### 输出
@@ -349,3 +390,17 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 ## 🎯 实用工作流示例
 
 ### 图像批量处理工作流
+
+---
+
+## 🧪 常见问题与排查
+
+- 节点未显示：确认目录放置在 ComfyUI/custom_nodes，重启 ComfyUI 并查看日志是否显示“kktools Nodes 加载完成”。
+- 字体不生效：确保字体文件位于 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts)，并在 ImageFrame 中选择对应字体。
+- DeepSeek 优化失败：检查 api_key 是否有效；网络或 402 情况下会切换到本地优化，工作流可继续运行。
+
+## 📄 版本与版权
+
+- 当前版本：3.4.0（见 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py#L177)）
+- 作者：kktools；共创：KK HL
+- 仅用于学习与研究，请遵循 ComfyUI 及相关依赖的协议。
