@@ -31,11 +31,18 @@ class PadImageToCanvas:
 
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量 (Batch, H, W, C) 转换为 PIL 图像列表"""
-        batch_size, _, _, _ = img_tensor.shape
+        batch_size, height, width, channels = img_tensor.shape
         images = []
         for i in range(batch_size):
             img_np = 255. * img_tensor[i].cpu().numpy()
-            img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
+            img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+            if channels == 1:
+                img_np = img_np.reshape(height, width)
+            elif channels == 3:
+                img_np = img_np.reshape(height, width, 3)
+            elif channels == 4:
+                img_np = img_np.reshape(height, width, 4)
+            img = Image.fromarray(img_np)
             images.append(img)
         return images
 
@@ -43,7 +50,8 @@ class PadImageToCanvas:
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         tensors = []
         for img in pil_images:
-            img_np = np.array(img).astype(np.float32) / 255.0
+            img_rgb = img.convert("RGB")
+            img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)
         return torch.cat(tensors, dim=0)
@@ -204,22 +212,31 @@ class ImageFrame:
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量转换为 PIL 图像"""
         if len(img_tensor.shape) == 4:  # Batch of images
-            batch_size, _, _, _ = img_tensor.shape
+            batch_size, height, width, channels = img_tensor.shape
             images = []
             for i in range(batch_size):
                 img_np = 255. * img_tensor[i].cpu().numpy()
-                img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
+                img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+                if channels == 1:
+                    img_np = img_np.reshape(height, width)
+                elif channels == 3:
+                    img_np = img_np.reshape(height, width, 3)
+                elif channels == 4:
+                    img_np = img_np.reshape(height, width, 4)
+                img = Image.fromarray(img_np)
                 images.append(img)
             return images
         else:
             img_np = 255. * img_tensor.cpu().numpy()
-            return [Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))]
+            img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+            return [Image.fromarray(img_np)]
 
     def pil_to_tensor(self, pil_images):
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         tensors = []
         for img in pil_images:
-            img_np = np.array(img).astype(np.float32) / 255.0
+            img_rgb = img.convert("RGB")
+            img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)
         return torch.cat(tensors, dim=0)
@@ -506,16 +523,24 @@ class Resize:
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量转换为 PIL 图像"""
         if len(img_tensor.shape) == 4:  # Batch of images
-            batch_size, _, _, _ = img_tensor.shape
+            batch_size, height, width, channels = img_tensor.shape
             images = []
             for i in range(batch_size):
                 img_np = 255. * img_tensor[i].cpu().numpy()
-                img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
+                img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+                if channels == 1:
+                    img_np = img_np.reshape(height, width)
+                elif channels == 3:
+                    img_np = img_np.reshape(height, width, 3)
+                elif channels == 4:
+                    img_np = img_np.reshape(height, width, 4)
+                img = Image.fromarray(img_np)
                 images.append(img)
             return images
         else:
             img_np = 255. * img_tensor.cpu().numpy()
-            return [Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))]
+            img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+            return [Image.fromarray(img_np)]
 
     def mask_to_pil(self, mask_tensor):
         """将蒙版张量转换为 PIL 图像"""
@@ -523,22 +548,26 @@ class Resize:
             return None
             
         if len(mask_tensor.shape) == 4:  # Batch of masks
-            batch_size, _, _, _ = mask_tensor.shape
+            batch_size, height, width, _ = mask_tensor.shape
             masks = []
             for i in range(batch_size):
                 mask_np = mask_tensor[i].cpu().numpy() * 255.0
-                mask = Image.fromarray(np.clip(mask_np, 0, 255).astype(np.uint8))
+                mask_np = np.clip(mask_np, 0, 255).astype(np.uint8)
+                mask_np = mask_np.reshape(height, width)
+                mask = Image.fromarray(mask_np)
                 masks.append(mask)
             return masks
         else:
             mask_np = mask_tensor.cpu().numpy() * 255.0
-            return [Image.fromarray(np.clip(mask_np, 0, 255).astype(np.uint8))]
+            mask_np = np.clip(mask_np, 0, 255).astype(np.uint8)
+            return [Image.fromarray(mask_np)]
 
     def pil_to_tensor(self, pil_images):
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         tensors = []
         for img in pil_images:
-            img_np = np.array(img).astype(np.float32) / 255.0
+            img_rgb = img.convert("RGB")
+            img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)
         return torch.cat(tensors, dim=0)
@@ -551,6 +580,7 @@ class Resize:
         tensors = []
         for mask in pil_masks:
             mask_np = np.array(mask).astype(np.float32) / 255.0
+            mask_np = mask_np.reshape(mask_np.shape[0], mask_np.shape[1], 1)
             tensor = torch.from_numpy(mask_np)[None,]
             tensors.append(tensor)
         return torch.cat(tensors, dim=0)
@@ -1008,6 +1038,208 @@ class BatchImageLoader:
         
         return " | ".join(info_parts)
 
+class ImageTileSplit2x2:
+    """
+    图像2x2分块切割节点
+    将一张输入图片切割成2x2的四张子图输出
+    """
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "overlap_pixels": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 512,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "output_order": (["top-left,top-right,bottom-left,bottom-right", 
+                                 "row-major", 
+                                 "column-major"], {
+                    "default": "top-left,top-right,bottom-left,bottom-right"
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
+    RETURN_NAMES = ("image_tl", "image_tr", "image_bl", "image_br")
+    FUNCTION = "split_image"
+    CATEGORY = "kktools/Image"
+    OUTPUT_IS_LIST = (True, True, True, True)
+
+    def tensor_to_pil(self, img_tensor):
+        """将 ComfyUI 图像张量转换为 PIL 图像"""
+        if len(img_tensor.shape) == 4:  # Batch of images
+            batch_size, height, width, channels = img_tensor.shape
+            images = []
+            for i in range(batch_size):
+                img_np = 255. * img_tensor[i].cpu().numpy()
+                img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+                if channels == 1:
+                    img_np = img_np.reshape(height, width)
+                elif channels == 3:
+                    img_np = img_np.reshape(height, width, 3)
+                elif channels == 4:
+                    img_np = img_np.reshape(height, width, 4)
+                img = Image.fromarray(img_np)
+                images.append(img)
+            return images
+        else:
+            # 单张图像
+            img_np = 255. * img_tensor.cpu().numpy()
+            img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+            return [Image.fromarray(img_np)]
+
+    def pil_to_tensor(self, pil_images):
+        """将 PIL 图像列表转换回 ComfyUI 图像张量"""
+        if not pil_images:
+            return torch.zeros((1, 256, 256, 3))
+            
+        tensors = []
+        for img in pil_images:
+            # 确保图像为 RGB 模式
+            img_rgb = img.convert("RGB")
+            img_np = np.array(img_rgb).astype(np.float32) / 255.0
+            tensor = torch.from_numpy(img_np)[None,]
+            tensors.append(tensor)
+        
+        if tensors:
+            return torch.cat(tensors, dim=0)
+        else:
+            return torch.zeros((1, 256, 256, 3))
+
+    def split_image(self, image, overlap_pixels, output_order):
+        """
+        将输入图像切割成2x2的四张子图
+        
+        Args:
+            image: 输入图像张量
+            overlap_pixels: 重叠像素数（用于防止切割边缘问题）
+            output_order: 输出顺序
+        """
+        # 转换为 PIL 图像
+        pil_images = self.tensor_to_pil(image)
+        
+        if not pil_images:
+            # 返回空的张量列表
+            empty_tensor = torch.zeros((1, 256, 256, 3))
+            return ([empty_tensor], [empty_tensor], [empty_tensor], [empty_tensor])
+        
+        # 准备输出列表
+        top_left_list = []
+        top_right_list = []
+        bottom_left_list = []
+        bottom_right_list = []
+        
+        for pil_img in pil_images:
+            # 确保图像为 RGB 模式
+            img = pil_img.convert("RGB")
+            width, height = img.size
+            
+            # 检查图像是否足够大
+            if width < 2 or height < 2:
+                print(f"⚠️ 图像尺寸过小 ({width}x{height})，无法进行2x2切割")
+                # 返回原始图像的4个副本
+                top_left_list.append(img)
+                top_right_list.append(img)
+                bottom_left_list.append(img)
+                bottom_right_list.append(img)
+                continue
+            
+            # 计算切割点
+            half_width = width // 2
+            half_height = height // 2
+            
+            # 调整重叠像素，确保不会越界
+            overlap_w = min(overlap_pixels, half_width // 2)
+            overlap_h = min(overlap_pixels, half_height // 2)
+            
+            # 定义切割区域（考虑重叠）
+            # 左上角
+            tl_x1 = max(0, 0 - overlap_w)
+            tl_y1 = max(0, 0 - overlap_h)
+            tl_x2 = min(width, half_width + overlap_w)
+            tl_y2 = min(height, half_height + overlap_h)
+            
+            # 右上角
+            tr_x1 = max(0, half_width - overlap_w)
+            tr_y1 = max(0, 0 - overlap_h)
+            tr_x2 = min(width, width)
+            tr_y2 = min(height, half_height + overlap_h)
+            
+            # 左下角
+            bl_x1 = max(0, 0 - overlap_w)
+            bl_y1 = max(0, half_height - overlap_h)
+            bl_x2 = min(width, half_width + overlap_w)
+            bl_y2 = min(height, height)
+            
+            # 右下角
+            br_x1 = max(0, half_width - overlap_w)
+            br_y1 = max(0, half_height - overlap_h)
+            br_x2 = min(width, width)
+            br_y2 = min(height, height)
+            
+            # 执行切割
+            try:
+                img_tl = img.crop((tl_x1, tl_y1, tl_x2, tl_y2))
+                img_tr = img.crop((tr_x1, tr_y1, tr_x2, tr_y2))
+                img_bl = img.crop((bl_x1, bl_y1, bl_x2, bl_y2))
+                img_br = img.crop((br_x1, br_y1, br_x2, br_y2))
+                
+                # 打印调试信息
+                print(f"🔪 2x2 图像切割:")
+                print(f"  原始尺寸: {width}x{height}")
+                print(f"  重叠像素: {overlap_pixels}")
+                print(f"  左上: {img_tl.size}, 区域: ({tl_x1},{tl_y1})-({tl_x2},{tl_y2})")
+                print(f"  右上: {img_tr.size}, 区域: ({tr_x1},{tr_y1})-({tr_x2},{tr_y2})")
+                print(f"  左下: {img_bl.size}, 区域: ({bl_x1},{bl_y1})-({bl_x2},{bl_y2})")
+                print(f"  右下: {img_br.size}, 区域: ({br_x1},{br_y1})-({br_x2},{br_y2})")
+                
+            except Exception as e:
+                print(f"⚠️ 图像切割失败: {e}")
+                # 如果切割失败，返回原始图像
+                img_tl = img
+                img_tr = img
+                img_bl = img
+                img_br = img
+            
+            # 根据输出顺序添加到对应的列表
+            if output_order == "top-left,top-right,bottom-left,bottom-right":
+                top_left_list.append(img_tl)
+                top_right_list.append(img_tr)
+                bottom_left_list.append(img_bl)
+                bottom_right_list.append(img_br)
+            elif output_order == "row-major":
+                # 行优先：第一行，第二行
+                top_left_list.append(img_tl)
+                top_right_list.append(img_tr)
+                bottom_left_list.append(img_bl)
+                bottom_right_list.append(img_br)
+            elif output_order == "column-major":
+                # 列优先：第一列，第二列
+                top_left_list.append(img_tl)
+                top_right_list.append(img_bl)
+                bottom_left_list.append(img_tr)
+                bottom_right_list.append(img_br)
+            else:
+                # 默认顺序
+                top_left_list.append(img_tl)
+                top_right_list.append(img_tr)
+                bottom_left_list.append(img_bl)
+                bottom_right_list.append(img_br)
+        
+        # 转换回张量
+        tl_tensor = self.pil_to_tensor(top_left_list)
+        tr_tensor = self.pil_to_tensor(top_right_list)
+        bl_tensor = self.pil_to_tensor(bottom_left_list)
+        br_tensor = self.pil_to_tensor(bottom_right_list)
+        
+        # 转换为列表格式（因为 OUTPUT_IS_LIST = True）
+        return ([tl_tensor], [tr_tensor], [bl_tensor], [br_tensor])
+
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
@@ -1016,6 +1248,7 @@ NODE_CLASS_MAPPINGS = {
     "Resize": Resize,
     "GetImage": GetImage,
     "BatchImageLoader": BatchImageLoader,
+    "ImageTileSplit2x2": ImageTileSplit2x2,  # 新增节点
 }
 
 # 节点在菜单中显示的名称
@@ -1025,6 +1258,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "Resize": "Resize (图像蒙版同步调整)",
     "GetImage": "Get Image (获取图像尺寸)",
     "BatchImageLoader": "Batch Image Loader (批量图像加载)",
+    "ImageTileSplit2x2": "Image Tile Split 2x2 (2x2图像分块)",  # 新增节点显示名称
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
