@@ -9,6 +9,49 @@ import os
 import glob
 import re
 
+PROVIDER_MODEL_OPTIONS = {
+    "deepseek": [
+        "deepseek-chat",
+        "deepseek-reasoner",
+        "custom",
+    ],
+    "openai": [
+        "gpt-5.4",
+        "gpt-5.4-pro",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        "gpt-5.1",
+        "gpt-5",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o3",
+        "o4-mini",
+        "o3-mini",
+        "custom",
+    ],
+    "gemini": [
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "custom",
+    ],
+    "doubao": [
+        "doubao-seed-1-6-251015",
+        "doubao-seed-1-6-250615",
+        "doubao-seed-1-6-thinking-250715",
+        "doubao-seed-1-6-flash-250715",
+        "doubao-1-5-thinking-pro",
+        "doubao-1-5-thinking-vision-pro",
+        "doubao-1-5-pro-32k-250115",
+        "doubao-1-5-lite-32k-250115",
+        "custom",
+    ],
+}
+
+
 class BatchPrompt:
     """批量提示词节点 - 用于批量加载和处理提示词"""
     
@@ -136,11 +179,13 @@ class BatchPrompt:
             return ("", 0, 0, error_msg)
 
 
-class AIPromptOptimizerNode:
-    """提示词节点（AI优化） - 通过DeepSeek API优化提示词"""
+class kkLLM:
+    """多厂商 LLM 提示词优化节点，支持 DeepSeek、OpenAI、Gemini 和豆包 API。"""
     
     @classmethod
     def INPUT_TYPES(cls):
+        default_provider = "deepseek"
+        default_models = cls._get_provider_models(default_provider)
         return {
             "required": {
                 "base_prompt": ("STRING", {
@@ -151,7 +196,23 @@ class AIPromptOptimizerNode:
                 "api_key": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "placeholder": "输入DeepSeek API Key"
+                    "placeholder": "输入 API Key"
+                }),
+                "provider": (["deepseek", "openai", "gemini", "doubao"], {
+                    "default": "deepseek"
+                }),
+                "model": (default_models, {
+                    "default": default_models[0]
+                }),
+                "custom_model": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "仅当 model=custom 时生效；Ark 也可填写接入点 ID"
+                }),
+                "base_url": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "留空使用对应厂商默认 API 地址"
                 }),
                 "system_message": ("STRING", {
                     "default": "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
@@ -180,13 +241,27 @@ class AIPromptOptimizerNode:
     FUNCTION = "optimize_prompt"
     CATEGORY = "kktools/Prompt"
     
-    def optimize_prompt(self, base_prompt, api_key, system_message, max_length=500, temperature=0.7):
+    def optimize_prompt(
+        self,
+        base_prompt,
+        api_key,
+        provider,
+        model,
+        custom_model,
+        base_url,
+        system_message,
+        max_length=500,
+        temperature=0.7,
+    ):
         """
-        通过DeepSeek API优化提示词
+        通过多厂商 LLM API 优化提示词
         
         Args:
             base_prompt: 基础提示词
-            api_key: DeepSeek API密钥
+            api_key: API密钥
+            provider: 提供商
+            model: 模型名
+            base_url: 自定义 API 地址
             system_message: 系统角色设定
             max_length: 最大长度
             temperature: 生成温度
@@ -204,71 +279,187 @@ class AIPromptOptimizerNode:
             # 构建用户消息
             user_message = self._build_user_message(base_prompt, max_length)
             
-            # 调用DeepSeek API
-            optimized_prompt = self._call_deepseek_api(
-                base_prompt, system_message, user_message, api_key, max_length, temperature
+            # 调用对应 LLM API
+            optimized_prompt = self._call_llm_api(
+                base_prompt=base_prompt,
+                system_message=system_message,
+                user_message=user_message,
+                api_key=api_key,
+                provider=provider,
+                model=model,
+                custom_model=custom_model,
+                base_url=base_url,
+                max_length=max_length,
+                temperature=temperature,
             )
             
             if optimized_prompt:
-                info = "优化完成"
+                resolved_model = self._resolve_model(provider, model, custom_model)
+                info = f"优化完成 | provider={provider} | model={resolved_model}"
                 return (optimized_prompt, base_prompt, info)
             else:
                 return (base_prompt, base_prompt, "API调用失败，返回原始提示词")
                 
         except Exception as e:
             error_msg = f"优化提示词时出错: {str(e)}"
-            print(f"AIPromptOptimizer Error: {error_msg}")
+            print(f"kkLLM Error: {error_msg}")
             return (base_prompt, base_prompt, f"错误: {error_msg}")
     
     def _build_user_message(self, base_prompt, max_length):
         """构建用户消息"""
         return f"请优化以下AI绘画提示词，使其更加详细、具有表现力，包含适当的技术细节和画质描述，保持核心内容不变但提升整体质量。输出长度不超过{max_length}字符：\n\n{base_prompt}"
     
-    def _call_deepseek_api(self, base_prompt, system_message, user_message, api_key, max_length, temperature):
-        """调用DeepSeek API"""
+    @classmethod
+    def _get_provider_models(cls, provider):
+        return list(PROVIDER_MODEL_OPTIONS.get(provider, ["custom"]))
+
+    def _resolve_model(self, provider, model, custom_model=""):
+        available_models = self._get_provider_models(provider)
+        selected_model = str(model).strip()
+        custom_model = str(custom_model).strip()
+
+        if not selected_model:
+            selected_model = available_models[0] if available_models else ""
+
+        if selected_model == "custom":
+            if custom_model:
+                return custom_model
+            raise ValueError(f"{provider} 选择 custom 时必须填写 custom_model。")
+
+        # 兼容旧工作流或手动修改后的未知模型值。
+        if selected_model not in available_models and selected_model:
+            return selected_model
+
+        return selected_model
+
+    def _resolve_base_url(self, provider, base_url, model):
+        base_url = base_url.strip()
+        if base_url:
+            return base_url
+
+        if provider == "deepseek":
+            return "https://api.deepseek.com/chat/completions"
+        if provider == "openai":
+            return "https://api.openai.com/v1/chat/completions"
+        if provider == "doubao":
+            return "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+        if provider == "gemini":
+            return f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+        raise ValueError(f"不支持的 provider: {provider}")
+
+    def _parse_openai_compatible_content(self, result):
+        content = result["choices"][0]["message"]["content"]
+        if isinstance(content, list):
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    text_parts.append(item.get("text", ""))
+                elif isinstance(item, str):
+                    text_parts.append(item)
+            return "".join(text_parts).strip()
+        return str(content).strip()
+
+    def _parse_gemini_content(self, result):
+        candidates = result.get("candidates", [])
+        if not candidates:
+            raise ValueError("Gemini 返回结果中没有 candidates。")
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        texts = []
+        for part in parts:
+            if isinstance(part, dict) and "text" in part:
+                texts.append(part["text"])
+
+        if not texts:
+            raise ValueError("Gemini 返回结果中没有文本内容。")
+
+        return "".join(texts).strip()
+
+    def _call_llm_api(self, base_prompt, system_message, user_message, api_key, provider, model, custom_model, base_url, max_length, temperature):
+        """调用多厂商 LLM API"""
         try:
-            url = "https://api.deepseek.com/chat/completions"
-            
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            
-            payload = {
-                "model": "deepseek-chat",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_message
+            resolved_model = self._resolve_model(provider, model, custom_model)
+            url = self._resolve_base_url(provider, base_url, resolved_model)
+
+            if provider == "gemini":
+                headers = {
+                    "Content-Type": "application/json",
+                }
+                payload = {
+                    "system_instruction": {
+                        "parts": [
+                            {
+                                "text": system_message
+                            }
+                        ]
                     },
-                    {
-                        "role": "user", 
-                        "content": user_message
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [
+                                {
+                                    "text": user_message
+                                }
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": temperature,
+                        "maxOutputTokens": max_length,
                     }
-                ],
-                "max_tokens": max_length,
-                "temperature": temperature,
-                "stream": False
-            }
-            
-            # 使用导入的requests库
-            response = requests.post(url, headers=headers, json=payload, timeout=30)
-            
-            # 添加402错误处理
+                }
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    params={"key": api_key},
+                    json=payload,
+                    timeout=30,
+                )
+            else:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}"
+                }
+                payload = {
+                    "model": resolved_model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": system_message
+                        },
+                        {
+                            "role": "user",
+                            "content": user_message
+                        }
+                    ],
+                    "max_tokens": max_length,
+                    "temperature": temperature,
+                    "stream": False
+                }
+                response = requests.post(url, headers=headers, json=payload, timeout=30)
+
             if response.status_code == 402:
-                print("DeepSeek API 需要付费，使用本地优化作为备选方案")
+                print(f"{provider} API 需要付费或额度不足，使用本地优化作为备选方案")
                 return self._local_prompt_optimization(base_prompt)
             
             response.raise_for_status()
             
             result = response.json()
-            optimized_prompt = result["choices"][0]["message"]["content"].strip()
+
+            if provider == "gemini":
+                optimized_prompt = self._parse_gemini_content(result)
+            else:
+                optimized_prompt = self._parse_openai_compatible_content(result)
             
             # 清理可能的标记和解释
             optimized_prompt = self._clean_prompt(optimized_prompt)
             
             # 打印调试信息
-            print(f"AIPromptOptimizer API Call:")
+            print(f"kkLLM API Call:")
+            print(f"  Provider: {provider}")
+            print(f"  Model: {resolved_model}")
+            print(f"  URL: {url}")
             print(f"  Original Length: {len(base_prompt)}")
             print(f"  Optimized Length: {len(optimized_prompt)}")
             print(f"  System Message: {system_message[:50]}...")
@@ -277,10 +468,10 @@ class AIPromptOptimizerNode:
             return optimized_prompt
             
         except requests.exceptions.RequestException as e:
-            print(f"DeepSeek API请求错误: {e}，使用本地优化")
+            print(f"{provider} API请求错误: {e}，使用本地优化")
             return self._local_prompt_optimization(base_prompt)
         except Exception as e:
-            print(f"DeepSeek API调用错误: {e}，使用本地优化")
+            print(f"{provider} API调用错误: {e}，使用本地优化")
             return self._local_prompt_optimization(base_prompt)
     
     def _local_prompt_optimization(self, base_prompt):
@@ -324,13 +515,13 @@ class AIPromptOptimizerNode:
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
     "BatchPrompt": BatchPrompt,
-    "AIPromptOptimizerNode": AIPromptOptimizerNode,
+    "kkLLM": kkLLM,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
     "BatchPrompt": "Batch Prompt (批量提示词)",
-    "AIPromptOptimizerNode": "AI Prompt Optimizer (AI提示词优化)",
+    "kkLLM": "kkLLM (多厂商大模型提示词优化)",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

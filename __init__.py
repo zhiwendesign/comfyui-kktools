@@ -15,6 +15,7 @@ if current_dir not in sys.path:
 
 # nodes 文件夹路径
 nodes_dir = os.path.join(current_dir, "nodes")
+WEB_DIRECTORY = "./web"
 
 def load_module_from_file(module_name, file_path):
     """从文件路径加载模块"""
@@ -119,6 +120,14 @@ def discover_and_load_nodes():
                     chinese_desc = " (图像蒙版同步调整)"
                 elif 'AIPromptOptimizer' in attr_name:
                     chinese_desc = " (AI提示词优化)"
+                elif attr_name == 'kkLLM':
+                    chinese_desc = " (多厂商LLM)"
+                elif attr_name == 'VideoFirstLastFrames':
+                    chinese_desc = " (视频首尾帧提取)"
+                elif attr_name == 'VideoFramesAdvanced':
+                    chinese_desc = " (视频抽帧-高级)"
+                elif attr_name == 'AudioMerge4':
+                    chinese_desc = " (音频4合1)"
                 # 新增的节点名称映射
                 elif attr_name == 'InputNode':
                     chinese_desc = " (多类型输入)"
@@ -154,7 +163,7 @@ if not NODE_CLASS_MAPPINGS:
                           "kktoolsStringReplaceNode"]),
         ("regex_node.py", ["kktoolsRegexNode", "kktoolsRegexNodeAdvanced"]),
         ("image_layout.py", ["PadImageToCanvas", "ImageFrame", "Resize"]),
-        ("prompts.py", ["BatchPrompt", "AIPromptOptimizerNode"]),
+        ("prompts.py", ["BatchPrompt", "kkLLM"]),
     ]
     
     for file_name, class_names in nodes_to_load:
@@ -171,7 +180,7 @@ if not NODE_CLASS_MAPPINGS:
 print(f"✅ kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} 个节点\n")
 
 # 导出
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
 
 # 元信息
 __version__ = "3.4.0"
