@@ -122,6 +122,12 @@ def discover_and_load_nodes():
                     chinese_desc = " (AI提示词优化)"
                 elif attr_name == 'kkLLM':
                     chinese_desc = " (多厂商LLM)"
+                elif attr_name == 'StoryboardScript':
+                    chinese_desc = " (默认分镜)"
+                elif attr_name == 'StoryboardScriptLLM':
+                    chinese_desc = " (LLM分镜)"
+                elif attr_name == 'StoryboardShotOutput':
+                    chinese_desc = " (分镜输出)"
                 elif attr_name == 'VideoFirstLastFrames':
                     chinese_desc = " (视频首尾帧提取)"
                 elif attr_name == 'VideoFramesAdvanced':
