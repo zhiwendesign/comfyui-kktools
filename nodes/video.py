@@ -221,7 +221,7 @@ class _KKVideo:
         )
 
 
-class VideoFirstLastFrames(_VideoNodeMixin):
+class kkVideoFirstLastFrames(_VideoNodeMixin):
     """
     从 ComfyUI 的 VIDEO 输入中提取首帧、尾帧，以及仅包含首尾两帧的新批次。
     """
@@ -251,7 +251,7 @@ class VideoFirstLastFrames(_VideoNodeMixin):
         return (first_frame, last_frame, first_last_frames, audio)
 
 
-class VideoFramesAdvanced(_VideoNodeMixin):
+class kkVideoFramesAdvanced(_VideoNodeMixin):
     """
     从 VIDEO 中提取全部帧，或按时间间隔抽帧，并输出 FPS 与提取信息。
     """
@@ -297,7 +297,7 @@ class VideoFramesAdvanced(_VideoNodeMixin):
         return (selected_images, fps, extracted_count, info)
 
 
-class MergeVideos(_VideoNodeMixin):
+class kkMergeVideos(_VideoNodeMixin):
     """
     合并多个 VIDEO 输入并输出单个 VIDEO，同时按顺序拼接每段视频对应的音频。
     """

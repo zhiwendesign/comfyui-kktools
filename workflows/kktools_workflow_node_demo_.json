@@ -8,11 +8,11 @@
       "id": 1,
       "type": "Note",
       "pos": [
-        -257.43302549820123,
-        445.2315030512621
+        40,
+        20
       ],
       "size": [
-        271.14859725191064,
+        2200,
         203.43713476718847
       ],
       "flags": {},
@@ -34,8 +34,8 @@
       "id": 2,
       "type": "Note",
       "pos": [
-        3334.1938300803204,
-        1431.9588711511356
+        70,
+        160
       ],
       "size": [
         330,
@@ -46,7 +46,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "SizeNode Demo",
+      "title": "kkSizeNode Demo",
       "properties": {
         "text": ""
       },
@@ -58,10 +58,10 @@
     },
     {
       "id": 3,
-      "type": "SizeNode",
+      "type": "kkSizeNode",
       "pos": [
-        3684.193830080327,
-        1431.9588711511356
+        470,
+        160
       ],
       "size": [
         315,
@@ -89,7 +89,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "SizeNode"
+        "Node name for S&R": "kkSizeNode"
       },
       "widgets_values": [
         "preset",
@@ -105,8 +105,8 @@
       "id": 4,
       "type": "Note",
       "pos": [
-        4401.429031816002,
-        837.7168209130914
+        1280,
+        160
       ],
       "size": [
         330,
@@ -117,7 +117,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "RandomSelector Demo",
+      "title": "kkRandomSelector Demo",
       "properties": {
         "text": ""
       },
@@ -129,10 +129,10 @@
     },
     {
       "id": 5,
-      "type": "RandomSelector",
+      "type": "kkRandomSelector",
       "pos": [
-        4751.429031816004,
-        837.7168209130914
+        1680,
+        160
       ],
       "size": [
         390,
@@ -160,7 +160,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "RandomSelector"
+        "Node name for S&R": "kkRandomSelector"
       },
       "widgets_values": [
         "[{\"groupName\":\"style\",\"list\":[\"anime\",\"photo\",\"cinematic\"]},{\"groupName\":\"mood\",\"list\":[\"warm\",\"cool\"]}]",
@@ -175,8 +175,8 @@
       "id": 6,
       "type": "Note",
       "pos": [
-        75.71512036189226,
-        515.0800010598424
+        70,
+        520
       ],
       "size": [
         330,
@@ -187,7 +187,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "BatchPrompt Demo",
+      "title": "kkBatchPrompt Demo",
       "properties": {
         "text": ""
       },
@@ -199,10 +199,10 @@
     },
     {
       "id": 7,
-      "type": "BatchPrompt",
+      "type": "kkBatchPrompt",
       "pos": [
-        425.7151203618924,
-        515.0800010598424
+        470,
+        520
       ],
       "size": [
         330,
@@ -235,7 +235,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "BatchPrompt"
+        "Node name for S&R": "kkBatchPrompt"
       },
       "widgets_values": [
         "./prompts/demo.txt",
@@ -250,8 +250,8 @@
       "id": 8,
       "type": "Note",
       "pos": [
-        75.71512036189226,
-        747.0800010598422
+        1280,
+        520
       ],
       "size": [
         330,
@@ -276,8 +276,8 @@
       "id": 9,
       "type": "kkLLM",
       "pos": [
-        425.1894896505102,
-        747.596722776116
+        1680,
+        520
       ],
       "size": [
         430,
@@ -325,8 +325,8 @@
       "id": 10,
       "type": "Note",
       "pos": [
-        2241.0011930440655,
-        1298.3994643462213
+        70,
+        1020
       ],
       "size": [
         330,
@@ -337,7 +337,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "MathExpressionNode Demo",
+      "title": "kkMathExpressionNode Demo",
       "properties": {
         "text": ""
       },
@@ -349,10 +349,10 @@
     },
     {
       "id": 11,
-      "type": "MathExpressionNode",
+      "type": "kkMathExpressionNode",
       "pos": [
-        2591.001193044066,
-        1298.3994643462213
+        470,
+        1020
       ],
       "size": [
         400,
@@ -380,7 +380,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "MathExpressionNode"
+        "Node name for S&R": "kkMathExpressionNode"
       },
       "widgets_values": [
         "(a + b) * c",
@@ -397,8 +397,8 @@
       "id": 12,
       "type": "Note",
       "pos": [
-        2239.3441199539457,
-        1579.1256168493235
+        1280,
+        1020
       ],
       "size": [
         330,
@@ -409,7 +409,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "RegexNode Demo",
+      "title": "kkRegexNode Demo",
       "properties": {
         "text": ""
       },
@@ -421,10 +421,10 @@
     },
     {
       "id": 13,
-      "type": "RegexNode",
+      "type": "kkRegexNode",
       "pos": [
-        2598.631747354215,
-        1596.524884295583
+        1680,
+        1020
       ],
       "size": [
         320,
@@ -453,7 +453,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "RegexNode"
+        "Node name for S&R": "kkRegexNode"
       },
       "widgets_values": [
         "search",
@@ -466,8 +466,8 @@
       "id": 14,
       "type": "Note",
       "pos": [
-        2235.8473393739873,
-        1779.535708231438
+        70,
+        1418
       ],
       "size": [
         330,
@@ -478,7 +478,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "RegexNodeAdvanced Demo",
+      "title": "kkRegexNodeAdvanced Demo",
       "properties": {
         "text": ""
       },
@@ -490,10 +490,10 @@
     },
     {
       "id": 15,
-      "type": "RegexNodeAdvanced",
+      "type": "kkRegexNodeAdvanced",
       "pos": [
-        2591.001193044066,
-        1768.3994643462229
+        470,
+        1418
       ],
       "size": [
         350,
@@ -537,7 +537,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "RegexNodeAdvanced"
+        "Node name for S&R": "kkRegexNodeAdvanced"
       },
       "widgets_values": [
         "findall",
@@ -551,8 +551,8 @@
       "id": 16,
       "type": "Note",
       "pos": [
-        81.5176339109539,
-        1292.2946943378436
+        1280,
+        1418
       ],
       "size": [
         330,
@@ -563,7 +563,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "InputNode Demo",
+      "title": "kkInputNode Demo",
       "properties": {
         "text": ""
       },
@@ -575,10 +575,10 @@
     },
     {
       "id": 17,
-      "type": "InputNode",
+      "type": "kkInputNode",
       "pos": [
-        437.1856969606857,
-        1276.851971397766
+        1680,
+        1418
       ],
       "size": [
         400,
@@ -621,7 +621,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "InputNode"
+        "Node name for S&R": "kkInputNode"
       },
       "widgets_values": [
         "STRING",
@@ -640,8 +640,8 @@
       "id": 18,
       "type": "Note",
       "pos": [
-        78.09469553695048,
-        1714.5137928126514
+        70,
+        1954
       ],
       "size": [
         330,
@@ -652,7 +652,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "ReplaceNode Demo",
+      "title": "kkReplaceNode Demo",
       "properties": {
         "text": ""
       },
@@ -664,10 +664,10 @@
     },
     {
       "id": 19,
-      "type": "ReplaceNode",
+      "type": "kkReplaceNode",
       "pos": [
-        428.3575108926422,
-        1716.8791310138713
+        470,
+        1954
       ],
       "size": [
         360.03870244229506,
@@ -696,7 +696,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ReplaceNode"
+        "Node name for S&R": "kkReplaceNode"
       },
       "widgets_values": [
         "world",
@@ -710,8 +710,8 @@
       "id": 20,
       "type": "Note",
       "pos": [
-        77.62251879621734,
-        1940.3974206619682
+        1280,
+        1954
       ],
       "size": [
         330,
@@ -722,7 +722,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "SomethingToAny Demo",
+      "title": "kkSomethingToAny Demo",
       "properties": {
         "text": ""
       },
@@ -734,10 +734,10 @@
     },
     {
       "id": 21,
-      "type": "SomethingToAny",
+      "type": "kkSomethingToAny",
       "pos": [
-        436.23751706582027,
-        1931.3057911540789
+        1680,
+        1954
       ],
       "size": [
         344.9245922412813,
@@ -765,7 +765,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "SomethingToAny"
+        "Node name for S&R": "kkSomethingToAny"
       },
       "widgets_values": [
         "STRING",
@@ -782,8 +782,8 @@
       "id": 22,
       "type": "Note",
       "pos": [
-        78.35751089264154,
-        2236.879131013863
+        70,
+        2352
       ],
       "size": [
         330,
@@ -794,7 +794,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StringMergeNode Demo",
+      "title": "kkStringMergeNode Demo",
       "properties": {
         "text": ""
       },
@@ -806,10 +806,10 @@
     },
     {
       "id": 23,
-      "type": "StringMergeNode",
+      "type": "kkStringMergeNode",
       "pos": [
-        428.3575108926422,
-        2236.879131013863
+        470,
+        2352
       ],
       "size": [
         346.43021241456245,
@@ -827,7 +827,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringMergeNode"
+        "Node name for S&R": "kkStringMergeNode"
       },
       "widgets_values": [
         "hello",
@@ -843,8 +843,8 @@
       "id": 24,
       "type": "Note",
       "pos": [
-        78.35751089264154,
-        2528.879131013863
+        1280,
+        2352
       ],
       "size": [
         330,
@@ -855,7 +855,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StringNode Demo",
+      "title": "kkStringNode Demo",
       "properties": {
         "text": ""
       },
@@ -867,10 +867,10 @@
     },
     {
       "id": 25,
-      "type": "StringNode",
+      "type": "kkStringNode",
       "pos": [
-        437.795107862065,
-        2560.027120525356
+        1680,
+        2352
       ],
       "size": [
         340,
@@ -894,7 +894,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringNode"
+        "Node name for S&R": "kkStringNode"
       },
       "widgets_values": [
         7,
@@ -907,8 +907,8 @@
       "id": 26,
       "type": "Note",
       "pos": [
-        78.35751089264154,
-        2720.879131013863
+        70,
+        2776
       ],
       "size": [
         330,
@@ -919,7 +919,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StringNodeAdvanced Demo",
+      "title": "kkStringNodeAdvanced Demo",
       "properties": {
         "text": ""
       },
@@ -931,10 +931,10 @@
     },
     {
       "id": 27,
-      "type": "StringNodeAdvanced",
+      "type": "kkStringNodeAdvanced",
       "pos": [
-        428.3575108926422,
-        2720.879131013863
+        470,
+        2776
       ],
       "size": [
         360,
@@ -973,7 +973,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringNodeAdvanced"
+        "Node name for S&R": "kkStringNodeAdvanced"
       },
       "widgets_values": [
         7,
@@ -986,8 +986,8 @@
       "id": 28,
       "type": "Note",
       "pos": [
-        78.35751089264154,
-        2912.879131013863
+        1280,
+        2776
       ],
       "size": [
         330,
@@ -998,7 +998,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StringToIntNode Demo",
+      "title": "kkStringToIntNode Demo",
       "properties": {
         "text": ""
       },
@@ -1010,10 +1010,10 @@
     },
     {
       "id": 29,
-      "type": "StringToIntNode",
+      "type": "kkStringToIntNode",
       "pos": [
-        428.3575108926422,
-        2912.879131013863
+        1680,
+        2776
       ],
       "size": [
         340,
@@ -1046,7 +1046,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringToIntNode"
+        "Node name for S&R": "kkStringToIntNode"
       },
       "widgets_values": [
         "任意文本A",
@@ -1061,8 +1061,8 @@
       "id": 30,
       "type": "Note",
       "pos": [
-        1158.0233780504268,
-        521.9909135195791
+        70,
+        3116
       ],
       "size": [
         330,
@@ -1073,7 +1073,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "GetImage Demo",
+      "title": "kkGetImage Demo",
       "properties": {
         "text": ""
       },
@@ -1085,10 +1085,10 @@
     },
     {
       "id": 31,
-      "type": "GetImage",
+      "type": "kkGetImage",
       "pos": [
-        1521.900028830915,
-        535.2109713605963
+        470,
+        3116
       ],
       "size": [
         220,
@@ -1117,7 +1117,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "GetImage"
+        "Node name for S&R": "kkGetImage"
       },
       "widgets_values": [],
       "color": "#323",
@@ -1127,8 +1127,8 @@
       "id": 32,
       "type": "Note",
       "pos": [
-        1159.3120641928228,
-        723.6928091923791
+        1280,
+        3116
       ],
       "size": [
         330,
@@ -1139,7 +1139,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "ImageFrame Demo",
+      "title": "kkImageFrame Demo",
       "properties": {
         "text": ""
       },
@@ -1151,10 +1151,10 @@
     },
     {
       "id": 33,
-      "type": "ImageFrame",
+      "type": "kkImageFrame",
       "pos": [
-        1514.6775064967194,
-        727.6225669345946
+        1680,
+        3116
       ],
       "size": [
         330,
@@ -1191,7 +1191,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ImageFrame"
+        "Node name for S&R": "kkImageFrame"
       },
       "widgets_values": [
         2,
@@ -1214,8 +1214,8 @@
       "id": 34,
       "type": "Note",
       "pos": [
-        1165.7336678667932,
-        1137.1600222458615
+        70,
+        3628
       ],
       "size": [
         330,
@@ -1226,7 +1226,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "PadImageToCanvas Demo",
+      "title": "kkPadImageToCanvas Demo",
       "properties": {
         "text": ""
       },
@@ -1238,10 +1238,10 @@
     },
     {
       "id": 35,
-      "type": "PadImageToCanvas",
+      "type": "kkPadImageToCanvas",
       "pos": [
-        1514.8338593608676,
-        1137.1154772703205
+        470,
+        3628
       ],
       "size": [
         330,
@@ -1265,7 +1265,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "PadImageToCanvas"
+        "Node name for S&R": "kkPadImageToCanvas"
       },
       "widgets_values": [
         760,
@@ -1282,8 +1282,8 @@
       "id": 36,
       "type": "Note",
       "pos": [
-        1165.5025596246949,
-        1369.1110668758556
+        1280,
+        3628
       ],
       "size": [
         330,
@@ -1294,7 +1294,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "Resize Demo",
+      "title": "kkResize Demo",
       "properties": {
         "text": ""
       },
@@ -1306,10 +1306,10 @@
     },
     {
       "id": 37,
-      "type": "Resize",
+      "type": "kkResize",
       "pos": [
-        1523.2576082324838,
-        1367.72962473089
+        1680,
+        3628
       ],
       "size": [
         320,
@@ -1344,7 +1344,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "Resize"
+        "Node name for S&R": "kkResize"
       },
       "widgets_values": [
         512,
@@ -1359,8 +1359,8 @@
       "id": 38,
       "type": "Note",
       "pos": [
-        1166.2699893723052,
-        1580.7151680674674
+        70,
+        3958
       ],
       "size": [
         330,
@@ -1371,7 +1371,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "BatchImageLoader Demo",
+      "title": "kkBatchImageLoader Demo",
       "properties": {
         "text": ""
       },
@@ -1383,10 +1383,10 @@
     },
     {
       "id": 39,
-      "type": "BatchImageLoader",
+      "type": "kkBatchImageLoader",
       "pos": [
-        1527.56402472887,
-        1579.9692910693325
+        470,
+        3958
       ],
       "size": [
         380,
@@ -1419,7 +1419,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "BatchImageLoader"
+        "Node name for S&R": "kkBatchImageLoader"
       },
       "widgets_values": [
         "./images",
@@ -1439,8 +1439,8 @@
       "id": 40,
       "type": "Note",
       "pos": [
-        1161.6552136062817,
-        1990.591335376034
+        1280,
+        3958
       ],
       "size": [
         330,
@@ -1451,7 +1451,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "ImageTileSplit2x2 Demo",
+      "title": "kkImageTileSplit2x2 Demo",
       "properties": {
         "text": ""
       },
@@ -1463,10 +1463,10 @@
     },
     {
       "id": 41,
-      "type": "ImageTileSplit2x2",
+      "type": "kkImageTileSplit2x2",
       "pos": [
-        1527.601394161835,
-        1985.5114742649218
+        1680,
+        3958
       ],
       "size": [
         340,
@@ -1509,7 +1509,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ImageTileSplit2x2"
+        "Node name for S&R": "kkImageTileSplit2x2"
       },
       "widgets_values": [
         0,
@@ -1522,8 +1522,8 @@
       "id": 42,
       "type": "Note",
       "pos": [
-        1161.6552136062817,
-        2182.5913353760343
+        70,
+        4418
       ],
       "size": [
         330,
@@ -1534,7 +1534,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "ImageSplit Demo",
+      "title": "kkImageSplit Demo",
       "properties": {
         "text": ""
       },
@@ -1546,10 +1546,10 @@
     },
     {
       "id": 43,
-      "type": "ImageSplit",
+      "type": "kkImageSplit",
       "pos": [
-        1525.4625052729475,
-        2187.0123423204777
+        470,
+        4418
       ],
       "size": [
         360,
@@ -1653,7 +1653,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ImageSplit"
+        "Node name for S&R": "kkImageSplit"
       },
       "widgets_values": [
         "2x2",
@@ -1669,8 +1669,8 @@
       "id": 44,
       "type": "Note",
       "pos": [
-        2271.7472123568764,
-        514.2685127329574
+        1280,
+        4418
       ],
       "size": [
         330,
@@ -1681,7 +1681,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "VideoFirstLastFrames Demo",
+      "title": "kkVideoFirstLastFrames Demo",
       "properties": {
         "text": ""
       },
@@ -1693,10 +1693,10 @@
     },
     {
       "id": 45,
-      "type": "VideoFirstLastFrames",
+      "type": "kkVideoFirstLastFrames",
       "pos": [
-        2623.4439709706603,
-        515.062223206231
+        1680,
+        4418
       ],
       "size": [
         320,
@@ -1735,7 +1735,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "VideoFirstLastFrames"
+        "Node name for S&R": "kkVideoFirstLastFrames"
       },
       "widgets_values": [],
       "color": "#223",
@@ -1745,8 +1745,8 @@
       "id": 46,
       "type": "Note",
       "pos": [
-        2273.1564534012596,
-        709.4028591937413
+        70,
+        5042
       ],
       "size": [
         330,
@@ -1757,7 +1757,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "VideoFramesAdvanced Demo",
+      "title": "kkVideoFramesAdvanced Demo",
       "properties": {
         "text": ""
       },
@@ -1769,10 +1769,10 @@
     },
     {
       "id": 47,
-      "type": "VideoFramesAdvanced",
+      "type": "kkVideoFramesAdvanced",
       "pos": [
-        2627.282937953634,
-        711.5936620817057
+        470,
+        5042
       ],
       "size": [
         350,
@@ -1811,7 +1811,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "VideoFramesAdvanced"
+        "Node name for S&R": "kkVideoFramesAdvanced"
       },
       "widgets_values": [
         "every_frame",
@@ -1824,8 +1824,8 @@
       "id": 48,
       "type": "Note",
       "pos": [
-        2271.0142450320673,
-        915.0660180550929
+        1280,
+        5042
       ],
       "size": [
         330,
@@ -1836,7 +1836,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "MergeVideos Demo",
+      "title": "kkMergeVideos Demo",
       "properties": {
         "text": ""
       },
@@ -1848,10 +1848,10 @@
     },
     {
       "id": 49,
-      "type": "MergeVideos",
+      "type": "kkMergeVideos",
       "pos": [
-        2635.511609799002,
-        907.9347724253245
+        1680,
+        5042
       ],
       "size": [
         380,
@@ -1905,7 +1905,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "MergeVideos"
+        "Node name for S&R": "kkMergeVideos"
       },
       "widgets_values": [
         "keep",
@@ -1920,8 +1920,8 @@
       "id": 50,
       "type": "Note",
       "pos": [
-        4388.77973989428,
-        527.368491766269
+        70,
+        5422
       ],
       "size": [
         330,
@@ -1932,7 +1932,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "AudioMerge4 Demo",
+      "title": "kkAudioMerge4 Demo",
       "properties": {
         "text": ""
       },
@@ -1944,10 +1944,10 @@
     },
     {
       "id": 51,
-      "type": "AudioMerge4",
+      "type": "kkAudioMerge4",
       "pos": [
-        4740.674926126385,
-        526.3399077855986
+        470,
+        5422
       ],
       "size": [
         280,
@@ -1990,7 +1990,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "AudioMerge4"
+        "Node name for S&R": "kkAudioMerge4"
       },
       "widgets_values": [],
       "color": "#432",
@@ -2000,8 +2000,8 @@
       "id": 52,
       "type": "Note",
       "pos": [
-        3346.747466200818,
-        536.0947083679628
+        1280,
+        5422
       ],
       "size": [
         330,
@@ -2012,7 +2012,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StoryboardScript Demo",
+      "title": "kkStoryboardScript Demo",
       "properties": {
         "text": ""
       },
@@ -2024,10 +2024,10 @@
     },
     {
       "id": 53,
-      "type": "StoryboardScript",
+      "type": "kkStoryboardScript",
       "pos": [
-        3696.7474662008235,
-        536.0947083679628
+        1680,
+        5422
       ],
       "size": [
         420,
@@ -2050,7 +2050,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StoryboardScript"
+        "Node name for S&R": "kkStoryboardScript"
       },
       "widgets_values": [
         "一个女孩推开咖啡馆的门，环顾四周后坐下。",
@@ -2064,8 +2064,8 @@
       "id": 54,
       "type": "Note",
       "pos": [
-        3345.8937586709744,
-        759.7811753101121
+        70,
+        5742
       ],
       "size": [
         330,
@@ -2076,7 +2076,7 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StoryboardScriptLLM Demo",
+      "title": "kkStoryboardScriptLLM Demo",
       "properties": {
         "text": ""
       },
@@ -2088,10 +2088,10 @@
     },
     {
       "id": 55,
-      "type": "StoryboardScriptLLM",
+      "type": "kkStoryboardScriptLLM",
       "pos": [
-        3700.1694703330577,
-        764.9823346305895
+        470,
+        5742
       ],
       "size": [
         430,
@@ -2114,7 +2114,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StoryboardScriptLLM"
+        "Node name for S&R": "kkStoryboardScriptLLM"
       },
       "widgets_values": [
         "一个女孩推开咖啡馆的门，环顾四周后坐下。",
@@ -2132,8 +2132,8 @@
       "id": 56,
       "type": "Note",
       "pos": [
-        3351.3603564671184,
-        1096.2606289372936
+        1280,
+        5742
       ],
       "size": [
         330,
@@ -2144,22 +2144,22 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "StoryboardShotOutput Demo",
+      "title": "kkStoryboardShotOutput Demo",
       "properties": {
         "text": ""
       },
       "widgets_values": [
-        "功能：从 shot_list 中逐条输出分镜文本。\n最小演示：把 StoryboardScript 的 shot_list 接进来，输出第 0 条。"
+        "功能：从 shot_list 中逐条输出分镜文本。\n最小演示：把 kkStoryboardScript 的 shot_list 接进来，输出第 0 条。"
       ],
       "color": "#8a4f32",
       "bgcolor": "#653922"
     },
     {
       "id": 57,
-      "type": "StoryboardShotOutput",
+      "type": "kkStoryboardShotOutput",
       "pos": [
-        3719.2595185424216,
-        1100.0556817380286
+        1680,
+        5742
       ],
       "size": [
         380,
@@ -2193,7 +2193,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StoryboardShotOutput"
+        "Node name for S&R": "kkStoryboardShotOutput"
       },
       "widgets_values": [
         0,

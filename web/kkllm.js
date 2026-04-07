@@ -42,7 +42,7 @@ const NODE_PROVIDER_MODELS = {
             "custom",
         ],
     },
-    StoryboardScriptLLM: {
+    kkStoryboardScriptLLM: {
         deepseek: [
             "deepseek-chat",
             "deepseek-reasoner",

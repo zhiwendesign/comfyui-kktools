@@ -10,8 +10,8 @@
         20
       ],
       "size": [
-        980,
-        90
+        1080,
+        100
       ],
       "flags": {},
       "order": 0,
@@ -23,7 +23,7 @@
         "text": ""
       },
       "widgets_values": [
-        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。\n合作交流：kkcomfy"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -33,7 +33,7 @@
       "type": "Note",
       "pos": [
         60,
-        140
+        170
       ],
       "size": [
         360,
@@ -56,10 +56,10 @@
     },
     {
       "id": 3,
-      "type": "RandomSelector",
+      "type": "kkRandomSelector",
       "pos": [
-        450,
-        140
+        520,
+        170
       ],
       "size": [
         390,
@@ -87,7 +87,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "RandomSelector"
+        "Node name for S&R": "kkRandomSelector"
       },
       "widgets_values": [
         "[{\"groupName\":\"style\",\"list\":[\"anime\",\"photo\",\"cinematic\"]},{\"groupName\":\"mood\",\"list\":[\"warm\",\"cool\"]}]",

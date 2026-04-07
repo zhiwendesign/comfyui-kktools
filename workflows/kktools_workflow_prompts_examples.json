@@ -10,8 +10,8 @@
         20
       ],
       "size": [
-        980,
-        90
+        1080,
+        100
       ],
       "flags": {},
       "order": 0,
@@ -23,7 +23,7 @@
         "text": ""
       },
       "widgets_values": [
-        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。\n合作交流：kkcomfy"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -33,7 +33,7 @@
       "type": "Note",
       "pos": [
         60,
-        140
+        170
       ],
       "size": [
         360,
@@ -56,10 +56,10 @@
     },
     {
       "id": 3,
-      "type": "BatchPrompt",
+      "type": "kkBatchPrompt",
       "pos": [
-        450,
-        140
+        520,
+        170
       ],
       "size": [
         330,
@@ -92,7 +92,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "BatchPrompt"
+        "Node name for S&R": "kkBatchPrompt"
       },
       "widgets_values": [
         "./prompts/demo.txt",
@@ -106,7 +106,7 @@
       "type": "Note",
       "pos": [
         60,
-        360
+        500
       ],
       "size": [
         360,
@@ -131,8 +131,8 @@
       "id": 5,
       "type": "kkLLM",
       "pos": [
-        450,
-        360
+        520,
+        500
       ],
       "size": [
         430,

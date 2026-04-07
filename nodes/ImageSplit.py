@@ -6,7 +6,7 @@ import glob
 import random
 
 # ============== 图像分块切割节点 ==============
-class ImageSplit:
+class kkImageSplit:
     """
     图像分块切割节点
     将一张输入图片切割成指定网格大小的子图
@@ -336,11 +336,11 @@ class ImageSplit:
 
 # ============== 节点注册部分 ==============
 NODE_CLASS_MAPPINGS = {
-    "ImageSplit": ImageSplit,
+    "kkImageSplit": kkImageSplit,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImageSplit": "ImageSplit（图像切割）",
+    "kkImageSplit": "kkImageSplit（图像切割）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

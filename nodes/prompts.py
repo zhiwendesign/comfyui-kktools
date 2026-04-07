@@ -52,7 +52,7 @@ PROVIDER_MODEL_OPTIONS = {
 }
 
 
-class BatchPrompt:
+class kkBatchPrompt:
     """批量提示词节点 - 用于批量加载和处理提示词"""
     
     @classmethod
@@ -514,13 +514,13 @@ class kkLLM:
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
-    "BatchPrompt": BatchPrompt,
+    "kkBatchPrompt": kkBatchPrompt,
     "kkLLM": kkLLM,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "BatchPrompt": "BatchPrompt（批量提示词）",
+    "kkBatchPrompt": "kkBatchPrompt（批量提示词）",
     "kkLLM": "kkLLM（多厂商LLM）",
 }
 

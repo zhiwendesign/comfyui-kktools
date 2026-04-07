@@ -9,6 +9,8 @@
 
 所有新示例都遵循根目录 [readme.md](../readme.md) 的模块划分与说明风格，每个节点都配有一张 `Note` 说明卡，包含功能描述、关键参数和最小演示方式。
 
+当前示例已全部切换到 `kk...` 前缀节点名。
+
 ## 🧭 快速上手
 
 - 想一次看全全部节点：
@@ -78,8 +80,8 @@
 - 图像、视频、音频、分镜输出类节点：
   - 需要先把你自己的 `IMAGE`、`VIDEO`、`AUDIO`、`LIST` 接到左侧输入口
 
-- `BatchImageLoader` 与 `BatchPrompt`：
+- `kkBatchImageLoader` 与 `kkBatchPrompt`：
   - 需要把示例中的目录或文件路径改成你本机的真实路径
 
-- `kkLLM` 与 `StoryboardScriptLLM`：
+- `kkLLM` 与 `kkStoryboardScriptLLM`：
   - 需要填写有效的 `api_key` 后再运行

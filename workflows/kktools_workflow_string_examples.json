@@ -10,20 +10,20 @@
         20
       ],
       "size": [
-        980,
-        90
+        1080,
+        100
       ],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "📝 字符串处理模块 (string.py)",
+      "title": "📝 字符串处理模块 (kkstring.py)",
       "properties": {
         "text": ""
       },
       "widgets_values": [
-        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。\n合作交流：kkcomfy"
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -33,7 +33,7 @@
       "type": "Note",
       "pos": [
         60,
-        140
+        170
       ],
       "size": [
         360,
@@ -56,10 +56,10 @@
     },
     {
       "id": 3,
-      "type": "StringNode",
+      "type": "kkStringNode",
       "pos": [
-        450,
-        140
+        520,
+        170
       ],
       "size": [
         340,
@@ -86,7 +86,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringNode"
+        "Node name for S&R": "kkStringNode"
       },
       "widgets_values": [
         "prefix_demo_suffix",
@@ -99,7 +99,7 @@
       "type": "Note",
       "pos": [
         60,
-        350
+        480
       ],
       "size": [
         360,
@@ -122,10 +122,10 @@
     },
     {
       "id": 5,
-      "type": "StringNodeAdvanced",
+      "type": "kkStringNodeAdvanced",
       "pos": [
-        450,
-        350
+        520,
+        480
       ],
       "size": [
         360,
@@ -167,7 +167,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringNodeAdvanced"
+        "Node name for S&R": "kkStringNodeAdvanced"
       },
       "widgets_values": [
         "prefix_demo_suffix",
@@ -180,7 +180,7 @@
       "type": "Note",
       "pos": [
         60,
-        560
+        790
       ],
       "size": [
         360,
@@ -203,10 +203,10 @@
     },
     {
       "id": 7,
-      "type": "StringMergeNode",
+      "type": "kkStringMergeNode",
       "pos": [
-        450,
-        560
+        520,
+        790
       ],
       "size": [
         400,
@@ -224,7 +224,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringMergeNode"
+        "Node name for S&R": "kkStringMergeNode"
       },
       "widgets_values": [
         "hello",
@@ -239,7 +239,7 @@
       "type": "Note",
       "pos": [
         60,
-        840
+        1180
       ],
       "size": [
         360,
@@ -262,10 +262,10 @@
     },
     {
       "id": 9,
-      "type": "InputNode",
+      "type": "kkInputNode",
       "pos": [
-        450,
-        840
+        520,
+        1180
       ],
       "size": [
         400,
@@ -308,7 +308,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "InputNode"
+        "Node name for S&R": "kkInputNode"
       },
       "widgets_values": [
         "STRING",
@@ -326,7 +326,7 @@
       "type": "Note",
       "pos": [
         60,
-        1240
+        1690
       ],
       "size": [
         360,
@@ -349,10 +349,10 @@
     },
     {
       "id": 11,
-      "type": "ReplaceNode",
+      "type": "kkReplaceNode",
       "pos": [
-        450,
-        1240
+        520,
+        1690
       ],
       "size": [
         400,
@@ -384,7 +384,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "ReplaceNode"
+        "Node name for S&R": "kkReplaceNode"
       },
       "widgets_values": [
         "hello world",
@@ -398,7 +398,7 @@
       "type": "Note",
       "pos": [
         60,
-        1470
+        2030
       ],
       "size": [
         360,
@@ -421,10 +421,10 @@
     },
     {
       "id": 13,
-      "type": "SomethingToAny",
+      "type": "kkSomethingToAny",
       "pos": [
-        450,
-        1470
+        520,
+        2030
       ],
       "size": [
         400,
@@ -452,7 +452,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "SomethingToAny"
+        "Node name for S&R": "kkSomethingToAny"
       },
       "widgets_values": [
         "STRING",
@@ -468,7 +468,7 @@
       "type": "Note",
       "pos": [
         60,
-        1736
+        2406
       ],
       "size": [
         360,
@@ -491,10 +491,10 @@
     },
     {
       "id": 15,
-      "type": "StringToIntNode",
+      "type": "kkStringToIntNode",
       "pos": [
-        450,
-        1736
+        520,
+        2406
       ],
       "size": [
         340,
@@ -527,7 +527,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "StringToIntNode"
+        "Node name for S&R": "kkStringToIntNode"
       },
       "widgets_values": [
         "任意文本A",
@@ -541,7 +541,7 @@
   "groups": [
     {
       "id": 1,
-      "title": "📝 字符串处理模块 (string.py)",
+      "title": "📝 字符串处理模块 (kkstring.py)",
       "bounding": [
         40,
         110,

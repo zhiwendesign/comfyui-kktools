@@ -7,7 +7,7 @@ import numpy as np
 import json
 import random
 
-class RandomSelector:
+class kkRandomSelector:
     """随机选择器"""
     
     @classmethod
@@ -79,7 +79,7 @@ class RandomSelector:
             
             # 如果没有有效的组
             if not valid_groups:
-                print(f"⚠️ RandomSelector: 没有找到有效的组")
+                print(f"⚠️ kkRandomSelector: 没有找到有效的组")
                 return ("", "", all_groups_str)
             
             # 收集所有符合条件的选项
@@ -95,7 +95,7 @@ class RandomSelector:
             
             # 如果没有可选的项
             if not all_items:
-                print(f"⚠️ RandomSelector: 没有可选的项")
+                print(f"⚠️ kkRandomSelector: 没有可选的项")
                 return ("", "", all_groups_str)
             
             # 随机选择一个项
@@ -104,7 +104,7 @@ class RandomSelector:
             selected_group = group_mapping[selected_index]
             
             # 打印调试信息
-            print(f"✅ RandomSelector:")
+            print(f"✅ kkRandomSelector:")
             print(f"   选中的组: {selected_group}")
             print(f"   选中的值: {selected_value}")
             print(f"   总组数: {len(all_groups)}")
@@ -114,22 +114,22 @@ class RandomSelector:
             
         except json.JSONDecodeError as e:
             error_msg = f"JSON解析错误: {str(e)}"
-            print(f"❌ RandomSelector: {error_msg}")
+            print(f"❌ kkRandomSelector: {error_msg}")
             return (error_msg, "", "")
         except Exception as e:
             error_msg = f"错误: {str(e)}"
-            print(f"❌ RandomSelector: {error_msg}")
+            print(f"❌ kkRandomSelector: {error_msg}")
             return (error_msg, "", "")
 
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
-    "RandomSelector": RandomSelector,
+    "kkRandomSelector": kkRandomSelector,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "RandomSelector": "RandomSelector（随机选择器）",
+    "kkRandomSelector": "kkRandomSelector（随机选择器）",
 }
 
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'RandomSelector']
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'kkRandomSelector']

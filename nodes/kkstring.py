@@ -1,9 +1,9 @@
 """
 ComfyUI Custom Node: kktoolsString
-卡卡字符串节点 - 字符串裁剪和处理功能
+卡卡字符串节点 - kkstring 字符串裁剪、转换和处理功能
 """
 
-class StringNode:
+class kkStringNode:
     """字符串裁剪节点（基础裁剪） - 忽略开头和结尾指定数量的字符"""
     
     @classmethod
@@ -68,7 +68,7 @@ class StringNode:
         return (trimmed,)
 
 
-class StringNodeAdvanced:
+class kkStringNodeAdvanced:
     """字符串裁剪节点（高级裁剪） - 带详细信息输出"""
     
     @classmethod
@@ -135,7 +135,7 @@ class StringNodeAdvanced:
         return (trimmed, original_length, trimmed_length, removed_chars)
 
 
-class StringMergeNode:
+class kkStringMergeNode:
     """字符串合并节点（字符串合并） - 合并多个字符串"""
     
     @classmethod
@@ -212,7 +212,7 @@ class StringMergeNode:
         return (merged,)
 
 
-class StringToIntNode:
+class kkStringToIntNode:
     """字符串转整数节点（字符串转整数） - 输入任意字符串，固定输出1/2/3/4"""
 
     @classmethod
@@ -276,7 +276,7 @@ class StringToIntNode:
         return (int1, int2, int3, int4)
 
 
-class InputNode:
+class kkInputNode:
     """输入节点（多类型输入）（多类型输入节点） - 可以输入2组字符串、整数或浮点数"""
     
     @classmethod
@@ -402,7 +402,7 @@ class InputNode:
         return (string_output_1, int_output_1, float_output_1, string_output_2, int_output_2, float_output_2)
 
 
-class ReplaceNode:
+class kkReplaceNode:
     """替换节点（字符串替换）（字符串替换节点） - 替换字符串中的指定内容"""
     
     @classmethod
@@ -478,7 +478,7 @@ class ReplaceNode:
         return (replaced_text, replace_count)
 
 
-class SomethingToAny:
+class kkSomethingToAny:
     """类型转换节点（任意类型转换）（类型转换节点） - 将任意输入转换为指定类型"""
     
     @classmethod
@@ -627,11 +627,11 @@ class SomethingToAny:
 
 # 更新 __all__ 列表
 __all__ = [
-    'StringNode',           # 基础字符串裁剪
-    'StringNodeAdvanced',   # 高级字符串裁剪
-    'StringMergeNode',      # 字符串合并
-    'StringToIntNode',      # 字符串转整数
-    'InputNode',            # 多类型输入
-    'ReplaceNode',          # 字符串替换
-    'SomethingToAny'        # 任意类型转换
+    'kkStringNode',           # 基础字符串裁剪
+    'kkStringNodeAdvanced',   # 高级字符串裁剪
+    'kkStringMergeNode',      # 字符串合并
+    'kkStringToIntNode',      # 字符串转整数
+    'kkInputNode',          # 多类型输入
+    'kkReplaceNode',          # 字符串替换
+    'kkSomethingToAny'        # 任意类型转换
 ]

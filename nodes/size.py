@@ -5,7 +5,7 @@ ComfyUI Custom Node: Size
 
 import torch
 
-class SizeNode:
+class kkSizeNode:
     """尺寸节点（尺寸生成） - 支持预设比例和自定义尺寸"""
     
     @classmethod
@@ -88,12 +88,12 @@ class SizeNode:
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
-    "SizeNode": SizeNode,
+    "kkSizeNode": kkSizeNode,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SizeNode": "SizeNode（尺寸生成）",
+    "kkSizeNode": "kkSizeNode（尺寸生成）",
 }
 
-__all__ = ['SizeNode']
+__all__ = ['kkSizeNode']

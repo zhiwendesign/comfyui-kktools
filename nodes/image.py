@@ -5,7 +5,7 @@ import os
 import glob
 import random
 
-class PadImageToCanvas:
+class kkPadImageToCanvas:
     """
     一个 ComfyUI 节点，用于将输入图像放置到指定尺寸和颜色的新画布上。
     用户可以控制图像是居中还是通过自定义的左边距和顶边距来定位。
@@ -105,7 +105,7 @@ class PadImageToCanvas:
         
         return (output_tensor,)
 
-class ImageFrame:
+class kkImageFrame:
     """
     图像边框节点，用于显示1-3张图像进行视觉比较，并添加边框和标签
     """
@@ -494,7 +494,7 @@ class ImageFrame:
         output_tensor = self.pil_to_tensor(processed_images)
         return (output_tensor,)
 
-class Resize:
+class kkResize:
     """
     图像和蒙版同步调整尺寸节点
     用于同时调整图像和对应蒙版的尺寸，保持两者尺寸一致
@@ -765,7 +765,7 @@ class Resize:
         
         return (output_image, output_mask)
 
-class GetImage:
+class kkGetImage:
     """
     获取图像尺寸节点
     用于提取图像的宽度和高度信息
@@ -790,7 +790,7 @@ class GetImage:
         
         return (width, height)
 
-class BatchImageLoader:
+class kkBatchImageLoader:
     """批量图像加载节点 - 支持顺序/倒序/随机加载和加载间隔"""
     
     @classmethod
@@ -873,7 +873,7 @@ class BatchImageLoader:
             # 检查目录是否存在
             if not directory or not os.path.exists(directory):
                 error_msg = f"目录不存在: {directory}"
-                print(f"BatchImageLoader Error: {error_msg}")
+                print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
                 return (empty_tensor, empty_mask, 0, error_msg)
@@ -892,7 +892,7 @@ class BatchImageLoader:
             
             if not image_files:
                 error_msg = f"在目录中未找到图像文件: {directory}"
-                print(f"BatchImageLoader Error: {error_msg}")
+                print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
                 return (empty_tensor, empty_mask, 0, error_msg)
@@ -931,7 +931,7 @@ class BatchImageLoader:
             
             if not image_files:
                 error_msg = "没有符合条件的图像文件"
-                print(f"BatchImageLoader Error: {error_msg}")
+                print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
                 return (empty_tensor, empty_mask, 0, error_msg)
@@ -966,7 +966,7 @@ class BatchImageLoader:
             
             if not images:
                 error_msg = "所有图像加载失败"
-                print(f"BatchImageLoader Error: {error_msg}")
+                print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
                 return (empty_tensor, empty_mask, 0, error_msg)
@@ -979,7 +979,7 @@ class BatchImageLoader:
             file_info = self._generate_file_info(loaded_files, total_files, load_order, load_interval, start_index, seed, batch_index)
             
             # 打印调试信息
-            print(f"BatchImageLoader:")
+            print(f"kkBatchImageLoader:")
             print(f"  目录: {directory}")
             print(f"  加载顺序: {load_order}")
             print(f"  加载间隔: {load_interval}")
@@ -996,7 +996,7 @@ class BatchImageLoader:
             
         except Exception as e:
             error_msg = f"批量加载图像时出错: {str(e)}"
-            print(f"BatchImageLoader Error: {error_msg}")
+            print(f"kkBatchImageLoader Error: {error_msg}")
             empty_tensor = torch.zeros((1, 512, 512, 3))
             empty_mask = torch.zeros((1, 512, 512, 1))
             return (empty_tensor, empty_mask, 0, error_msg)
@@ -1038,7 +1038,7 @@ class BatchImageLoader:
         
         return " | ".join(info_parts)
 
-class ImageTileSplit2x2:
+class kkImageTileSplit2x2:
     """
     图像2x2分块切割节点
     将一张输入图片切割成2x2的四张子图输出
@@ -1243,22 +1243,22 @@ class ImageTileSplit2x2:
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
-    "PadImageToCanvas": PadImageToCanvas,
-    "ImageFrame": ImageFrame,
-    "Resize": Resize,
-    "GetImage": GetImage,
-    "BatchImageLoader": BatchImageLoader,
-    "ImageTileSplit2x2": ImageTileSplit2x2,  # 新增节点
+    "kkPadImageToCanvas": kkPadImageToCanvas,
+    "kkImageFrame": kkImageFrame,
+    "kkResize": kkResize,
+    "kkGetImage": kkGetImage,
+    "kkBatchImageLoader": kkBatchImageLoader,
+    "kkImageTileSplit2x2": kkImageTileSplit2x2,  # 新增节点
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PadImageToCanvas": "PadImageToCanvas（图像填充到画布）",
-    "ImageFrame": "ImageFrame（图像边框）",
-    "Resize": "Resize（图像蒙版同步调整）",
-    "GetImage": "GetImage（获取图像尺寸）",
-    "BatchImageLoader": "BatchImageLoader（批量图像加载）",
-    "ImageTileSplit2x2": "ImageTileSplit2x2（图像2x2分块）",
+    "kkPadImageToCanvas": "kkPadImageToCanvas（图像填充到画布）",
+    "kkImageFrame": "kkImageFrame（图像边框）",
+    "kkResize": "kkResize（图像蒙版同步调整）",
+    "kkGetImage": "kkGetImage（获取图像尺寸）",
+    "kkBatchImageLoader": "kkBatchImageLoader（批量图像加载）",
+    "kkImageTileSplit2x2": "kkImageTileSplit2x2（图像2x2分块）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

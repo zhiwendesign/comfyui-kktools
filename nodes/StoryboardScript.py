@@ -1,5 +1,5 @@
 """
-ComfyUI Custom Node: StoryboardScript
+ComfyUI Custom Node: kkStoryboardScript
 分镜头脚本节点 - 将文本优化为分镜头脚本格式 + 分镜输出节点
 """
 
@@ -322,7 +322,7 @@ class StoryboardScriptBase:
         else:
             content = self._parse_openai_compatible_content(result)
 
-        print(f"StoryboardScript API Call:")
+        print(f"kkStoryboardScript API Call:")
         print(f"  Provider: {provider}")
         print(f"  Model: {model}")
         print(f"  URL: {url}")
@@ -688,7 +688,7 @@ class StoryboardScriptBase:
         return shot_list
 
 
-class StoryboardScript(StoryboardScriptBase):
+class kkStoryboardScript(StoryboardScriptBase):
     """默认规则分镜节点"""
 
     @classmethod
@@ -737,7 +737,7 @@ class StoryboardScript(StoryboardScriptBase):
             return (error_msg, [])
 
 
-class StoryboardScriptLLM(StoryboardScriptBase):
+class kkStoryboardScriptLLM(StoryboardScriptBase):
     """LLM 分镜节点"""
 
     @classmethod
@@ -825,7 +825,7 @@ class StoryboardScriptLLM(StoryboardScriptBase):
             return (error_msg, [])
 
 
-class StoryboardShotOutput:
+class kkStoryboardShotOutput:
     """分镜输出节点 - 从镜头列表依次输出每一条分镜"""
     
     @classmethod
@@ -950,7 +950,7 @@ class StoryboardShotOutput:
                             except:
                                 pass
         
-        # 如果是从StoryboardScript节点输出的LIST类型
+        # 如果是从kkStoryboardScript节点输出的LIST类型
         elif hasattr(shot_list, '__iter__') and not isinstance(shot_list, str):
             shots = list(shot_list)
         
@@ -1003,18 +1003,18 @@ class StoryboardShotOutput:
 
 # 节点注册
 NODE_CLASS_MAPPINGS = {
-    "StoryboardScript": StoryboardScript,
-    "StoryboardScriptLLM": StoryboardScriptLLM,
-    "StoryboardShotOutput": StoryboardShotOutput,
+    "kkStoryboardScript": kkStoryboardScript,
+    "kkStoryboardScriptLLM": kkStoryboardScriptLLM,
+    "kkStoryboardShotOutput": kkStoryboardShotOutput,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "StoryboardScript": "StoryboardScript（默认分镜）",
-    "StoryboardScriptLLM": "StoryboardScriptLLM（LLM分镜）",
-    "StoryboardShotOutput": "StoryboardShotOutput（分镜输出）",
+    "kkStoryboardScript": "kkStoryboardScript（默认分镜）",
+    "kkStoryboardScriptLLM": "kkStoryboardScriptLLM（LLM分镜）",
+    "kkStoryboardShotOutput": "kkStoryboardShotOutput（分镜输出）",
 }
 
-__all__ = ['StoryboardScript', 'StoryboardScriptLLM', 'StoryboardShotOutput']
+__all__ = ['kkStoryboardScript', 'kkStoryboardScriptLLM', 'kkStoryboardShotOutput']
 
 print("✅ 分镜头脚本节点已加载")
 print("   📋 分镜头脚本生成(默认): 使用本地规则生成分镜")

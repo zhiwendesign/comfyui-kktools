@@ -1,7 +1,7 @@
 import torch
 
 
-class AudioMerge4:
+class kkAudioMerge4:
     """
     将 4 路 AUDIO 输入按顺序拼接为 1 路 AUDIO 输出。
     """

@@ -1,444 +1,347 @@
 # ComfyUI kktools 节点包完整使用指南
 
-欢迎合作交流微信【XingYueAiArt】
+欢迎合作交流微信【XingYueAiArt】  
 共创：KK HL
 
 ## 📋 概述
 
-kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理、数学运算、提示词优化、尺寸生成、字符串处理、随机选择、视频处理、音频处理与分镜生成等模块，为工作流提供强大的扩展功能。节点会被 ComfyUI 自动发现并注册，显示名包含中文说明，便于检索与使用（自动注册逻辑见 [__init__.py](__init__.py)）。
+kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块、28 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
+
+当前版本的几个统一规则：
+- 节点显示名统一为 `英文名（中文名）`
+- 节点分类统一在 `kktools/...`
+- 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
+- 示例工作流已经同步到当前节点名
+
+自动注册逻辑见 [__init__.py](__init__.py)。
 
 ## 🚀 安装
 
-- 将本项目目录放入 ComfyUI/custom_nodes 下（目录名任意，建议使用 comfyui-kktools-main）。
-- 启动 ComfyUI 后，节点会自动加载，日志中可见注册详情与数量。
-- 字体：如需在图像标注中显示中文/自定义字体，将字体文件放至 [fonts](fonts) 目录（支持 .ttf/.otf/.ttc）。
+- 将本项目目录放到 `ComfyUI/custom_nodes` 下。
+- 重启 ComfyUI，等待 kktools 节点自动注册。
+- 如果需要图像标注里的中文字体，请把 `.ttf`、`.otf`、`.ttc` 放到 [fonts](fonts) 目录。
 
 ## 📦 依赖与环境
 
-- ComfyUI 基础环境：Python、torch、numpy、Pillow 通常随 ComfyUI 提供。
-- 额外依赖：requests（用于网络访问与提示词优化）。
-- 提示词优化：DeepSeek API Key 直接在节点参数中输入，无需环境变量。
+- 基础依赖：`torch`、`numpy`、`Pillow`
+- 网络能力：`requests`
+- 可选依赖：`torchaudio`
+  - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
+- LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
 
 ## 🧭 快速上手
 
-- 在 ComfyUI 的节点面板中搜索“kktools”或中文说明（如“图像填充到画布”、“正则表达式-高级”）。
-- 加载节点总览工作流：打开 [kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json) 浏览全部节点的最小演示。
-- 加载模块工作流：按模块打开 [workflows/README.md](workflows/README.md) 中列出的示例文件。
-- 图像对比标注：使用 ImageFrame 节点时，请在 [fonts](fonts) 目录放置合适字体以确保标签正常渲染。
+- 在节点面板中搜索 `kktools`、英文类名，或中文名。
+- 推荐先打开总览工作流 [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)。
+- 分模块示例可查看 [workflows/README.md](workflows/README.md)。
+- 如果你手里有旧工作流，请留意：
+  - 当前全部节点都已切换为 `kk...` 前缀命名
+  - 旧工作流里的旧节点名需要重新选择或替换
 
-## 🧩 节点索引与源码位置
+## 🧩 源码位置
 
-- 图像处理模块：[nodes/image.py](nodes/image.py)
-- 数学与正则模块：[nodes/Math.py](nodes/Math.py)
+- 自动发现与注册：[__init__.py](__init__.py)
+- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)
+- 数学模块：[nodes/Math.py](nodes/Math.py)
 - 提示词模块：[nodes/prompts.py](nodes/prompts.py)
-- 尺寸生成模块：[nodes/size.py](nodes/size.py)
-- 字符串模块：[nodes/string.py](nodes/string.py)
-- 随机选择器：[nodes/RandomSelector.py](nodes/RandomSelector.py)
-- 视频处理模块：[nodes/video.py](nodes/video.py)
-- 音频处理模块：[nodes/audio.py](nodes/audio.py)
+- 尺寸模块：[nodes/size.py](nodes/size.py)
+- 字符串模块：[nodes/kkstring.py](nodes/kkstring.py)
+- 随机模块：[nodes/RandomSelector.py](nodes/RandomSelector.py)
+- 视频模块：[nodes/video.py](nodes/video.py)
+- 音频模块：[nodes/audio.py](nodes/audio.py)
 - 分镜模块：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
 
-## 🔑 DeepSeek 提示词优化使用说明
+## 🧾 节点清单
 
-- 节点：kkLLM（多厂商LLM）（见 [nodes/prompts.py](nodes/prompts.py)）
-- 在节点的 api_key 参数中填写你的 DeepSeek API Key；未提供时将返回原始提示词并给出提示。
-- 若 API 返回 402 或网络错误，节点会启用本地优化备选方案，保证工作流不间断。
-
-## 📁 目录结构速览
-
-- 根目录：自动发现与注册节点逻辑 [__init__.py](__init__.py)
-- nodes：各功能模块源码（见上方节点索引）
-- fonts：示例字体文件，支持中文标签与对比说明
-- workflows：示例工作流 JSON 文件
-
----
-
-## 🖼️ 图像处理模块 (image.py)
-
-### 1. Pad Image to Canvas (图像填充到画布)
-<img width="1874" height="924" alt="image" src="https://github.com/user-attachments/assets/f16f9de3-c9b6-4aeb-bd2c-5459ac0290ee" />
-
-#### 功能描述
-将任意尺寸的图像放置到指定大小的画布上，支持自定义背景色和精确定位。
-
-#### 核心参数
-- **`width` / `height`**：画布尺寸（64-8192，步长8）
-- **`fill_color`**：背景颜色（支持 #RGB、#RRGGBB、#RRGGBBAA 格式）
-- **`center`**：居中开关
-- **`left_padding` / `top_padding`**：自定义边距（支持负值）
-
-#### 特色功能
-- 支持透明背景（使用 #RRGGBBAA 格式）
-- 自动处理 RGBA 透明度通道
-- 批量处理支持
-
-#### 使用场景
-- 统一不同尺寸的图像分辨率
-- 为图像添加彩色或透明背景
-- 精确控制图像在画布中的位置
-
-### 2. Image Frame (图像边框)
-<img width="2702" height="882" alt="image" src="https://github.com/user-attachments/assets/22f81cba-bdfd-4e67-8521-00e2b6d693f8" />
-
-#### 功能描述
-将 1-3 张图像进行并排显示，添加标签和边框，适合效果对比展示。
-
-#### 核心参数
-- **`image_count`**：显示图像数量（1-3 张）
-- **`mode`**：排列方式（水平、垂直、网格）
-- **`footer_height`**：底部标签区域高度
-- **`font_size`**：标签文字大小
-- **`font_selection`**：字体选择（支持自定义字体）
-
-#### 布局模式
-- **水平排列**：适合 1-2 张图像
-- **垂直排列**：适合 1-3 张图像  
-- **网格排列**：特别适合 3 张图像的 2×2 网格布局
-
-#### 字体配置
-在节点目录下的 `fonts` 文件夹中放入 `.ttf`、`.otf`、`.ttc` 格式的字体文件。
-
-### 3. Resize (图像蒙版同步调整)
-
-#### 功能描述
-同时调整图像和对应蒙版的尺寸，确保两者尺寸完全一致。
-
-#### 7种缩放模式
-| 模式 | 描述 | 适用场景 |
-|------|------|----------|
-| **`stretch`** | 直接拉伸 | 需要精确尺寸，可接受变形 |
-| **`scale_width`** | 按宽度等比缩放 | 固定宽度，高度自适应 |
-| **`scale_height`** | 按高度等比缩放 | 固定高度，宽度自适应 |
-| **`scale_long`** | 按长边等比缩放 | 保持比例，长边匹配目标 |
-| **`scale_short`** | 按短边等比缩放 | 保持比例，短边匹配目标 |
-| **`fit_padding`** | 等比缩放 + 填充 | 保持比例，填充空白区域 |
-| **`fill_crop`** | 等比缩放 + 裁剪 | 保持比例，裁剪多余部分 |
-
-#### 插值方法
-- `nearest`：最近邻插值（保持边缘清晰）
-- `bilinear`：双线性插值
-- `bicubic`：双三次插值
-- `lanczos`：兰索斯插值（最高质量）
-
-### 4. Get Image (获取图像尺寸)
-
-#### 功能描述
-简单直接地获取图像的宽度和高度信息。
-
-#### 输出
-- **`width`**：图像宽度
-- **`height`**：图像高度
-
-#### 使用场景
-- 动态调整工作流参数
-- 调试和工作流优化
-
-### 5. Batch Image Loader (批量图像加载)
-
-#### 功能描述
-从文件夹批量加载图像，支持多种排序、筛选和分批处理方式。
-
-#### 加载控制
-- **`load_order`**：加载顺序（顺序、倒序、随机）
-- **`load_interval`**：加载间隔（隔N张加载1张）
-- **`start_index`**：起始文件索引
-- **`max_images`**：最大加载数量
-
-#### 文件筛选
-- **`file_extensions`**：文件类型（png、jpg、webp等）
-- **`seed`**：随机种子（确保可重复性）
-- **`batch_index`**：批次索引（支持大型数据集分批）
-
-#### 输出
-- **`images`**：图像张量
-- **`masks`**：对应蒙版张量
-- **`loaded_count`**：实际加载数量
-- **`file_info`**：文件信息统计
+- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageSplit`
+- 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
+- 提示词模块：`kkBatchPrompt`、`kkLLM`
+- 尺寸模块：`kkSizeNode`
+- 字符串模块：`kkStringNode`、`kkStringNodeAdvanced`、`kkStringMergeNode`、`kkInputNode`、`kkReplaceNode`、`kkSomethingToAny`、`kkStringToIntNode`
+- 随机模块：`kkRandomSelector`
+- 视频模块：`kkVideoFirstLastFrames`、`kkVideoFramesAdvanced`、`kkMergeVideos`
+- 音频模块：`kkAudioMerge4`
+- 分镜模块：`kkStoryboardScript`、`kkStoryboardScriptLLM`、`kkStoryboardShotOutput`
 
 ---
 
-## 🔢 数学运算模块 (Math.py)
+## 🖼️ 图像模块
 
-<img width="2504" height="1170" alt="image" src="https://github.com/user-attachments/assets/9b7fa0fa-3ac2-4cd4-8720-8beeb9523cb8" />
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)
 
-### 1. 运算（数学表达式）
+### kkPadImageToCanvas（图像填充到画布）
 
-#### 功能描述
-执行复杂数学运算，支持变量、函数和常量。
+- 将输入图像放置到指定尺寸的新画布中，支持纯色背景、透明背景、居中或自定义偏移。
+- 常用参数：`width`、`height`、`fill_color`、`center`、`left_padding`、`top_padding`
+- 适合做统一分辨率、补边、加留白和图像位置微调。
+- 输出：`IMAGE`
 
-#### 内置函数库
-| 类别 | 函数列表 |
-|------|----------|
-| **基本运算** | `add`, `sub`, `mul`, `div`, `pow`, `mod` |
-| **比较运算** | `eq`, `ne`, `lt`, `le`, `gt`, `ge` |
-| **数学函数** | `abs`, `round`, `min`, `max`, `sum` |
-| **幂指对数** | `sqrt`, `exp`, `log`, `log10`, `log2` |
-| **特殊函数** | `ceil`, `floor`, `trunc`, `fabs`, `factorial` |
-| **数学常量** | `pi`, `e`, `tau`, `inf` |
+### kkImageFrame（图像边框）
 
-#### 输入变量
-- 支持 `a, b, c, d` 和 `x, y, z, w` 两种命名方式
-- 可控制输出小数位数（0-10位）
+- 将 1 到 3 张图像排版成对比图，支持横排、竖排、网格、边框、底部文字说明。
+- 常用参数：`image_count`、`mode`、`footer_height`、`font_size`、`border_thickness`、`font_selection`
+- 适合做前后对比、模型效果对比、版本对比图。
+- 输出：`IMAGE`
 
-#### 输出格式
-- 浮点数结果
-- 整数结果  
-- 字符串结果
+### kkResize（图像蒙版同步调整）
 
-### 2. 运算（正则表达式）
+- 同时调整图像和对应蒙版尺寸，保证两者始终对齐。
+- 支持 `stretch`、`scale_width`、`scale_height`、`scale_long`、`scale_short`、`fit_padding`、`fill_crop`
+- 支持 `nearest`、`bilinear`、`bicubic`、`lanczos`
+- 输出：`IMAGE`、`MASK`
 
-#### 功能描述
-使用正则表达式进行文本匹配和替换操作。
+### kkGetImage（获取图像尺寸）
 
-#### 操作模式
-- **`match`**：从文本开头进行严格匹配
-- **`search`**：在文本中搜索第一个匹配项
-- **`findall`**：查找所有匹配项（换行分隔）
-- **`replace`**：替换所有匹配的文本
+- 读取输入图像的宽高信息。
+- 适合把图像尺寸继续传给后续节点做动态计算。
+- 输出：`width`、`height`
 
-### 3. 运算（正则表达式高级）
-<img width="2082" height="1364" alt="image" src="https://github.com/user-attachments/assets/55841da7-7a7e-4891-a0ce-51626e184278" />
-#### 增强功能
-- **多标志支持**：
-  - `IGNORECASE`：忽略大小写
-  - `MULTILINE`：多行模式
-  - `DOTALL`：点号匹配换行符
+### kkBatchImageLoader（批量图像加载）
 
-- **丰富输出**：
-  - 匹配结果
-  - 匹配数量
-  - 匹配的文本内容
-  - 操作详细信息
+- 从目录批量读取图像，支持顺序、倒序、随机读取，也支持分批次取图。
+- 常用参数：`directory`、`load_order`、`load_interval`、`start_index`、`max_images`、`file_extensions`、`seed`、`batch_index`
+- 适合批量测试、批量预处理、数据集抽样。
+- 输出：`images`、`masks`、`loaded_count`、`file_info`
+
+### kkImageTileSplit2x2（图像2x2分块）
+
+- 将一张图切成 2x2 四块，支持分块重叠和输出顺序控制。
+- 常用参数：`overlap_pixels`、`output_order`
+- 适合大图分块生成、局部细化、拼图处理。
+- 输出：左上、右上、左下、右下四张图
+
+### kkImageSplit（图像切割）
+
+- 按网格切割一张图，支持 `2x2`、`3x3`、`4x4`、横竖切分和自定义网格。
+- 支持 `row-major`、`column-major`、`diagonal` 三种输出顺序，并可设置分块重叠。
+- 输出 `merged_tiles` 以及最多 16 个 `tile_xx` 子图，适合大图切块工作流。
 
 ---
 
-## 💬 提示词模块 (prompts.py)
+## 🔢 数学模块
 
-### 1. Batch Prompt (批量提示词)
+源码位置：[nodes/Math.py](nodes/Math.py)
 
-#### 功能描述
-批量加载和处理提示词文件，支持单个文件和目录模式。
+### kkMathExpressionNode（数学表达式）
 
-#### 文件模式
-- **`single_file`**：单个文件（支持 .txt 和 .json 格式）
-- **`directory`**：目录模式（读取目录下所有文本文件）
+- 用表达式做数值计算，支持变量 `a b c d` 以及同义变量 `x y z w`。
+- 内置常见数学函数、比较函数、常量，适合尺寸计算、步数换算、流程控制前的数值预处理。
+- 输出：浮点结果、整数结果、字符串结果
 
-#### 批次控制
-- **`batch_size`**：每批次提示词数量
-- **`current_batch`**：当前批次索引
+### kkRegexNode（正则表达式）
 
-#### 输出
-- 合并后的提示词
-- 批次索引
-- 总批次数
-- 文件信息
+- 对字符串执行正则匹配和替换。
+- 支持模式：`match`、`search`、`findall`、`replace`
+- 适合从文本中抽取片段、提取标记、批量替换关键词。
+- 输出：`STRING`
 
-### 2. AI Prompt Optimizer (AI提示词优化)
+### kkRegexNodeAdvanced（正则表达式高级）
 
-#### 功能描述
-通过 DeepSeek API 优化提示词，提升生成质量。
-
-#### 优化参数
-- **`optimization_level`**：优化级别（轻度、中等、重度）
-- **`target_style`**：目标风格（写实、动漫、艺术等）
-- **`include_technical`**：是否包含技术细节
-- **`max_length`**：最大长度限制
-
-#### 使用要求
-- 需要 DeepSeek API Key（在节点参数中直接填写）
-- 支持参考提示词输入
-
-#### 输出
-- 优化后的提示词
-- 原始提示词
-- 优化信息
+- 在基础正则节点上增加了标志位和详细结果输出。
+- 支持 `IGNORECASE`、`MULTILINE`、`DOTALL`
+- 输出：结果文本、匹配数量、匹配内容、附加信息
+- 适合做更可控的文本筛选、日志分析、格式化处理。
 
 ---
 
-## 📐 尺寸生成模块 (size.py)
+## 💬 提示词模块
 
-### 尺寸节点（尺寸生成）
+源码位置：[nodes/prompts.py](nodes/prompts.py)
 
-#### 功能描述
-生成不同比例和尺寸的 latent 张量，针对 SDXL 优化。
+### kkBatchPrompt（批量提示词）
 
-#### 尺寸模式
-- **`preset`**：预设比例
-  - 1:1 (1328×1328)
-  - 16:9 (1664×928)
-  - 9:16 (928×1664)
-  - 4:3 (1472×1104)
-  - 3:4 (1104×1472)
-  - 3:2 (1584×1056)
-  - 2:3 (1056×1584)
+- 从单文件或目录读取提示词，按批次输出。
+- 支持 `.txt` 和 `.json`
+- 常用参数：`prompt_file`、`file_mode`、`batch_size`、`current_batch`
+- 输出：当前批次提示词、批次索引、总批次数、文件信息
 
-- **`custom`**：自定义尺寸
+### kkLLM（多厂商LLM）
 
-#### 输出
-- Latent 张量
-- 实际宽度
-- 实际高度
-
-#### 特性
-- 自动确保尺寸为 8 的倍数
-- 支持批量生成
-- 针对 SDXL 优化的预设尺寸
+- 使用 LLM 优化提示词，当前支持 DeepSeek、OpenAI、Gemini、豆包。
+- 支持 `provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`
+- 没填 `api_key` 时会直接返回原始提示词，不会中断工作流。
+- 输出：优化后的提示词、原始提示词、优化信息
 
 ---
 
-## 📝 字符串处理模块 (string.py)
+## 📐 尺寸模块
 
-### 1. 字符串裁剪节点（基础裁剪）
+源码位置：[nodes/size.py](nodes/size.py)
 
-#### 功能描述
-忽略字符串开头和结尾指定数量的字符。
+### kkSizeNode（尺寸生成）
 
-#### 参数
-- **`skip_start`**：忽略开头的字符数
-- **`skip_end`**：忽略结尾的字符数
-
-#### 输出
-裁剪后的字符串
-
-### 2. 字符串裁剪节点（高级裁剪）
-
-#### 增强功能
-- 裁剪后的字符串
-- 原始长度
-- 裁剪后长度
-- 移除的字符数
-
-### 3. 字符串合并节点（字符串合并）
-
-#### 功能描述
-合并多个字符串，支持自定义分隔符。
-
-#### 输入
-- 最多 4 个字符串输入
-- 可选分隔符
-
-#### 输出
-合并后的字符串
-
-### 4. 输入节点（多类型输入）
-<img width="2068" height="930" alt="image" src="https://github.com/user-attachments/assets/b580ae77-0905-4bfa-8762-325c619fa668" />
-
-#### 功能描述
-可以输入 2 组字符串、整数或浮点数，自动类型转换。
-
-#### 输入类型
-- **`STRING`**：字符串
-- **`INT`**：整数
-- **`FLOAT`**：浮点数
-
-#### 输出
-每组输入都输出三种格式：
-- 字符串格式
-- 整数格式
-- 浮点数格式
-
-### 5. 替换节点（字符串替换）
-
-#### 功能描述
-替换字符串中的指定内容。
-
-#### 参数
-- **`old_text`**：要替换的文本
-- **`new_text`**：替换为的文本
-- **`replace_all`**：是否替换所有匹配项
-
-#### 输出
-- 替换后的字符串
-- 替换次数
-
-### 6. 类型转换节点（任意类型转换）
-
-#### 功能描述
-将任意输入转换为指定类型。
-
-#### 支持类型
-- **输入类型**：STRING、INT、FLOAT、BOOLEAN
-- **输出类型**：STRING、INT、FLOAT
-
-#### 特性
-- 自动类型转换
-
-### 7. 字符串转整数节点
-
-#### 功能描述
-接收 `string1`、`string2`、`string3`、`string4` 四个字符串输入口，不解析字符串内容，固定分别输出整数 `1`、`2`、`3`、`4`。
-
-#### 示例
-- 输入：任意字符串
-- 输出：`1`、`2`、`3`、`4`
-
-#### 说明
-- 该节点不读取字符串内容
-- 四个输出始终固定为 `1`、`2`、`3`、`4`
-- 错误处理
-- 同时输出三种格式结果
+- 生成指定尺寸的 latent，同时输出最终宽高。
+- 支持 `preset` 和 `custom` 两种模式，预设尺寸针对 SDXL 做了优化。
+- 所有尺寸会自动校正为 8 的倍数。
+- 输出：`LATENT`、`width`、`height`
 
 ---
 
-## ⚠️ 通用注意事项
+## 📝 字符串模块
 
-### 安全特性
-- 数学表达式在沙盒环境中执行
-- 只允许数学相关函数，禁用危险操作
-- 完善的错误处理机制
+源码位置：[nodes/kkstring.py](nodes/kkstring.py)
 
-### 性能优化
-- 合理设置批量大小
-- 选择适当的图像尺寸
-- 使用合适的插值方法
+### kkStringNode（字符串裁剪）
 
-### 错误处理
-- 所有节点都有完善的异常处理
-- 错误时返回默认值并显示错误信息
-- 详细的控制台日志输出
+- 按字符数裁掉文本开头和结尾。
+- 常用参数：`skip_start`、`skip_end`
+- 输出：裁剪后的字符串
 
-### 兼容性
-- 支持 ComfyUI 标准数据类型
-- 批量处理支持
-- 与其他节点良好集成
+### kkStringNodeAdvanced（字符串裁剪高级）
+
+- 在基础裁剪之外，额外输出原始长度、裁剪后长度和移除字符数。
+- 适合做文本调试、规则清洗、批处理结果检查。
+- 输出：裁剪后的字符串、原始长度、裁剪后长度、移除字符数
+
+### kkStringMergeNode（字符串合并）
+
+- 将 2 到 4 个字符串按顺序拼接，可选分隔符。
+- 常用参数：`string1`、`string2`、`string3`、`string4`、`separator`
+- 输出：合并后的字符串
+
+### kkInputNode（多类型输入）
+
+- 提供两组手动输入槽，每组可在 `STRING`、`INT`、`FLOAT` 之间切换。
+- 每组都会同时输出三种格式，方便做测试、占位输入、参数注入。
+- 输出：两组 `string/int/float`
+
+### kkReplaceNode（字符串替换）
+
+- 对输入文本执行字符串替换。
+- 支持只替换第一个匹配项，或替换全部匹配项。
+- 输出：替换后的字符串、替换次数
+
+### kkSomethingToAny（任意类型转换）
+
+- 在 `STRING`、`INT`、`FLOAT`、`BOOLEAN` 之间做基础转换，并统一输出字符串、整数、浮点数三种结果。
+- 适合做节点之间的类型桥接，减少临时转换逻辑。
+- 输出：`string_output`、`int_output`、`float_output`
+
+### kkStringToIntNode（字符串转整数）
+
+- 接收 `string1`、`string2`、`string3`、`string4` 四个字符串输入。
+- 当前逻辑不会解析字符串内容，而是固定输出 `1`、`2`、`3`、`4`。
+- 适合做固定占位、演示或兼容某些固定输入场景。
 
 ---
 
-## 🎯 实用工作流示例
+## 🎲 随机模块
 
-### 1. 节点总览工作流
+源码位置：[nodes/RandomSelector.py](nodes/RandomSelector.py)
+
+### kkRandomSelector（随机选择器）
+
+- 从 JSON 配置的多组候选项中随机选择一个值。
+- 支持用 `target_groups` 限定候选组，用 `seed` 保证可复现。
+- 输出：选中的值、选中的组名、全部组名列表
+
+---
+
+## 🎬 视频模块
+
+源码位置：[nodes/video.py](nodes/video.py)
+
+### kkVideoFirstLastFrames（视频首尾帧提取）
+
+- 从 `VIDEO` 输入中提取首帧、尾帧和一个仅含首尾两帧的新图像批次。
+- 同时把原视频音频直接透传出来。
+- 输出：`first_frame`、`last_frame`、`first_last_frames`、`audio`
+
+### kkVideoFramesAdvanced（视频抽帧高级）
+
+- 支持两种抽帧方式：
+  - `every_frame`：输出全部帧
+  - `interval_seconds`：按秒间隔抽帧
+- 输出：图像批次、FPS、抽取帧数、说明信息
+- 适合做视频分析、关键帧提取、视频转图像序列。
+
+### kkMergeVideos（视频合并）
+
+- 将最多 5 路 `VIDEO` 顺序拼接成一个新视频。
+- 支持保持原始分辨率，或参考某一路视频尺寸/FPS，或手动自定义尺寸与 FPS。
+- 如果没有额外接入 `audio`，会自动把每段视频自带音频顺序拼接进去；没有音轨的片段会自动补静音。
+- 如果接入了外部 `audio`，则以外部音频为输出音轨。
+- 输出：`VIDEO`
+
+---
+
+## 🔊 音频模块
+
+源码位置：[nodes/audio.py](nodes/audio.py)
+
+### kkAudioMerge4（音频四合一）
+
+- 将最多 4 路 `AUDIO` 按顺序拼接成 1 路输出。
+- 会自动对齐 batch 和声道；当采样率不同且环境中安装了 `torchaudio` 时，会自动重采样。
+- 适合配音片段拼接、音频段落合并、批量音轨串联。
+- 输出：`AUDIO`
+
+---
+
+## 🎞️ 分镜模块
+
+源码位置：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
+
+### kkStoryboardScript（默认分镜）
+
+- 使用本地规则把一段描述文本转成分镜脚本。
+- 支持控制最大镜头数，也可以选择是否包含音频描述。
+- 输出：分镜文本、结构化镜头列表
+
+### kkStoryboardScriptLLM（LLM分镜）
+
+- 使用 LLM 生成分镜脚本，支持 DeepSeek、OpenAI、Gemini、豆包。
+- 支持 `api_key`、`provider`、`model`、`max_shots`、`include_audio`、`system_prompt`
+- 适合复杂剧情、风格化分镜、需要更强理解能力的文本转镜头任务。
+- 输出：分镜文本、结构化镜头列表
+
+### kkStoryboardShotOutput（分镜输出）
+
+- 从分镜节点生成的 `shot_list` 中取出指定一条镜头，并格式化输出。
+- 支持 `完整`、`简洁`、`纯文本` 三种输出格式。
+- 可用于逐镜头推进工作流、逐条喂给后续图像或视频节点。
+- 输出：镜头文本、当前索引、总镜头数
+
+---
+
+## 🎯 工作流示例
+
+### 节点总览工作流
 
 - [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)
-- 覆盖全部节点
-- 每个节点都包含功能说明和最小演示 demo
+- 覆盖当前全部节点
+- 每个节点都配有最小演示和说明卡
 
-### 2. 模块工作流示例
+### 模块工作流
 
-- 图像模块：[workflows/kktools_workflow_image_examples.json](workflows/kktools_workflow_image_examples.json)
-- 数学模块：[workflows/kktools_workflow_math_examples.json](workflows/kktools_workflow_math_examples.json)
-- 提示词模块：[workflows/kktools_workflow_prompts_examples.json](workflows/kktools_workflow_prompts_examples.json)
-- 尺寸模块：[workflows/kktools_workflow_size_examples.json](workflows/kktools_workflow_size_examples.json)
-- 字符串模块：[workflows/kktools_workflow_string_examples.json](workflows/kktools_workflow_string_examples.json)
-- 随机模块：[workflows/kktools_workflow_random_examples.json](workflows/kktools_workflow_random_examples.json)
-- 视频模块：[workflows/kktools_workflow_video_examples.json](workflows/kktools_workflow_video_examples.json)
-- 音频模块：[workflows/kktools_workflow_audio_examples.json](workflows/kktools_workflow_audio_examples.json)
-- 分镜模块：[workflows/kktools_workflow_storyboard_examples.json](workflows/kktools_workflow_storyboard_examples.json)
+- 图像：[workflows/kktools_workflow_image_examples.json](workflows/kktools_workflow_image_examples.json)
+- 数学：[workflows/kktools_workflow_math_examples.json](workflows/kktools_workflow_math_examples.json)
+- 提示词：[workflows/kktools_workflow_prompts_examples.json](workflows/kktools_workflow_prompts_examples.json)
+- 尺寸：[workflows/kktools_workflow_size_examples.json](workflows/kktools_workflow_size_examples.json)
+- 字符串：[workflows/kktools_workflow_string_examples.json](workflows/kktools_workflow_string_examples.json)
+- 随机：[workflows/kktools_workflow_random_examples.json](workflows/kktools_workflow_random_examples.json)
+- 视频：[workflows/kktools_workflow_video_examples.json](workflows/kktools_workflow_video_examples.json)
+- 音频：[workflows/kktools_workflow_audio_examples.json](workflows/kktools_workflow_audio_examples.json)
+- 分镜：[workflows/kktools_workflow_storyboard_examples.json](workflows/kktools_workflow_storyboard_examples.json)
 
-### 3. 工作流索引说明
+### 工作流索引
 
 - [workflows/README.md](workflows/README.md)
-- 汇总了全部工作流文件用途与使用建议
+- 用于快速查看每个工作流文件的用途和适用场景
 
 ---
 
-## 🧪 常见问题与排查
+## ⚠️ 使用说明
 
-- 节点未显示：确认目录放置在 ComfyUI/custom_nodes，重启 ComfyUI 并查看日志是否显示“kktools Nodes 加载完成”。
-- 字体不生效：确保字体文件位于 [fonts](fonts)，并在 ImageFrame 中选择对应字体。
-- DeepSeek 优化失败：检查 api_key 是否有效；网络或 402 情况下会切换到本地优化，工作流可继续运行。
+- 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
+- API 问题：`kkLLM` 和 `kkStoryboardScriptLLM` 需要有效 `api_key`。
+- 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
+- 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
+- 节点未显示：重启 ComfyUI，并检查日志里是否出现 “kktools Nodes 加载完成”。
 
 ## 📄 版本与版权
 
-- 当前版本：3.4.6（见 [__init__.py](__init__.py)）
-- 作者：kktools；共创：KK HL
-- 仅用于学习与研究，请遵循 ComfyUI 及相关依赖的协议。
+- 当前版本：3.5.0（见 [__init__.py](__init__.py)）
+- 作者：kktools
+- 共创：KK HL
+- 仅用于学习与研究，请遵循 ComfyUI 与相关依赖的许可证要求。

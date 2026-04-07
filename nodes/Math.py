@@ -7,7 +7,7 @@ import math
 import operator
 import re
 
-class MathExpressionNode:
+class kkMathExpressionNode:
     """数学表达式节点 - 执行数学运算和表达式计算"""
     
     @classmethod
@@ -169,7 +169,7 @@ class MathExpressionNode:
             return (0.0, 0, error_msg)
 
 
-class RegexNode:
+class kkRegexNode:
     """正则表达式节点 - 进行正则表达式匹配和替换"""
     
     @classmethod
@@ -252,7 +252,7 @@ class RegexNode:
             return (f"Error: {str(e)}",)
 
 
-class RegexNodeAdvanced:
+class kkRegexNodeAdvanced:
     """正则表达式高级节点 - 带匹配详情和标志支持"""
     
     @classmethod
@@ -345,21 +345,21 @@ class RegexNodeAdvanced:
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
-    "MathExpressionNode": MathExpressionNode,
-    "RegexNode": RegexNode,
-    "RegexNodeAdvanced": RegexNodeAdvanced,
+    "kkMathExpressionNode": kkMathExpressionNode,
+    "kkRegexNode": kkRegexNode,
+    "kkRegexNodeAdvanced": kkRegexNodeAdvanced,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "MathExpressionNode": "MathExpressionNode（数学表达式）",
-    "RegexNode": "RegexNode（正则表达式）",
-    "RegexNodeAdvanced": "RegexNodeAdvanced（正则表达式高级）",
+    "kkMathExpressionNode": "kkMathExpressionNode（数学表达式）",
+    "kkRegexNode": "kkRegexNode（正则表达式）",
+    "kkRegexNodeAdvanced": "kkRegexNodeAdvanced（正则表达式高级）",
 }
 
 # 更新 __all__ 列表
 __all__ = [
-    'MathExpressionNode',   # 数学表达式节点
-    'RegexNode',           # 正则表达式节点
-    'RegexNodeAdvanced'    # 正则表达式高级节点
+    'kkMathExpressionNode',   # 数学表达式节点
+    'kkRegexNode',         # 正则表达式节点
+    'kkRegexNodeAdvanced'    # 正则表达式高级节点
 ]

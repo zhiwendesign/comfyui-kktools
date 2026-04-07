@@ -18,34 +18,34 @@ nodes_dir = os.path.join(current_dir, "nodes")
 WEB_DIRECTORY = "./web"
 
 NODE_CHINESE_NAME_MAPPINGS = {
-    "AudioMerge4": "音频四合一",
-    "BatchImageLoader": "批量图像加载",
-    "BatchPrompt": "批量提示词",
-    "GetImage": "获取图像尺寸",
-    "ImageFrame": "图像边框",
-    "ImageSplit": "图像切割",
-    "ImageTileSplit2x2": "图像2x2分块",
-    "InputNode": "多类型输入",
+    "kkAudioMerge4": "音频四合一",
+    "kkBatchImageLoader": "批量图像加载",
+    "kkBatchPrompt": "批量提示词",
+    "kkGetImage": "获取图像尺寸",
+    "kkImageFrame": "图像边框",
+    "kkImageSplit": "图像切割",
+    "kkImageTileSplit2x2": "图像2x2分块",
+    "kkInputNode": "多类型输入",
     "kkLLM": "多厂商LLM",
-    "MathExpressionNode": "数学表达式",
-    "MergeVideos": "视频合并",
-    "PadImageToCanvas": "图像填充到画布",
-    "RandomSelector": "随机选择器",
-    "RegexNode": "正则表达式",
-    "RegexNodeAdvanced": "正则表达式高级",
-    "ReplaceNode": "字符串替换",
-    "Resize": "图像蒙版同步调整",
-    "SizeNode": "尺寸生成",
-    "SomethingToAny": "任意类型转换",
-    "StoryboardScript": "默认分镜",
-    "StoryboardScriptLLM": "LLM分镜",
-    "StoryboardShotOutput": "分镜输出",
-    "StringMergeNode": "字符串合并",
-    "StringNode": "字符串裁剪",
-    "StringNodeAdvanced": "字符串裁剪高级",
-    "StringToIntNode": "字符串转整数",
-    "VideoFirstLastFrames": "视频首尾帧提取",
-    "VideoFramesAdvanced": "视频抽帧高级",
+    "kkMathExpressionNode": "数学表达式",
+    "kkMergeVideos": "视频合并",
+    "kkPadImageToCanvas": "图像填充到画布",
+    "kkRandomSelector": "随机选择器",
+    "kkRegexNode": "正则表达式",
+    "kkRegexNodeAdvanced": "正则表达式高级",
+    "kkReplaceNode": "字符串替换",
+    "kkResize": "图像蒙版同步调整",
+    "kkSizeNode": "尺寸生成",
+    "kkSomethingToAny": "任意类型转换",
+    "kkStoryboardScript": "默认分镜",
+    "kkStoryboardScriptLLM": "LLM分镜",
+    "kkStoryboardShotOutput": "分镜输出",
+    "kkStringMergeNode": "字符串合并",
+    "kkStringNode": "字符串裁剪",
+    "kkStringNodeAdvanced": "字符串裁剪高级",
+    "kkStringToIntNode": "字符串转整数",
+    "kkVideoFirstLastFrames": "视频首尾帧提取",
+    "kkVideoFramesAdvanced": "视频抽帧高级",
 }
 
 
@@ -95,7 +95,7 @@ def discover_and_load_nodes():
     print(f"🔄 在 nodes 目录中发现 {len(python_files)} 个Python文件")
     
     for py_file in python_files:
-        module_name = os.path.splitext(py_file)[0]
+        module_name = os.path.splitext(py_file)[0].replace('-', '_')
         file_path = os.path.join(nodes_dir, py_file)
         
         print(f"🔍 正在加载模块: {module_name}")
@@ -135,20 +135,24 @@ if not NODE_CLASS_MAPPINGS:
     
     # 这里保留原有的手动加载逻辑作为备用
     nodes_to_load = [
-        ("size_node.py", ["kktoolsSize"]),
-        ("batch_prompt_loader.py", ["kktoolsBatchPromptLoader"]),
-        ("multi_ai_prompt_generator.py", ["MultiAIPromptGenerator"]),
-        ("string_node.py", ["kktoolsStringNode", "kktoolsStringNodeAdvanced", 
-                          "kktoolsStringMergeNode", "kktoolsStringInputNode", 
-                          "kktoolsStringReplaceNode"]),
-        ("regex_node.py", ["kktoolsRegexNode", "kktoolsRegexNodeAdvanced"]),
-        ("image_layout.py", ["PadImageToCanvas", "ImageFrame", "Resize"]),
-        ("prompts.py", ["BatchPrompt", "kkLLM"]),
+        ("size.py", ["kkSizeNode"]),
+        ("prompts.py", ["kkBatchPrompt", "kkLLM"]),
+        ("kkstring.py", ["kkStringNode", "kkStringNodeAdvanced",
+                        "kkStringMergeNode", "kkStringToIntNode",
+                        "kkInputNode", "kkReplaceNode", "kkSomethingToAny"]),
+        ("Math.py", ["kkMathExpressionNode", "kkRegexNode", "kkRegexNodeAdvanced"]),
+        ("image.py", ["kkPadImageToCanvas", "kkImageFrame", "kkResize",
+                     "kkGetImage", "kkBatchImageLoader", "kkImageTileSplit2x2"]),
+        ("ImageSplit.py", ["kkImageSplit"]),
+        ("RandomSelector.py", ["kkRandomSelector"]),
+        ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkMergeVideos"]),
+        ("audio.py", ["kkAudioMerge4"]),
+        ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
     ]
     
     for file_name, class_names in nodes_to_load:
         file_path = os.path.join(nodes_dir, file_name)
-        module_name = os.path.splitext(file_name)[0]
+        module_name = os.path.splitext(file_name)[0].replace('-', '_')
         
         module = load_module_from_file(module_name, file_path)
         if module:
@@ -164,6 +168,6 @@ print(f"✅ kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} �
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
 
 # 元信息
-__version__ = "3.4.6"
+__version__ = "3.5.0"
 __author__ = "kktools"
 __description__ = "kktools Custom Nodes Collection for ComfyUI"
