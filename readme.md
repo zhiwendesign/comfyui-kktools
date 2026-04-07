@@ -1,6 +1,6 @@
 # ComfyUI kktools 节点包完整使用指南
 
-欢迎合作交流微信【XingYueAiArt】  
+欢迎合作交流微信【kkcomfy】  
 共创：KK HL
 
 ## 📋 概述
