@@ -720,7 +720,7 @@ class StoryboardScript(StoryboardScriptBase):
     RETURN_TYPES = ("STRING", "LIST")
     RETURN_NAMES = ("script_text", "shot_list")
     FUNCTION = "generate_storyboard"
-    CATEGORY = "kktools/Storyboard"
+    CATEGORY = "kktools/分镜"
 
     def generate_storyboard(self, input_text, style="专业", max_shots=6, include_audio=False):
         """使用默认规则生成分镜"""
@@ -787,7 +787,7 @@ class StoryboardScriptLLM(StoryboardScriptBase):
     RETURN_TYPES = ("STRING", "LIST")
     RETURN_NAMES = ("script_text", "shot_list")
     FUNCTION = "generate_storyboard_llm"
-    CATEGORY = "kktools/Storyboard"
+    CATEGORY = "kktools/分镜"
 
     def generate_storyboard_llm(
         self,
@@ -862,7 +862,7 @@ class StoryboardShotOutput:
     RETURN_TYPES = ("STRING", "INT", "INT")
     RETURN_NAMES = ("shot_string", "current_index", "total_count")
     FUNCTION = "output_shot"
-    CATEGORY = "kktools/Storyboard"
+    CATEGORY = "kktools/分镜"
     
     def output_shot(self, shot_list, shot_index, output_format="完整", auto_next=False):
         """
@@ -1009,9 +1009,9 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "StoryboardScript": "📋 分镜头脚本生成(默认)",
-    "StoryboardScriptLLM": "🤖 分镜头脚本生成(LLM)",
-    "StoryboardShotOutput": "🎬 分镜输出(单条)",
+    "StoryboardScript": "StoryboardScript（默认分镜）",
+    "StoryboardScriptLLM": "StoryboardScriptLLM（LLM分镜）",
+    "StoryboardShotOutput": "StoryboardShotOutput（分镜输出）",
 }
 
 __all__ = ['StoryboardScript', 'StoryboardScriptLLM', 'StoryboardShotOutput']

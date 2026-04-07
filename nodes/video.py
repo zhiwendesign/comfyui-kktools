@@ -75,6 +75,107 @@ class _VideoNodeMixin:
             "sample_rate": int(sample_rate),
         }
 
+    def _get_audio_parts(self, audio, input_name):
+        if not isinstance(audio, dict):
+            raise TypeError(f"{input_name} 必须是 ComfyUI 的 AUDIO 类型。")
+
+        waveform = audio.get("waveform")
+        sample_rate = audio.get("sample_rate", audio.get("sampler_rate"))
+
+        if waveform is None or sample_rate is None:
+            raise ValueError(f"{input_name} 缺少 waveform 或 sample_rate。")
+
+        if not isinstance(waveform, torch.Tensor):
+            raise TypeError(f"{input_name}.waveform 必须是 torch.Tensor。")
+
+        if waveform.ndim == 2:
+            waveform = waveform.unsqueeze(0)
+
+        if waveform.ndim != 3:
+            raise ValueError(
+                f"{input_name}.waveform 需要是 3 维张量 [batch, channels, samples]，当前维度: {tuple(waveform.shape)}"
+            )
+
+        sample_rate = int(sample_rate)
+        if sample_rate <= 0:
+            raise ValueError(f"{input_name}.sample_rate 必须大于 0，当前值: {sample_rate}")
+
+        return waveform, sample_rate
+
+    def _resample_waveform(self, waveform, source_rate, target_rate):
+        if source_rate == target_rate:
+            return waveform
+
+        source_samples = int(waveform.shape[-1])
+        if source_samples <= 0:
+            return waveform
+
+        target_samples = max(1, int(round(source_samples * float(target_rate) / float(source_rate))))
+        working = waveform if waveform.is_floating_point() else waveform.float()
+        resampled = torch_functional.interpolate(
+            working,
+            size=target_samples,
+            mode="linear",
+            align_corners=False,
+        )
+
+        if waveform.is_floating_point() and resampled.dtype != waveform.dtype:
+            resampled = resampled.to(dtype=waveform.dtype)
+
+        return resampled
+
+    def _match_channels(self, waveform, target_channels, input_name):
+        current_channels = int(waveform.shape[1])
+        if current_channels == target_channels:
+            return waveform
+
+        if current_channels == 1:
+            return waveform.repeat(1, target_channels, 1)
+
+        raise ValueError(
+            f"{input_name} 的声道数为 {current_channels}，无法自动匹配到目标声道数 {target_channels}。"
+        )
+
+    def _match_batch(self, waveform, target_batch, input_name):
+        current_batch = int(waveform.shape[0])
+        if current_batch == target_batch:
+            return waveform
+
+        if current_batch == 1:
+            return waveform.repeat(target_batch, 1, 1)
+
+        raise ValueError(
+            f"{input_name} 的 batch 数量为 {current_batch}，无法自动匹配到目标 batch 数量 {target_batch}。"
+        )
+
+    def _duration_to_sample_count(self, duration_seconds, sample_rate):
+        return max(1, int(round(float(duration_seconds) * int(sample_rate))))
+
+    def _fit_waveform_to_sample_count(self, waveform, target_samples):
+        current_samples = int(waveform.shape[-1])
+        if current_samples == target_samples:
+            return waveform
+
+        if current_samples <= 0:
+            return torch.zeros(
+                (*waveform.shape[:2], target_samples),
+                dtype=waveform.dtype if waveform.is_floating_point() else torch.float32,
+                device=waveform.device,
+            )
+
+        working = waveform if waveform.is_floating_point() else waveform.float()
+        resized = torch_functional.interpolate(
+            working,
+            size=target_samples,
+            mode="linear",
+            align_corners=False,
+        )
+
+        if waveform.is_floating_point() and resized.dtype != waveform.dtype:
+            resized = resized.to(dtype=waveform.dtype)
+
+        return resized
+
 
 class _KKVideo:
     def __init__(self, images, frame_rate, audio=None):
@@ -136,7 +237,7 @@ class VideoFirstLastFrames(_VideoNodeMixin):
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "AUDIO")
     RETURN_NAMES = ("first_frame", "last_frame", "first_last_frames", "audio")
     FUNCTION = "extract_frames"
-    CATEGORY = "kktools/Video"
+    CATEGORY = "kktools/视频"
 
     def extract_frames(self, video):
         components = self._get_video_components(video)
@@ -168,7 +269,7 @@ class VideoFramesAdvanced(_VideoNodeMixin):
     RETURN_TYPES = ("IMAGE", "FLOAT", "INT", "STRING")
     RETURN_NAMES = ("images", "fps", "extracted_count", "info")
     FUNCTION = "extract_frames_advanced"
-    CATEGORY = "kktools/Video"
+    CATEGORY = "kktools/视频"
 
     def extract_frames_advanced(self, video, extract_mode, interval_seconds):
         components = self._get_video_components(video)
@@ -198,7 +299,7 @@ class VideoFramesAdvanced(_VideoNodeMixin):
 
 class MergeVideos(_VideoNodeMixin):
     """
-    合并多个 VIDEO 输入并输出单个 VIDEO。
+    合并多个 VIDEO 输入并输出单个 VIDEO，同时按顺序拼接每段视频对应的音频。
     """
 
     @classmethod
@@ -226,7 +327,7 @@ class MergeVideos(_VideoNodeMixin):
     RETURN_TYPES = ("VIDEO",)
     RETURN_NAMES = ("video",)
     FUNCTION = "merge_videos"
-    CATEGORY = "kktools/Video"
+    CATEGORY = "kktools/视频"
 
     def _resize_images(self, images, target_height, target_width):
         frames, height, width, channels = images.shape
@@ -266,6 +367,56 @@ class MergeVideos(_VideoNodeMixin):
             return float(videos[ref_index]["fps"])
 
         return float(videos[0]["fps"])
+
+    def _merge_video_audios(self, videos, target_fps):
+        available_audio = [
+            self._get_audio_parts(entry["audio"], f"video{index}.audio")
+            for index, entry in enumerate(videos, start=1)
+            if entry["audio"] is not None
+        ]
+
+        if not available_audio:
+            return None
+
+        target_sample_rate = available_audio[0][1]
+        target_channels = max(int(waveform.shape[1]) for waveform, _ in available_audio)
+        target_batch = max(int(waveform.shape[0]) for waveform, _ in available_audio)
+        base_waveform = available_audio[0][0]
+        base_dtype = base_waveform.dtype if base_waveform.is_floating_point() else torch.float32
+        base_device = base_waveform.device
+
+        merged_parts = []
+        for index, entry in enumerate(videos, start=1):
+            segment_samples = self._duration_to_sample_count(
+                float(entry["images"].shape[0]) / float(target_fps),
+                target_sample_rate,
+            )
+
+            if entry["audio"] is None:
+                merged_parts.append(
+                    torch.zeros(
+                        (target_batch, target_channels, segment_samples),
+                        dtype=base_dtype,
+                        device=base_device,
+                    )
+                )
+                continue
+
+            waveform, sample_rate = self._get_audio_parts(entry["audio"], f"video{index}.audio")
+            waveform = waveform.to(device=base_device)
+            if waveform.is_floating_point() and waveform.dtype != base_dtype:
+                waveform = waveform.to(dtype=base_dtype)
+            elif not waveform.is_floating_point():
+                waveform = waveform.to(dtype=base_dtype)
+
+            waveform = self._resample_waveform(waveform, sample_rate, target_sample_rate)
+            waveform = self._match_channels(waveform, target_channels, f"video{index}.audio")
+            waveform = self._match_batch(waveform, target_batch, f"video{index}.audio")
+            waveform = self._fit_waveform_to_sample_count(waveform, segment_samples)
+            merged_parts.append(waveform)
+
+        merged_waveform = torch.cat(merged_parts, dim=-1)
+        return {"waveform": merged_waveform, "sample_rate": target_sample_rate}
 
     def merge_videos(
         self,
@@ -318,9 +469,6 @@ class MergeVideos(_VideoNodeMixin):
 
         output_audio = audio
         if output_audio is None:
-            for entry in videos:
-                if entry["audio"] is not None:
-                    output_audio = entry["audio"]
-                    break
+            output_audio = self._merge_video_audios(videos, target_fps)
 
         return (_KKVideo(merged_images, target_fps, output_audio),)

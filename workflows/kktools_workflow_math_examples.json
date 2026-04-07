@@ -1,0 +1,298 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        40,
+        20
+      ],
+      "size": [
+        980,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "🔢 数学运算模块 (Math.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        60,
+        140
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（数学表达式）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n执行复杂数学运算，支持变量、函数和常量。\n\n输入变量\n- 支持 a, b, c, d\n- 支持控制输出小数位数\n\n最小演示\n- expression：(a + b) * c\n- a=2, b=3, c=4\n\n输出格式\n- float_result\n- int_result\n- string_result"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 3,
+      "type": "MathExpressionNode",
+      "pos": [
+        450,
+        140
+      ],
+      "size": [
+        400,
+        236
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "float_result",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "int_result",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "string_result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MathExpressionNode"
+      },
+      "widgets_values": [
+        "(a + b) * c",
+        2,
+        3,
+        4,
+        0,
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        60,
+        406
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（正则表达式）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n使用正则表达式进行文本匹配和替换操作。\n\n操作模式\n- match\n- search\n- findall\n- replace\n\n最小演示\n- 从 shot_001.png 中 search 数字\n- pattern：\\d+\n\n输出\n- result"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 5,
+      "type": "RegexNode",
+      "pos": [
+        450,
+        406
+      ],
+      "size": [
+        320,
+        110
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "pattern"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNode"
+      },
+      "widgets_values": [
+        "shot_001.png",
+        "\\d+",
+        "search",
+        ""
+      ]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        60,
+        616
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（正则表达式高级）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n带匹配详情和 flags 支持的正则节点。\n\n增强功能\n- IGNORECASE\n- MULTILINE\n- DOTALL\n\n最小演示\n- findall 匹配 A1 / B2 / C3\n- flags：MULTILINE\n\n输出\n- result\n- match_count\n- matched_text\n- info"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 7,
+      "type": "RegexNodeAdvanced",
+      "pos": [
+        450,
+        616
+      ],
+      "size": [
+        350,
+        170
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "pattern"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "match_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "matched_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNodeAdvanced"
+      },
+      "widgets_values": [
+        "A1\nB2\nC3",
+        "[A-Z]\\d",
+        "findall",
+        "",
+        "MULTILINE"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "🔢 数学运算模块 (Math.py)",
+      "bounding": [
+        40,
+        110,
+        980,
+        736
+      ],
+      "color": "#9a6b2f",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        250,
+        80
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    }
+  },
+  "version": 0.4
+}

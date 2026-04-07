@@ -42,7 +42,7 @@ class SizeNode:
     RETURN_TYPES = ("LATENT", "INT", "INT")
     RETURN_NAMES = ("latent", "width", "height")
     FUNCTION = "generate"
-    CATEGORY = "kktools"
+    CATEGORY = "kktools/尺寸"
     
     def generate(self, size_mode, aspect_ratio, custom_width, custom_height, batch_size):
         """生成latent张量并返回尺寸信息"""
@@ -93,7 +93,7 @@ NODE_CLASS_MAPPINGS = {
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SizeNode": "尺寸节点（尺寸生成）",
+    "SizeNode": "SizeNode（尺寸生成）",
 }
 
 __all__ = ['SizeNode']

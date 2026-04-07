@@ -1,0 +1,2342 @@
+{
+  "id": "e9c7b806-754b-4851-a45a-c330d1150bf1",
+  "revision": 0,
+  "last_node_id": 57,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        -257.43302549820123,
+        445.2315030512621
+      ],
+      "size": [
+        271.14859725191064,
+        203.43713476718847
+      ],
+      "flags": {},
+      "order": 55,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kktools 节点最小演示总览",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "每个示例都包含 1 张说明 Note + 1 个最小配置节点。\n需要 IMAGE / VIDEO / AUDIO / LIST 输入的节点，请把任意可用输入接到左侧端口后再运行。\n合作交流：kkcomfy\n学习站点：kkcomfy.art"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        3334.1938300803204,
+        1431.9588711511356
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "SizeNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：生成常用比例或自定义尺寸的 latent。\n最小演示：preset=16:9，batch_size=1，查看 latent / width / height 输出。"
+      ],
+      "color": "#3f789e",
+      "bgcolor": "#2b526c"
+    },
+    {
+      "id": 3,
+      "type": "SizeNode",
+      "pos": [
+        3684.193830080327,
+        1431.9588711511356
+      ],
+      "size": [
+        315,
+        194
+      ],
+      "flags": {},
+      "order": 56,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SizeNode"
+      },
+      "widgets_values": [
+        "preset",
+        "16:9",
+        512,
+        512,
+        1
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        4401.429031816002,
+        837.7168209130914
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "RandomSelector Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：从 JSON 配置里的分组中随机抽取一个值。\n最小演示：限定 style 组，seed=42，输出抽中的值与组名。"
+      ],
+      "color": "#6c8a2b",
+      "bgcolor": "#4b611d"
+    },
+    {
+      "id": 5,
+      "type": "RandomSelector",
+      "pos": [
+        4751.429031816004,
+        837.7168209130914
+      ],
+      "size": [
+        390,
+        210
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "selected_value",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "selected_group",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "all_groups",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RandomSelector"
+      },
+      "widgets_values": [
+        "[{\"groupName\":\"style\",\"list\":[\"anime\",\"photo\",\"cinematic\"]},{\"groupName\":\"mood\",\"list\":[\"warm\",\"cool\"]}]",
+        "style",
+        42,
+        "randomize"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        75.71512036189226,
+        515.0800010598424
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "BatchPrompt Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：按文件或目录批量读取提示词。\n最小演示：把 prompt_file 改成你的 txt/json 路径，读取第 1 批提示词。"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 7,
+      "type": "BatchPrompt",
+      "pos": [
+        425.7151203618924,
+        515.0800010598424
+      ],
+      "size": [
+        330,
+        190
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "batch_index",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "total_batches",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "file_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchPrompt"
+      },
+      "widgets_values": [
+        "./prompts/demo.txt",
+        "single_file",
+        1,
+        0
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 8,
+      "type": "Note",
+      "pos": [
+        75.71512036189226,
+        747.0800010598422
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kkLLM Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：调用多厂商 LLM 优化提示词。\n最小演示：填入 api_key 后，用 deepseek-chat 优化基础提示词。"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 9,
+      "type": "kkLLM",
+      "pos": [
+        425.1894896505102,
+        747.596722776116
+      ],
+      "size": [
+        430,
+        350
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "optimized_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "optimization_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkLLM"
+      },
+      "widgets_values": [
+        "a girl in white dress, cinematic portrait",
+        "",
+        "openai",
+        "gpt-5.4",
+        "",
+        "",
+        "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
+        300,
+        0.7
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [
+        2241.0011930440655,
+        1298.3994643462213
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "MathExpressionNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：计算表达式并同时输出 float / int / string。\n最小演示：(a + b) * c，输入 2、3、4，结果应为 20。"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 11,
+      "type": "MathExpressionNode",
+      "pos": [
+        2591.001193044066,
+        1298.3994643462213
+      ],
+      "size": [
+        400,
+        248
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "float_result",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "int_result",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "string_result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MathExpressionNode"
+      },
+      "widgets_values": [
+        "(a + b) * c",
+        2,
+        3,
+        4,
+        0,
+        2
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 12,
+      "type": "Note",
+      "pos": [
+        2239.3441199539457,
+        1579.1256168493235
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "RegexNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：执行 match / search / findall / replace。\n最小演示：从 shot_001.png 中 search 数字，输出 001。"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 13,
+      "type": "RegexNode",
+      "pos": [
+        2598.631747354215,
+        1596.524884295583
+      ],
+      "size": [
+        320,
+        110
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNode"
+      },
+      "widgets_values": [
+        "search",
+        ""
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 14,
+      "type": "Note",
+      "pos": [
+        2235.8473393739873,
+        1779.535708231438
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "RegexNodeAdvanced Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：带 flags 和统计信息的正则操作。\n最小演示：findall 匹配 A1 / B2 / C3，查看 match_count 和 info。"
+      ],
+      "color": "#9a6b2f",
+      "bgcolor": "#6b4a20"
+    },
+    {
+      "id": 15,
+      "type": "RegexNodeAdvanced",
+      "pos": [
+        2591.001193044066,
+        1768.3994643462229
+      ],
+      "size": [
+        350,
+        170
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "match_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "matched_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RegexNodeAdvanced"
+      },
+      "widgets_values": [
+        "findall",
+        "",
+        "MULTILINE"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 16,
+      "type": "Note",
+      "pos": [
+        81.5176339109539,
+        1292.2946943378436
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "InputNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：输入 2 组 STRING / INT / FLOAT，并同时输出三种格式。\n最小演示：第一组 STRING=hello，第二组 INT=42。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 17,
+      "type": "InputNode",
+      "pos": [
+        437.1856969606857,
+        1276.851971397766
+      ],
+      "size": [
+        400,
+        386
+      ],
+      "flags": {},
+      "order": 54,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output_1",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_1",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_1",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "string_output_2",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_2",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_2",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "InputNode"
+      },
+      "widgets_values": [
+        "STRING",
+        "hello",
+        0,
+        0,
+        "INT",
+        "",
+        42,
+        0
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 18,
+      "type": "Note",
+      "pos": [
+        78.09469553695048,
+        1714.5137928126514
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "ReplaceNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：替换字符串中的指定内容。\n最小演示：把 hello world 中的 world 替换成 ComfyUI。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 19,
+      "type": "ReplaceNode",
+      "pos": [
+        428.3575108926422,
+        1716.8791310138713
+      ],
+      "size": [
+        360.03870244229506,
+        126
+      ],
+      "flags": {},
+      "order": 50,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "replaced_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "replace_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ReplaceNode"
+      },
+      "widgets_values": [
+        "world",
+        "ComfyUI",
+        true
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 20,
+      "type": "Note",
+      "pos": [
+        77.62251879621734,
+        1940.3974206619682
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "SomethingToAny Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：把任意输入类型转换成 STRING / INT / FLOAT。\n最小演示：把字符串 123.45 转成 FLOAT，同时查看三种输出。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 21,
+      "type": "SomethingToAny",
+      "pos": [
+        436.23751706582027,
+        1931.3057911540789
+      ],
+      "size": [
+        344.9245922412813,
+        248
+      ],
+      "flags": {},
+      "order": 51,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SomethingToAny"
+      },
+      "widgets_values": [
+        "STRING",
+        "FLOAT",
+        "123.45",
+        0,
+        0,
+        false
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 22,
+      "type": "Note",
+      "pos": [
+        78.35751089264154,
+        2236.879131013863
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StringMergeNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：合并最多 4 个字符串。\n最小演示：hello + world，用空格分隔，输出 hello world from kktools。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 23,
+      "type": "StringMergeNode",
+      "pos": [
+        428.3575108926422,
+        2236.879131013863
+      ],
+      "size": [
+        346.43021241456245,
+        274
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "merged_string",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringMergeNode"
+      },
+      "widgets_values": [
+        "hello",
+        "world",
+        " ",
+        "from",
+        "kktools"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 24,
+      "type": "Note",
+      "pos": [
+        78.35751089264154,
+        2528.879131013863
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StringNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：裁剪字符串开头和结尾的字符。\n最小演示：prefix_demo_suffix 去掉前后各 7 个字符，得到 demo。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 25,
+      "type": "StringNode",
+      "pos": [
+        437.795107862065,
+        2560.027120525356
+      ],
+      "size": [
+        340,
+        90
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNode"
+      },
+      "widgets_values": [
+        7,
+        7
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 26,
+      "type": "Note",
+      "pos": [
+        78.35751089264154,
+        2720.879131013863
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StringNodeAdvanced Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：裁剪字符串并返回原长、裁后长度、移除数。\n最小演示：同样裁 prefix_demo_suffix，观察统计输出。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 27,
+      "type": "StringNodeAdvanced",
+      "pos": [
+        428.3575108926422,
+        2720.879131013863
+      ],
+      "size": [
+        360,
+        150
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "trimmed_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "removed_chars",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNodeAdvanced"
+      },
+      "widgets_values": [
+        7,
+        7
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 28,
+      "type": "Note",
+      "pos": [
+        78.35751089264154,
+        2912.879131013863
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StringToIntNode Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：接收 4 个字符串输入口，固定输出 int1~int4。\n最小演示：输入任意文本，查看输出恒为 1 / 2 / 3 / 4。"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 29,
+      "type": "StringToIntNode",
+      "pos": [
+        428.3575108926422,
+        2912.879131013863
+      ],
+      "size": [
+        340,
+        190
+      ],
+      "flags": {},
+      "order": 47,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "int1",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int2",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int3",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int4",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringToIntNode"
+      },
+      "widgets_values": [
+        "任意文本A",
+        "任意文本B",
+        "任意文本C",
+        "任意文本D"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 30,
+      "type": "Note",
+      "pos": [
+        1158.0233780504268,
+        521.9909135195791
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "GetImage Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：读取 IMAGE 的宽高。\n最小演示：连接任意 IMAGE，直接查看 width / height 输出。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 31,
+      "type": "GetImage",
+      "pos": [
+        1521.900028830915,
+        535.2109713605963
+      ],
+      "size": [
+        220,
+        50
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImage"
+      },
+      "widgets_values": [],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 32,
+      "type": "Note",
+      "pos": [
+        1159.3120641928228,
+        723.6928091923791
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "ImageFrame Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：把 1~3 张图做对比排版并加边框标题。\n最小演示：连接两张 IMAGE，horizontal 模式输出对比图。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 33,
+      "type": "ImageFrame",
+      "pos": [
+        1514.6775064967194,
+        727.6225669345946
+      ],
+      "size": [
+        330,
+        362
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "image2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "image3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageFrame"
+      },
+      "widgets_values": [
+        2,
+        100,
+        50,
+        20,
+        "horizontal",
+        "#FFFFFF",
+        "#000000",
+        10,
+        "Arial",
+        "原图",
+        "结果图",
+        "对比图"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 34,
+      "type": "Note",
+      "pos": [
+        1165.7336678667932,
+        1137.1600222458615
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "PadImageToCanvas Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：把图片放到指定尺寸和背景的新画布上。\n最小演示：连接任意 IMAGE，输出 768x1024 米白色背景画布。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 35,
+      "type": "PadImageToCanvas",
+      "pos": [
+        1514.8338593608676,
+        1137.1154772703205
+      ],
+      "size": [
+        330,
+        180
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageToCanvas"
+      },
+      "widgets_values": [
+        760,
+        1024,
+        "#F3F0EA",
+        true,
+        0,
+        0
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 36,
+      "type": "Note",
+      "pos": [
+        1165.5025596246949,
+        1369.1110668758556
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Resize Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：同时调整 IMAGE 和 MASK 尺寸。\n最小演示：连接 IMAGE，必要时接 MASK，输出 512x512。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 37,
+      "type": "Resize",
+      "pos": [
+        1523.2576082324838,
+        1367.72962473089
+      ],
+      "size": [
+        320,
+        150
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Resize"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "stretch",
+        "lanczos"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 38,
+      "type": "Note",
+      "pos": [
+        1166.2699893723052,
+        1580.7151680674674
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "BatchImageLoader Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：按顺序 / 倒序 / 随机批量加载文件夹中的图片。\n最小演示：把 directory 改成你的目录，顺序加载前 3 张。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 39,
+      "type": "BatchImageLoader",
+      "pos": [
+        1527.56402472887,
+        1579.9692910693325
+      ],
+      "size": [
+        380,
+        310
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "masks",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "loaded_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "file_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchImageLoader"
+      },
+      "widgets_values": [
+        "./images",
+        "sequential",
+        1,
+        0,
+        3,
+        "all",
+        0,
+        0,
+        0
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 40,
+      "type": "Note",
+      "pos": [
+        1161.6552136062817,
+        1990.591335376034
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "ImageTileSplit2x2 Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：把一张图切成 2x2 四块。\n最小演示：连接任意 IMAGE，按默认顺序输出 tl / tr / bl / br。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 41,
+      "type": "ImageTileSplit2x2",
+      "pos": [
+        1527.601394161835,
+        1985.5114742649218
+      ],
+      "size": [
+        340,
+        142
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image_tl",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_tr",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_bl",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_br",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageTileSplit2x2"
+      },
+      "widgets_values": [
+        0,
+        "top-left,top-right,bottom-left,bottom-right"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 42,
+      "type": "Note",
+      "pos": [
+        1161.6552136062817,
+        2182.5913353760343
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "ImageSplit Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：按网格把图片切成最多 16 个分块，并输出合并批次。\n最小演示：连接 IMAGE，grid_size=2x2，查看 merged_tiles 与 tile_01~04。"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 43,
+      "type": "ImageSplit",
+      "pos": [
+        1525.4625052729475,
+        2187.0123423204777
+      ],
+      "size": [
+        360,
+        474
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "merged_tiles",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_01",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_02",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_03",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_04",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_05",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_06",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_07",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_08",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_09",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_10",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_11",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_12",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_13",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_14",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_15",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_16",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageSplit"
+      },
+      "widgets_values": [
+        "2x2",
+        2,
+        2,
+        0,
+        "row-major"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 44,
+      "type": "Note",
+      "pos": [
+        2271.7472123568764,
+        514.2685127329574
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "VideoFirstLastFrames Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：提取视频首帧、尾帧，并返回首尾两帧批次和原音频。\n最小演示：连接任意 VIDEO，查看 first_frame / last_frame / audio。"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 45,
+      "type": "VideoFirstLastFrames",
+      "pos": [
+        2623.4439709706603,
+        515.062223206231
+      ],
+      "size": [
+        320,
+        100
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "first_last_frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VideoFirstLastFrames"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 46,
+      "type": "Note",
+      "pos": [
+        2273.1564534012596,
+        709.4028591937413
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "VideoFramesAdvanced Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：提取全部帧或按时间间隔抽帧。\n最小演示：连接 VIDEO，every_frame 模式查看 fps 和提取数量。"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 47,
+      "type": "VideoFramesAdvanced",
+      "pos": [
+        2627.282937953634,
+        711.5936620817057
+      ],
+      "size": [
+        350,
+        142
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "extracted_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VideoFramesAdvanced"
+      },
+      "widgets_values": [
+        "every_frame",
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 48,
+      "type": "Note",
+      "pos": [
+        2271.0142450320673,
+        915.0660180550929
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "MergeVideos Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：合并多段 VIDEO，并顺序拼接各段音频。\n最小演示：连接 video1 / video2，size_reference=keep，输出合并视频。"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 49,
+      "type": "MergeVideos",
+      "pos": [
+        2635.511609799002,
+        907.9347724253245
+      ],
+      "size": [
+        380,
+        230
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video1",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video2",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video3",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video4",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video5",
+          "shape": 7,
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MergeVideos"
+      },
+      "widgets_values": [
+        "keep",
+        0,
+        0,
+        0
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 50,
+      "type": "Note",
+      "pos": [
+        4388.77973989428,
+        527.368491766269
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AudioMerge4 Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：顺序拼接最多 4 路音频。\n最小演示：连接 audio1 / audio2，输出合并后的 AUDIO。"
+      ],
+      "color": "#7d7d2f",
+      "bgcolor": "#5a5a21"
+    },
+    {
+      "id": 51,
+      "type": "AudioMerge4",
+      "pos": [
+        4740.674926126385,
+        526.3399077855986
+      ],
+      "size": [
+        280,
+        130
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio1",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "audio2",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "audio3",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "audio4",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AudioMerge4"
+      },
+      "widgets_values": [],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 52,
+      "type": "Note",
+      "pos": [
+        3346.747466200818,
+        536.0947083679628
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StoryboardScript Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：按本地规则把文本生成分镜脚本和 shot_list。\n最小演示：输入一句剧情，最多 4 镜头，不带音频。"
+      ],
+      "color": "#8a4f32",
+      "bgcolor": "#653922"
+    },
+    {
+      "id": 53,
+      "type": "StoryboardScript",
+      "pos": [
+        3696.7474662008235,
+        536.0947083679628
+      ],
+      "size": [
+        420,
+        170
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "script_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "shot_list",
+          "type": "LIST",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StoryboardScript"
+      },
+      "widgets_values": [
+        "一个女孩推开咖啡馆的门，环顾四周后坐下。",
+        4,
+        false
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 54,
+      "type": "Note",
+      "pos": [
+        3345.8937586709744,
+        759.7811753101121
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StoryboardScriptLLM Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：通过 LLM 生成分镜。\n最小演示：填入 api_key 后，用 deepseek-chat 生成 4 镜头脚本。"
+      ],
+      "color": "#8a4f32",
+      "bgcolor": "#653922"
+    },
+    {
+      "id": 55,
+      "type": "StoryboardScriptLLM",
+      "pos": [
+        3700.1694703330577,
+        764.9823346305895
+      ],
+      "size": [
+        430,
+        282
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "script_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "shot_list",
+          "type": "LIST",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StoryboardScriptLLM"
+      },
+      "widgets_values": [
+        "一个女孩推开咖啡馆的门，环顾四周后坐下。",
+        "",
+        "deepseek",
+        "deepseek-chat",
+        4,
+        false,
+        ""
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 56,
+      "type": "Note",
+      "pos": [
+        3351.3603564671184,
+        1096.2606289372936
+      ],
+      "size": [
+        330,
+        150
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "StoryboardShotOutput Demo",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能：从 shot_list 中逐条输出分镜文本。\n最小演示：把 StoryboardScript 的 shot_list 接进来，输出第 0 条。"
+      ],
+      "color": "#8a4f32",
+      "bgcolor": "#653922"
+    },
+    {
+      "id": 57,
+      "type": "StoryboardShotOutput",
+      "pos": [
+        3719.2595185424216,
+        1100.0556817380286
+      ],
+      "size": [
+        380,
+        170
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "shot_list",
+          "type": "LIST",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "shot_string",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "current_index",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "total_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StoryboardShotOutput"
+      },
+      "widgets_values": [
+        0,
+        "完整",
+        false
+      ],
+      "color": "#332922",
+      "bgcolor": "#593930"
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "尺寸 示例",
+      "bounding": [
+        3305.284864041727,
+        1344.3415975226344,
+        1027.3444674012853,
+        298.5688705234156
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "随机 示例",
+      "bounding": [
+        4369.763049730774,
+        758.4241434382545,
+        1050,
+        302
+      ],
+      "color": "#6c8a2b",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "提示词 示例",
+      "bounding": [
+        40,
+        416,
+        1035.4275567015634,
+        749.2459682606332
+      ],
+      "color": "#7d5ba6",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "数学计算 示例",
+      "bounding": [
+        2210.235019464763,
+        1218.4738027689489,
+        1050,
+        732
+      ],
+      "color": "#9a6b2f",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "字符串 示例",
+      "bounding": [
+        46.28238320707053,
+        1193.8235250946984,
+        1021.0026400367315,
+        1969.8192148760322
+      ],
+      "color": "#2f8f83",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "图像 示例",
+      "bounding": [
+        1121.4035492352991,
+        435.0151186634552,
+        1055.443859322917,
+        2395.631772065969
+      ],
+      "color": "#9c4a7b",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "视频 示例",
+      "bounding": [
+        2232.4656592714528,
+        436.0894191512113,
+        1033.9567550505053,
+        729.0587121212116
+      ],
+      "color": "#6d5bb3",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 8,
+      "title": "音频 示例",
+      "bounding": [
+        4354.309044167271,
+        447.6789185593639,
+        1031.6272223610108,
+        256.52571156955105
+      ],
+      "color": "#7d7d2f",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 9,
+      "title": "分镜 示例",
+      "bounding": [
+        3302.3922664762995,
+        440.5032827481292,
+        1034.1310835629024,
+        876.5736340679512
+      ],
+      "color": "#8a4f32",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.1734944802432917,
+      "offset": [
+        3144.826924791222,
+        1195.5754082311912
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "demo-gallery"
+    },
+    "frontendVersion": "1.41.21"
+  },
+  "version": 0.4
+}

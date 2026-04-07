@@ -35,7 +35,7 @@ class StringNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("trimmed_text",)
     FUNCTION = "trim_string"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def trim_string(self, text, skip_start, skip_end):
         """
@@ -100,7 +100,7 @@ class StringNodeAdvanced:
     RETURN_TYPES = ("STRING", "INT", "INT", "INT")
     RETURN_NAMES = ("trimmed_text", "original_length", "trimmed_length", "removed_chars")
     FUNCTION = "trim_string_advanced"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def trim_string_advanced(self, text, skip_start, skip_end):
         """
@@ -170,7 +170,7 @@ class StringMergeNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("merged_string",)
     FUNCTION = "merge_strings"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def merge_strings(self, string1="", string2="", separator="", string3="", string4=""):
         """
@@ -210,6 +210,70 @@ class StringMergeNode:
         print(f"  Result Length: {len(merged)}")
         
         return (merged,)
+
+
+class StringToIntNode:
+    """字符串转整数节点（字符串转整数） - 输入任意字符串，固定输出1/2/3/4"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "string1": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                }),
+                "string2": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                }),
+                "string3": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                }),
+                "string4": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("INT", "INT", "INT", "INT")
+    RETURN_NAMES = ("int1", "int2", "int3", "int4")
+    FUNCTION = "strings_to_ints"
+    CATEGORY = "kktools/字符串"
+
+    def strings_to_ints(self, string1="", string2="", string3="", string4=""):
+        """
+        输入4个字符串，占位用，不解析内容。
+
+        只要传入的是字符串输入口，就固定输出:
+        string1 -> 1
+        string2 -> 2
+        string3 -> 3
+        string4 -> 4
+        """
+        string1 = str(string1) if string1 is not None else ""
+        string2 = str(string2) if string2 is not None else ""
+        string3 = str(string3) if string3 is not None else ""
+        string4 = str(string4) if string4 is not None else ""
+
+        int1 = 1
+        int2 = 2
+        int3 = 3
+        int4 = 4
+
+        print("kktools String To Ints:")
+        print(f"  Input 1: {repr(string1)}")
+        print(f"  Input 2: {repr(string2)}")
+        print(f"  Input 3: {repr(string3)}")
+        print(f"  Input 4: {repr(string4)}")
+        print(f"  Int 1: {int1}")
+        print(f"  Int 2: {int2}")
+        print(f"  Int 3: {int3}")
+        print(f"  Int 4: {int4}")
+
+        return (int1, int2, int3, int4)
 
 
 class InputNode:
@@ -269,7 +333,7 @@ class InputNode:
     RETURN_TYPES = ("STRING", "INT", "FLOAT", "STRING", "INT", "FLOAT")
     RETURN_NAMES = ("string_output_1", "int_output_1", "float_output_1", "string_output_2", "int_output_2", "float_output_2")
     FUNCTION = "process_input"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def process_input(self, input_type_1, string_value_1, int_value_1, float_value_1,
                      input_type_2, string_value_2, int_value_2, float_value_2):
@@ -367,7 +431,7 @@ class ReplaceNode:
     RETURN_TYPES = ("STRING", "INT")
     RETURN_NAMES = ("replaced_text", "replace_count")
     FUNCTION = "replace_string"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def replace_string(self, text, old_text, new_text, replace_all):
         """
@@ -454,7 +518,7 @@ class SomethingToAny:
     RETURN_TYPES = ("STRING", "INT", "FLOAT")
     RETURN_NAMES = ("string_output", "int_output", "float_output")
     FUNCTION = "convert_any"
-    CATEGORY = "kktools/String"
+    CATEGORY = "kktools/字符串"
     
     def convert_any(self, input_type, output_type, string_input, int_input, float_input, boolean_input):
         """
@@ -566,6 +630,7 @@ __all__ = [
     'StringNode',           # 基础字符串裁剪
     'StringNodeAdvanced',   # 高级字符串裁剪
     'StringMergeNode',      # 字符串合并
+    'StringToIntNode',      # 字符串转整数
     'InputNode',            # 多类型输入
     'ReplaceNode',          # 字符串替换
     'SomethingToAny'        # 任意类型转换

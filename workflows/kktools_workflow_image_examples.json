@@ -1,0 +1,650 @@
+{
+  "last_node_id": 15,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        40,
+        20
+      ],
+      "size": [
+        980,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "🖼️ 图像处理模块 (image.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        60,
+        140
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Pad Image to Canvas (图像填充到画布)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n将任意尺寸的图像放置到指定大小的画布上，支持自定义背景色和精确定位。\n\n核心参数\n- width / height\n- fill_color\n- center\n- left_padding / top_padding\n\n最小演示\n- 连接任意 IMAGE\n- 输出 768x1024 米白色背景画布"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 3,
+      "type": "PadImageToCanvas",
+      "pos": [
+        450,
+        140
+      ],
+      "size": [
+        330,
+        180
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PadImageToCanvas"
+      },
+      "widgets_values": [
+        768,
+        1024,
+        "#F3F0EA",
+        true,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        60,
+        350
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Image Frame (图像边框)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n将 1-3 张图像进行并排显示，添加标签和边框，适合效果对比展示。\n\n核心参数\n- image_count\n- mode\n- footer_height\n- font_size\n- font_selection\n\n最小演示\n- 连接两张 IMAGE\n- horizontal 模式对比输出"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 5,
+      "type": "ImageFrame",
+      "pos": [
+        450,
+        350
+      ],
+      "size": [
+        330,
+        360
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        },
+        {
+          "name": "image3",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageFrame"
+      },
+      "widgets_values": [
+        2,
+        100,
+        50,
+        20,
+        "horizontal",
+        "#FFFFFF",
+        "#000000",
+        10,
+        "Arial",
+        "原图",
+        "结果图",
+        "对比图"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        60,
+        740
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Resize (图像蒙版同步调整)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n同时调整图像和对应蒙版的尺寸，确保两者完全一致。\n\n常用模式\n- stretch\n- scale_width / scale_height\n- fit_padding / fill_crop\n\n最小演示\n- 连接 IMAGE\n- 必要时再接 MASK\n- 输出 512x512"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 7,
+      "type": "Resize",
+      "pos": [
+        450,
+        740
+      ],
+      "size": [
+        320,
+        150
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Resize"
+      },
+      "widgets_values": [
+        512,
+        512,
+        "stretch",
+        "lanczos"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "Note",
+      "pos": [
+        60,
+        950
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Get Image (获取图像尺寸)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n简单直接地获取图像的宽度和高度信息。\n\n最小演示\n- 连接任意 IMAGE\n\n输出\n- width\n- height"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 9,
+      "type": "GetImage",
+      "pos": [
+        450,
+        950
+      ],
+      "size": [
+        220,
+        50
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetImage"
+      }
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [
+        60,
+        1160
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Batch Image Loader (批量图像加载)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n从文件夹批量加载图像，支持排序、筛选和分批处理。\n\n加载控制\n- load_order\n- load_interval\n- start_index\n- max_images\n\n最小演示\n- 将 directory 改为你的真实路径\n- 顺序加载前 3 张"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 11,
+      "type": "BatchImageLoader",
+      "pos": [
+        450,
+        1160
+      ],
+      "size": [
+        380,
+        300
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "masks",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "loaded_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "file_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchImageLoader"
+      },
+      "widgets_values": [
+        "./images",
+        "sequential",
+        1,
+        0,
+        3,
+        "all",
+        0,
+        0
+      ]
+    },
+    {
+      "id": 12,
+      "type": "Note",
+      "pos": [
+        60,
+        1490
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Image Tile Split 2x2 (图像2x2分块)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n将一张输入图片切割成 2x2 的四张子图输出。\n\n最小演示\n- 连接任意 IMAGE\n- 使用默认输出顺序\n\n输出\n- image_tl\n- image_tr\n- image_bl\n- image_br"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 13,
+      "type": "ImageTileSplit2x2",
+      "pos": [
+        450,
+        1490
+      ],
+      "size": [
+        340,
+        100
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image_tl",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_tr",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_bl",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "image_br",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageTileSplit2x2"
+      },
+      "widgets_values": [
+        0,
+        "top-left,top-right,bottom-left,bottom-right"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "Note",
+      "pos": [
+        60,
+        1700
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Image Split (图像切割)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n按网格将一张输入图片切成最多 16 个子图，并输出合并批次。\n\n核心参数\n- grid_size\n- custom_width / custom_height\n- overlap_pixels\n- output_order\n\n最小演示\n- 连接 IMAGE\n- grid_size=2x2"
+      ],
+      "color": "#9c4a7b",
+      "bgcolor": "#6f3458"
+    },
+    {
+      "id": 15,
+      "type": "ImageSplit",
+      "pos": [
+        450,
+        1700
+      ],
+      "size": [
+        360,
+        180
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "merged_tiles",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_01",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_02",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_03",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_04",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_05",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_06",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_07",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_08",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_09",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_10",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_11",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_12",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_13",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_14",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_15",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "tile_16",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ImageSplit"
+      },
+      "widgets_values": [
+        "2x2",
+        2,
+        2,
+        0,
+        "row-major"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "🖼️ 图像处理模块 (image.py)",
+      "bounding": [
+        40,
+        110,
+        980,
+        1820
+      ],
+      "color": "#9c4a7b",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        250,
+        80
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    }
+  },
+  "version": 0.4
+}

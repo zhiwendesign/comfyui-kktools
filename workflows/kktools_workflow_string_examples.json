@@ -1,0 +1,570 @@
+{
+  "last_node_id": 15,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        40,
+        20
+      ],
+      "size": [
+        980,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "📝 字符串处理模块 (string.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        60,
+        140
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "字符串裁剪节点（基础裁剪）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n忽略字符串开头和结尾指定数量的字符。\n\n参数\n- skip_start：忽略开头字符数\n- skip_end：忽略结尾字符数\n\n最小演示\n- 输入 prefix_demo_suffix\n- 前后各裁 7 个字符\n\n输出\n- trimmed_text"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 3,
+      "type": "StringNode",
+      "pos": [
+        450,
+        140
+      ],
+      "size": [
+        340,
+        90
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNode"
+      },
+      "widgets_values": [
+        "prefix_demo_suffix",
+        7,
+        7
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        60,
+        350
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "字符串裁剪节点（高级裁剪）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n裁剪字符串并返回长度统计信息。\n\n增强功能\n- trimmed_text\n- original_length\n- trimmed_length\n- removed_chars\n\n最小演示\n- 输入 prefix_demo_suffix\n- 前后各裁 7 个字符"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 5,
+      "type": "StringNodeAdvanced",
+      "pos": [
+        450,
+        350
+      ],
+      "size": [
+        360,
+        150
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "trimmed_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "trimmed_length",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "removed_chars",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringNodeAdvanced"
+      },
+      "widgets_values": [
+        "prefix_demo_suffix",
+        7,
+        7
+      ]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        60,
+        560
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "字符串合并节点（字符串合并）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n合并多个字符串，支持自定义分隔符。\n\n输入\n- 最多 4 个字符串输入\n- separator 分隔符\n\n最小演示\n- hello + world + from + kktools\n- separator：空格\n\n输出\n- merged_string"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 7,
+      "type": "StringMergeNode",
+      "pos": [
+        450,
+        560
+      ],
+      "size": [
+        400,
+        250
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "merged_string",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringMergeNode"
+      },
+      "widgets_values": [
+        "hello",
+        "world",
+        " ",
+        "from",
+        "kktools"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "Note",
+      "pos": [
+        60,
+        840
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "输入节点（多类型输入）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n可以输入 2 组字符串、整数或浮点数，自动类型转换。\n\n输入类型\n- STRING\n- INT\n- FLOAT\n\n最小演示\n- 第一组 STRING=hello\n- 第二组 INT=42\n\n输出\n- 每组同时输出 string / int / float"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 9,
+      "type": "InputNode",
+      "pos": [
+        450,
+        840
+      ],
+      "size": [
+        400,
+        370
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output_1",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_1",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_1",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "string_output_2",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output_2",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output_2",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "InputNode"
+      },
+      "widgets_values": [
+        "STRING",
+        "hello",
+        0,
+        0.0,
+        "INT",
+        "",
+        42,
+        0.0
+      ]
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [
+        60,
+        1240
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "替换节点（字符串替换）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n替换字符串中的指定内容。\n\n参数\n- old_text：要替换的文本\n- new_text：替换为的文本\n- replace_all：是否替换所有匹配项\n\n最小演示\n- hello world -> hello ComfyUI\n\n输出\n- replaced_text\n- replace_count"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 11,
+      "type": "ReplaceNode",
+      "pos": [
+        450,
+        1240
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": null,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "replaced_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "replace_count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ReplaceNode"
+      },
+      "widgets_values": [
+        "hello world",
+        "world",
+        "ComfyUI",
+        true
+      ]
+    },
+    {
+      "id": 12,
+      "type": "Note",
+      "pos": [
+        60,
+        1470
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "类型转换节点（任意类型转换）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n将任意输入转换为指定类型。\n\n支持类型\n- 输入：STRING / INT / FLOAT / BOOLEAN\n- 输出：STRING / INT / FLOAT\n\n最小演示\n- 将字符串 123.45 转为 FLOAT\n\n输出\n- string_output\n- int_output\n- float_output"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 13,
+      "type": "SomethingToAny",
+      "pos": [
+        450,
+        1470
+      ],
+      "size": [
+        400,
+        236
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "string_output",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "int_output",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "float_output",
+          "type": "FLOAT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SomethingToAny"
+      },
+      "widgets_values": [
+        "STRING",
+        "FLOAT",
+        "123.45",
+        0,
+        0.0,
+        false
+      ]
+    },
+    {
+      "id": 14,
+      "type": "Note",
+      "pos": [
+        60,
+        1736
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "字符串转整数节点",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n接收 string1~string4 四个字符串输入口，不解析内容，固定输出整数 1、2、3、4。\n\n示例\n- 输入：任意字符串\n- 输出：1、2、3、4\n\n说明\n- 该节点不读取字符串内容\n- 四个输出固定为 int1~int4"
+      ],
+      "color": "#2f8f83",
+      "bgcolor": "#1f665d"
+    },
+    {
+      "id": 15,
+      "type": "StringToIntNode",
+      "pos": [
+        450,
+        1736
+      ],
+      "size": [
+        340,
+        170
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "int1",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int2",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int3",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "int4",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "StringToIntNode"
+      },
+      "widgets_values": [
+        "任意文本A",
+        "任意文本B",
+        "任意文本C",
+        "任意文本D"
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "📝 字符串处理模块 (string.py)",
+      "bounding": [
+        40,
+        110,
+        980,
+        1856
+      ],
+      "color": "#2f8f83",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        250,
+        80
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    }
+  },
+  "version": 0.4
+}

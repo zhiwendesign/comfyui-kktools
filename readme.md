@@ -5,13 +5,13 @@
 
 ## 📋 概述
 
-kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理、数学运算、提示词优化、尺寸生成、字符串处理与随机选择等模块，为工作流提供强大的扩展功能。节点会被 ComfyUI 自动发现并注册，显示名包含中文说明，便于检索与使用（自动注册逻辑见 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py#L41-L175)）。
+kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理、数学运算、提示词优化、尺寸生成、字符串处理、随机选择、视频处理、音频处理与分镜生成等模块，为工作流提供强大的扩展功能。节点会被 ComfyUI 自动发现并注册，显示名包含中文说明，便于检索与使用（自动注册逻辑见 [__init__.py](__init__.py)）。
 
 ## 🚀 安装
 
 - 将本项目目录放入 ComfyUI/custom_nodes 下（目录名任意，建议使用 comfyui-kktools-main）。
 - 启动 ComfyUI 后，节点会自动加载，日志中可见注册详情与数量。
-- 字体：如需在图像标注中显示中文/自定义字体，将字体文件放至 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts) 目录（支持 .ttf/.otf/.ttc）。
+- 字体：如需在图像标注中显示中文/自定义字体，将字体文件放至 [fonts](fonts) 目录（支持 .ttf/.otf/.ttc）。
 
 ## 📦 依赖与环境
 
@@ -22,27 +22,31 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 ## 🧭 快速上手
 
 - 在 ComfyUI 的节点面板中搜索“kktools”或中文说明（如“图像填充到画布”、“正则表达式-高级”）。
-- 加载示例工作流：打开 [kktools_workflow_-all.json](file:///Users/bytedance/Downloads/comfyui-kktools-main/workflows/kktools_workflow_-all.json) 体验全部节点的组合用法。
-- 图像对比标注：使用 ImageFrame 节点时，请在 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts) 目录放置合适字体以确保标签正常渲染。
+- 加载节点总览工作流：打开 [kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json) 浏览全部节点的最小演示。
+- 加载模块工作流：按模块打开 [workflows/README.md](workflows/README.md) 中列出的示例文件。
+- 图像对比标注：使用 ImageFrame 节点时，请在 [fonts](fonts) 目录放置合适字体以确保标签正常渲染。
 
 ## 🧩 节点索引与源码位置
 
-- 图像处理模块：[image.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/image.py)
-- 数学与正则模块：[Math.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/Math.py)
-- 提示词模块：[prompts.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/prompts.py)
-- 尺寸生成模块：[size.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/size.py)
-- 字符串模块：[string.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/string.py)
-- 随机选择器：[RandomSelector.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/RandomSelector.py)
+- 图像处理模块：[nodes/image.py](nodes/image.py)
+- 数学与正则模块：[nodes/Math.py](nodes/Math.py)
+- 提示词模块：[nodes/prompts.py](nodes/prompts.py)
+- 尺寸生成模块：[nodes/size.py](nodes/size.py)
+- 字符串模块：[nodes/string.py](nodes/string.py)
+- 随机选择器：[nodes/RandomSelector.py](nodes/RandomSelector.py)
+- 视频处理模块：[nodes/video.py](nodes/video.py)
+- 音频处理模块：[nodes/audio.py](nodes/audio.py)
+- 分镜模块：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
 
 ## 🔑 DeepSeek 提示词优化使用说明
 
-- 节点：AI Prompt Optimizer (AI提示词优化)（见 [prompts.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/nodes/prompts.py#L139-L334)）
+- 节点：kkLLM（多厂商LLM）（见 [nodes/prompts.py](nodes/prompts.py)）
 - 在节点的 api_key 参数中填写你的 DeepSeek API Key；未提供时将返回原始提示词并给出提示。
 - 若 API 返回 402 或网络错误，节点会启用本地优化备选方案，保证工作流不间断。
 
 ## 📁 目录结构速览
 
-- 根目录：自动发现与注册节点逻辑 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py)
+- 根目录：自动发现与注册节点逻辑 [__init__.py](__init__.py)
 - nodes：各功能模块源码（见上方节点索引）
 - fonts：示例字体文件，支持中文标签与对比说明
 - workflows：示例工作流 JSON 文件
@@ -358,6 +362,19 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 
 #### 特性
 - 自动类型转换
+
+### 7. 字符串转整数节点
+
+#### 功能描述
+接收 `string1`、`string2`、`string3`、`string4` 四个字符串输入口，不解析字符串内容，固定分别输出整数 `1`、`2`、`3`、`4`。
+
+#### 示例
+- 输入：任意字符串
+- 输出：`1`、`2`、`3`、`4`
+
+#### 说明
+- 该节点不读取字符串内容
+- 四个输出始终固定为 `1`、`2`、`3`、`4`
 - 错误处理
 - 同时输出三种格式结果
 
@@ -389,18 +406,39 @@ kktools 是一个功能丰富的 ComfyUI 自定义节点包，包含图像处理
 
 ## 🎯 实用工作流示例
 
-### 图像批量处理工作流
+### 1. 节点总览工作流
+
+- [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)
+- 覆盖全部节点
+- 每个节点都包含功能说明和最小演示 demo
+
+### 2. 模块工作流示例
+
+- 图像模块：[workflows/kktools_workflow_image_examples.json](workflows/kktools_workflow_image_examples.json)
+- 数学模块：[workflows/kktools_workflow_math_examples.json](workflows/kktools_workflow_math_examples.json)
+- 提示词模块：[workflows/kktools_workflow_prompts_examples.json](workflows/kktools_workflow_prompts_examples.json)
+- 尺寸模块：[workflows/kktools_workflow_size_examples.json](workflows/kktools_workflow_size_examples.json)
+- 字符串模块：[workflows/kktools_workflow_string_examples.json](workflows/kktools_workflow_string_examples.json)
+- 随机模块：[workflows/kktools_workflow_random_examples.json](workflows/kktools_workflow_random_examples.json)
+- 视频模块：[workflows/kktools_workflow_video_examples.json](workflows/kktools_workflow_video_examples.json)
+- 音频模块：[workflows/kktools_workflow_audio_examples.json](workflows/kktools_workflow_audio_examples.json)
+- 分镜模块：[workflows/kktools_workflow_storyboard_examples.json](workflows/kktools_workflow_storyboard_examples.json)
+
+### 3. 工作流索引说明
+
+- [workflows/README.md](workflows/README.md)
+- 汇总了全部工作流文件用途与使用建议
 
 ---
 
 ## 🧪 常见问题与排查
 
 - 节点未显示：确认目录放置在 ComfyUI/custom_nodes，重启 ComfyUI 并查看日志是否显示“kktools Nodes 加载完成”。
-- 字体不生效：确保字体文件位于 [fonts](file:///Users/bytedance/Downloads/comfyui-kktools-main/fonts)，并在 ImageFrame 中选择对应字体。
+- 字体不生效：确保字体文件位于 [fonts](fonts)，并在 ImageFrame 中选择对应字体。
 - DeepSeek 优化失败：检查 api_key 是否有效；网络或 402 情况下会切换到本地优化，工作流可继续运行。
 
 ## 📄 版本与版权
 
-- 当前版本：3.4.0（见 [__init__.py](file:///Users/bytedance/Downloads/comfyui-kktools-main/__init__.py#L177)）
+- 当前版本：3.4.6（见 [__init__.py](__init__.py)）
 - 作者：kktools；共创：KK HL
 - 仅用于学习与研究，请遵循 ComfyUI 及相关依赖的协议。

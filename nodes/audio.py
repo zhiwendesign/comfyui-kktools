@@ -20,7 +20,7 @@ class AudioMerge4:
     RETURN_TYPES = ("AUDIO",)
     RETURN_NAMES = ("audio",)
     FUNCTION = "merge_audio"
-    CATEGORY = "kktools/Audio"
+    CATEGORY = "kktools/音频"
 
     def _get_audio_parts(self, audio, input_name):
         if not isinstance(audio, dict):

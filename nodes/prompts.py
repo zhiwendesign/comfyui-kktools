@@ -85,7 +85,7 @@ class BatchPrompt:
     RETURN_TYPES = ("STRING", "INT", "INT", "STRING")
     RETURN_NAMES = ("prompt", "batch_index", "total_batches", "file_info")
     FUNCTION = "load_prompt"
-    CATEGORY = "kktools/Prompt"
+    CATEGORY = "kktools/提示词"
     
     def load_prompt(self, prompt_file, file_mode, batch_size, current_batch):
         """
@@ -239,7 +239,7 @@ class kkLLM:
     RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("optimized_prompt", "original_prompt", "optimization_info")
     FUNCTION = "optimize_prompt"
-    CATEGORY = "kktools/Prompt"
+    CATEGORY = "kktools/提示词"
     
     def optimize_prompt(
         self,
@@ -520,8 +520,8 @@ NODE_CLASS_MAPPINGS = {
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "BatchPrompt": "Batch Prompt (批量提示词)",
-    "kkLLM": "kkLLM (多厂商大模型提示词优化)",
+    "BatchPrompt": "BatchPrompt（批量提示词）",
+    "kkLLM": "kkLLM（多厂商LLM）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

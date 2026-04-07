@@ -51,7 +51,7 @@ class ImageSplit:
     RETURN_TYPES = ("IMAGE",) * 17
     RETURN_NAMES = ("merged_tiles",) + tuple([f"tile_{i+1:02d}" for i in range(16)])
     FUNCTION = "split_image"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
     OUTPUT_IS_LIST = (False,) * 17
 
     def tensor_to_pil(self, img_tensor):
@@ -340,7 +340,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImageSplit": "Image Split (图像切割)",
+    "ImageSplit": "ImageSplit（图像切割）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

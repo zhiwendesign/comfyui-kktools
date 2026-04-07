@@ -1,0 +1,208 @@
+{
+  "last_node_id": 5,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        40,
+        20
+      ],
+      "size": [
+        980,
+        90
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "💬 提示词模块 (prompts.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        60,
+        140
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Batch Prompt (批量提示词)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n批量加载和处理提示词文件，支持单个文件和目录模式。\n\n文件模式\n- single_file：读取单个 txt/json 文件\n- directory：读取目录下所有文本文件\n\n最小演示\n- 将 prompt_file 改成你的真实路径\n- 读取第 1 批提示词\n\n输出\n- prompt\n- batch_index\n- total_batches\n- file_info"
+      ],
+      "color": "#7d5ba6",
+      "bgcolor": "#593f78"
+    },
+    {
+      "id": 3,
+      "type": "BatchPrompt",
+      "pos": [
+        450,
+        140
+      ],
+      "size": [
+        330,
+        190
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "batch_index",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "total_batches",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "file_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BatchPrompt"
+      },
+      "widgets_values": [
+        "./prompts/demo.txt",
+        "single_file",
+        1,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        60,
+        360
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kkLLM（多厂商LLM）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n通过多厂商 LLM 优化提示词。\n\n使用要求\n- 需要填写有效 api_key\n- 支持 deepseek / openai / gemini / doubao\n\n最小演示\n- provider：deepseek\n- model：deepseek-chat\n- 填入 api_key 后运行\n\n输出\n- optimized_prompt\n- original_prompt\n- optimization_info"
+      ],
+      "color": "#7d5ba6",
+      "bgcolor": "#593f78"
+    },
+    {
+      "id": 5,
+      "type": "kkLLM",
+      "pos": [
+        450,
+        360
+      ],
+      "size": [
+        430,
+        320
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "optimized_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "original_prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "optimization_info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkLLM"
+      },
+      "widgets_values": [
+        "a girl in white dress, cinematic portrait",
+        "",
+        "deepseek",
+        "deepseek-chat",
+        "",
+        "",
+        "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
+        300,
+        0.7
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "💬 提示词模块 (prompts.py)",
+      "bounding": [
+        40,
+        110,
+        980,
+        620
+      ],
+      "color": "#7d5ba6",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        250,
+        80
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    }
+  },
+  "version": 0.4
+}

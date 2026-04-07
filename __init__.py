@@ -17,6 +17,45 @@ if current_dir not in sys.path:
 nodes_dir = os.path.join(current_dir, "nodes")
 WEB_DIRECTORY = "./web"
 
+NODE_CHINESE_NAME_MAPPINGS = {
+    "AudioMerge4": "音频四合一",
+    "BatchImageLoader": "批量图像加载",
+    "BatchPrompt": "批量提示词",
+    "GetImage": "获取图像尺寸",
+    "ImageFrame": "图像边框",
+    "ImageSplit": "图像切割",
+    "ImageTileSplit2x2": "图像2x2分块",
+    "InputNode": "多类型输入",
+    "kkLLM": "多厂商LLM",
+    "MathExpressionNode": "数学表达式",
+    "MergeVideos": "视频合并",
+    "PadImageToCanvas": "图像填充到画布",
+    "RandomSelector": "随机选择器",
+    "RegexNode": "正则表达式",
+    "RegexNodeAdvanced": "正则表达式高级",
+    "ReplaceNode": "字符串替换",
+    "Resize": "图像蒙版同步调整",
+    "SizeNode": "尺寸生成",
+    "SomethingToAny": "任意类型转换",
+    "StoryboardScript": "默认分镜",
+    "StoryboardScriptLLM": "LLM分镜",
+    "StoryboardShotOutput": "分镜输出",
+    "StringMergeNode": "字符串合并",
+    "StringNode": "字符串裁剪",
+    "StringNodeAdvanced": "字符串裁剪高级",
+    "StringToIntNode": "字符串转整数",
+    "VideoFirstLastFrames": "视频首尾帧提取",
+    "VideoFramesAdvanced": "视频抽帧高级",
+}
+
+
+def build_node_display_name(class_name):
+    """统一生成节点显示名：EnglishName（中文名称）"""
+    chinese_name = NODE_CHINESE_NAME_MAPPINGS.get(class_name)
+    if chinese_name:
+        return f"{class_name}（{chinese_name}）"
+    return class_name
+
 def load_module_from_file(module_name, file_path):
     """从文件路径加载模块"""
     try:
@@ -79,72 +118,7 @@ def discover_and_load_nodes():
                 # 添加到映射
                 node_class_mappings[attr_name] = attr
                 
-                # 生成显示名称
-                display_name = attr_name
-                if attr_name.startswith('kktools'):
-                    display_name = f"kktools {attr_name[7:]}"
-                
-                # 添加中文描述
-                chinese_desc = ""
-                if 'Size' in attr_name:
-                    chinese_desc = " (尺寸)"
-                elif 'Batch' in attr_name:
-                    chinese_desc = " (批量提示词)"
-                elif 'Prompt' in attr_name:
-                    chinese_desc = " (AI提示词生成)"
-                elif 'String' in attr_name:
-                    if 'Merge' in attr_name:
-                        chinese_desc = " (字符串合并)"
-                    elif 'Input' in attr_name:
-                        chinese_desc = " (字符串/整数输入)"
-                    elif 'Replace' in attr_name:
-                        chinese_desc = " (字符串替换)"
-                    elif 'Advanced' in attr_name:
-                        chinese_desc = " (字符串裁剪-高级)"
-                    else:
-                        chinese_desc = " (字符串裁剪)"
-                elif 'Regex' in attr_name:
-                    if 'Advanced' in attr_name:
-                        chinese_desc = " (正则表达式-高级)"
-                    else:
-                        chinese_desc = " (正则表达式)"
-                elif 'PadImage' in attr_name:
-                    chinese_desc = " (图像填充到画布)"
-                elif 'ImageFrame' in attr_name:
-                    chinese_desc = " (图像边框)"
-                elif 'Resize_img_and_mask' in attr_name:
-                    chinese_desc = " (图像蒙版同步调整)"
-                elif 'GetImage' in attr_name:
-                    chinese_desc = " (获取图像尺寸)"
-                elif 'Resize' in attr_name:
-                    chinese_desc = " (图像蒙版同步调整)"
-                elif 'AIPromptOptimizer' in attr_name:
-                    chinese_desc = " (AI提示词优化)"
-                elif attr_name == 'kkLLM':
-                    chinese_desc = " (多厂商LLM)"
-                elif attr_name == 'StoryboardScript':
-                    chinese_desc = " (默认分镜)"
-                elif attr_name == 'StoryboardScriptLLM':
-                    chinese_desc = " (LLM分镜)"
-                elif attr_name == 'StoryboardShotOutput':
-                    chinese_desc = " (分镜输出)"
-                elif attr_name == 'VideoFirstLastFrames':
-                    chinese_desc = " (视频首尾帧提取)"
-                elif attr_name == 'VideoFramesAdvanced':
-                    chinese_desc = " (视频抽帧-高级)"
-                elif attr_name == 'AudioMerge4':
-                    chinese_desc = " (音频4合1)"
-                # 新增的节点名称映射
-                elif attr_name == 'InputNode':
-                    chinese_desc = " (多类型输入)"
-                elif attr_name == 'ReplaceNode':
-                    chinese_desc = " (字符串替换)"
-                elif attr_name == 'SomethingToAny':
-                    chinese_desc = " (任意类型转换)"
-                elif attr_name == 'MathExpressionNode':
-                    chinese_desc = " (数学表达式)"
-                
-                node_display_name_mappings[attr_name] = f"{display_name}{chinese_desc}"
+                node_display_name_mappings[attr_name] = build_node_display_name(attr_name)
                 print(f"      ✅ 注册节点: {attr_name} -> {node_display_name_mappings[attr_name]}")
     
     return node_class_mappings, node_display_name_mappings
@@ -181,6 +155,7 @@ if not NODE_CLASS_MAPPINGS:
             for class_name in class_names:
                 if hasattr(module, class_name):
                     NODE_CLASS_MAPPINGS[class_name] = getattr(module, class_name)
+                    NODE_DISPLAY_NAME_MAPPINGS[class_name] = build_node_display_name(class_name)
                     print(f"   ✅ {class_name} 手动加载成功")
 
 print(f"✅ kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} 个节点\n")
@@ -189,6 +164,6 @@ print(f"✅ kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} �
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
 
 # 元信息
-__version__ = "3.4.0"
+__version__ = "3.4.6"
 __author__ = "kktools"
 __description__ = "kktools Custom Nodes Collection for ComfyUI"

@@ -62,7 +62,7 @@ class MathExpressionNode:
     RETURN_TYPES = ("FLOAT", "INT", "STRING")
     RETURN_NAMES = ("float_result", "int_result", "string_result")
     FUNCTION = "evaluate_expression"
-    CATEGORY = "kktools/Math"
+    CATEGORY = "kktools/数学计算"
     
     def evaluate_expression(self, expression, a, b, c=0.0, d=0.0, round_decimals=6):
         """
@@ -198,7 +198,7 @@ class RegexNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
     FUNCTION = "regex_operation"
-    CATEGORY = "kktools/Math"
+    CATEGORY = "kktools/数学计算"
     
     def regex_operation(self, text, pattern, mode, replacement=""):
         """
@@ -282,7 +282,7 @@ class RegexNodeAdvanced:
     RETURN_TYPES = ("STRING", "INT", "STRING", "STRING")
     RETURN_NAMES = ("result", "match_count", "matched_text", "info")
     FUNCTION = "regex_operation_advanced"
-    CATEGORY = "kktools/Math"
+    CATEGORY = "kktools/数学计算"
     
     def regex_operation_advanced(self, text, pattern, mode, replacement="", flags="none"):
         """
@@ -352,9 +352,9 @@ NODE_CLASS_MAPPINGS = {
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "MathExpressionNode": "运算（数学表达式）",
-    "RegexNode": "运算（正则表达式）",
-    "RegexNodeAdvanced": "运算（正则表达式高级）",
+    "MathExpressionNode": "MathExpressionNode（数学表达式）",
+    "RegexNode": "RegexNode（正则表达式）",
+    "RegexNodeAdvanced": "RegexNodeAdvanced（正则表达式高级）",
 }
 
 # 更新 __all__ 列表

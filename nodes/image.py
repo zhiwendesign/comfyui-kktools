@@ -27,7 +27,7 @@ class PadImageToCanvas:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "pad_image"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
 
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量 (Batch, H, W, C) 转换为 PIL 图像列表"""
@@ -139,7 +139,7 @@ class ImageFrame:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "create_image_frame"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
 
     @classmethod
     def get_font_options(cls):
@@ -518,7 +518,7 @@ class Resize:
     RETURN_TYPES = ("IMAGE", "MASK")
     RETURN_NAMES = ("image", "mask")
     FUNCTION = "resize_both"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
 
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量转换为 PIL 图像"""
@@ -782,7 +782,7 @@ class GetImage:
     RETURN_TYPES = ("INT", "INT")
     RETURN_NAMES = ("width", "height")
     FUNCTION = "get_image_size"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
 
     def get_image_size(self, image):
         # 获取图像的基本信息
@@ -850,7 +850,7 @@ class BatchImageLoader:
     RETURN_TYPES = ("IMAGE", "MASK", "INT", "STRING")
     RETURN_NAMES = ("images", "masks", "loaded_count", "file_info")
     FUNCTION = "load_images"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
     
     def load_images(self, directory, load_order, load_interval, start_index, max_images, file_extensions, seed, batch_index=0):
         """
@@ -1067,7 +1067,7 @@ class ImageTileSplit2x2:
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = ("image_tl", "image_tr", "image_bl", "image_br")
     FUNCTION = "split_image"
-    CATEGORY = "kktools/Image"
+    CATEGORY = "kktools/图像"
     OUTPUT_IS_LIST = (True, True, True, True)
 
     def tensor_to_pil(self, img_tensor):
@@ -1253,12 +1253,12 @@ NODE_CLASS_MAPPINGS = {
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PadImageToCanvas": "Pad Image to Canvas (图像填充到画布)",
-    "ImageFrame": "Image Frame (图像边框)",
-    "Resize": "Resize (图像蒙版同步调整)",
-    "GetImage": "Get Image (获取图像尺寸)",
-    "BatchImageLoader": "Batch Image Loader (批量图像加载)",
-    "ImageTileSplit2x2": "Image Tile Split 2x2 (2x2图像分块)",  # 新增节点显示名称
+    "PadImageToCanvas": "PadImageToCanvas（图像填充到画布）",
+    "ImageFrame": "ImageFrame（图像边框）",
+    "Resize": "Resize（图像蒙版同步调整）",
+    "GetImage": "GetImage（获取图像尺寸）",
+    "BatchImageLoader": "BatchImageLoader（批量图像加载）",
+    "ImageTileSplit2x2": "ImageTileSplit2x2（图像2x2分块）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
