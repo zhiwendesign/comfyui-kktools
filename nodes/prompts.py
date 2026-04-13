@@ -85,7 +85,7 @@ class kkBatchPrompt:
     RETURN_TYPES = ("STRING", "INT", "INT", "STRING")
     RETURN_NAMES = ("prompt", "batch_index", "total_batches", "file_info")
     FUNCTION = "load_prompt"
-    CATEGORY = "kktools/提示词"
+    CATEGORY = "🌟kktools/提示词"
     
     def load_prompt(self, prompt_file, file_mode, batch_size, current_batch):
         """
@@ -239,7 +239,7 @@ class kkLLM:
     RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("optimized_prompt", "original_prompt", "optimization_info")
     FUNCTION = "optimize_prompt"
-    CATEGORY = "kktools/提示词"
+    CATEGORY = "🌟kktools/提示词"
     
     def optimize_prompt(
         self,

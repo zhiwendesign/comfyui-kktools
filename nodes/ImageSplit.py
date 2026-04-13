@@ -51,7 +51,7 @@ class kkImageSplit:
     RETURN_TYPES = ("IMAGE",) * 17
     RETURN_NAMES = ("merged_tiles",) + tuple([f"tile_{i+1:02d}" for i in range(16)])
     FUNCTION = "split_image"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
     OUTPUT_IS_LIST = (False,) * 17
 
     def tensor_to_pil(self, img_tensor):
@@ -81,20 +81,11 @@ class kkImageSplit:
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         if not pil_images:
             return torch.zeros((1, 256, 256, 3))
-
-        # torch.cat 需要除 batch 维之外的维度完全一致。
-        # 切块时边缘块可能因为余数或重叠而出现不同尺寸，这里统一补齐到最大尺寸。
-        max_w = max(img.size[0] for img in pil_images)
-        max_h = max(img.size[1] for img in pil_images)
             
         tensors = []
         for img in pil_images:
             # 确保图像为 RGB 模式
             img_rgb = img.convert("RGB")
-            if img_rgb.size != (max_w, max_h):
-                padded = Image.new("RGB", (max_w, max_h), (0, 0, 0))
-                padded.paste(img_rgb, (0, 0))
-                img_rgb = padded
             img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)

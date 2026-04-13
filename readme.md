@@ -1,25 +1,36 @@
-# ComfyUI kktools 节点包完整使用指南
+# ComfyUI kktools 节点包使用说明
 
 欢迎合作交流微信【kkcomfy】  
 共创：KK HL
 
 ## 📋 概述
 
-kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块、28 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
+kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，包含 9 个模块、28 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
 
 当前版本的几个统一规则：
 - 节点显示名统一为 `英文名（中文名）`
-- 节点分类统一在 `kktools/...`
+- 节点分类统一在 `🌟kktools/...`
 - 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
+- `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
+- 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 示例工作流已经同步到当前节点名
 
-自动注册逻辑见 [__init__.py](__init__.py)。
+发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。
 
 ## 🚀 安装
 
-- 将本项目目录放到 `ComfyUI/custom_nodes` 下。
-- 重启 ComfyUI，等待 kktools 节点自动注册。
-- 如果需要图像标注里的中文字体，请把 `.ttf`、`.otf`、`.ttc` 放到 [fonts](fonts) 目录。
+1. 将本项目目录放到 `ComfyUI/custom_nodes/comfyui-kktools-main` 下。
+2. 在 ComfyUI 使用的 Python 环境中安装依赖：
+
+```bash
+pip install numpy pillow requests
+# 可选：不同采样率音频自动重采样
+pip install torchaudio
+```
+
+3. 重启 ComfyUI，等待 kktools 节点自动注册。
+4. 在节点面板中搜索 `🌟kktools`、英文类名或中文名。
+5. 如果需要图像标注里的中文字体，请把 `.ttf`、`.otf`、`.ttc` 放到 [fonts](fonts) 目录。
 
 ## 📦 依赖与环境
 
@@ -28,19 +39,29 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块
 - 可选依赖：`torchaudio`
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
+- 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
 ## 🧭 快速上手
 
-- 在节点面板中搜索 `kktools`、英文类名，或中文名。
+- 在节点面板中搜索 `🌟kktools`、英文类名，或中文名。
 - 推荐先打开总览工作流 [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)。
 - 分模块示例可查看 [workflows/README.md](workflows/README.md)。
+- 图像、视频、音频类节点建议先接入你自己的 `IMAGE`、`VIDEO`、`AUDIO` 输入再运行。
 - 如果你手里有旧工作流，请留意：
   - 当前全部节点都已切换为 `kk...` 前缀命名
   - 旧工作流里的旧节点名需要重新选择或替换
 
-## 🧩 源码位置
+## 📁 项目结构
 
-- 自动发现与注册：[__init__.py](__init__.py)
+- [__init__.py](__init__.py)：自动发现与注册节点，统一节点显示名，并导出版本号与前端目录
+- [nodes](nodes)：全部节点源码
+- [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
+- [workflows](workflows)：总览与分模块示例工作流
+- [fonts](fonts)：可选字体资源
+- [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：当前版本更新说明
+
+## 🧩 源码入口
+
 - 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)
 - 数学模块：[nodes/Math.py](nodes/Math.py)
 - 提示词模块：[nodes/prompts.py](nodes/prompts.py)
@@ -158,8 +179,9 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块
 ### kkLLM（多厂商LLM）
 
 - 使用 LLM 优化提示词，当前支持 DeepSeek、OpenAI、Gemini、豆包。
+- 切换 `provider` 时，前端会自动刷新对应的 `model` 选项。
 - 支持 `provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`
-- 没填 `api_key` 时会直接返回原始提示词，不会中断工作流。
+- 没填 `api_key` 时会直接返回原始提示词，不会中断工作流；请求失败、额度不足或网络异常时会退回本地优化方案。
 - 输出：优化后的提示词、原始提示词、优化信息
 
 ---
@@ -285,20 +307,22 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块
 ### kkStoryboardScript（默认分镜）
 
 - 使用本地规则把一段描述文本转成分镜脚本。
-- 支持控制最大镜头数，也可以选择是否包含音频描述。
+- 支持 `max_shots`、`include_audio`、`seconds_per_shot`，也支持固定时长或随机时长两种节奏。
 - 输出：分镜文本、结构化镜头列表
 
 ### kkStoryboardScriptLLM（LLM分镜）
 
 - 使用 LLM 生成分镜脚本，支持 DeepSeek、OpenAI、Gemini、豆包。
-- 支持 `api_key`、`provider`、`model`、`max_shots`、`include_audio`、`system_prompt`
+- 支持 `api_key`、`provider`、`model`、`max_shots`、`include_audio`、`seconds_per_shot`、`enable_random_duration`、`system_prompt`
+- 需要填写有效 `api_key`；生成失败时会返回错误文本和空镜头列表，方便在工作流中继续排查。
 - 适合复杂剧情、风格化分镜、需要更强理解能力的文本转镜头任务。
 - 输出：分镜文本、结构化镜头列表
 
 ### kkStoryboardShotOutput（分镜输出）
 
 - 从分镜节点生成的 `shot_list` 中取出指定一条镜头，并格式化输出。
-- 支持 `完整`、`简洁`、`纯文本` 三种输出格式。
+- 支持 `完整`、`简洁`、`纯文本`、`分镜` 四种输出格式。
+- 支持 `auto_next`、`group_size`，便于按镜头或按组推进下游工作流。
 - 可用于逐镜头推进工作流、逐条喂给后续图像或视频节点。
 - 输出：镜头文本、当前索引、总镜头数
 
@@ -334,14 +358,16 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前包含 9 个模块
 ## ⚠️ 使用说明
 
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
-- API 问题：`kkLLM` 和 `kkStoryboardScriptLLM` 需要有效 `api_key`。
+- 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
+- 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
 - 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
-- 节点未显示：重启 ComfyUI，并检查日志里是否出现 “kktools Nodes 加载完成”。
+- 节点未显示：重启 ComfyUI，并检查日志里是否出现 “🌟kktools Nodes 加载完成” 以及节点注册数量。
 
 ## 📄 版本与版权
 
 - 当前版本：3.5.0（见 [__init__.py](__init__.py)）
+- 更新说明：[RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)
 - 作者：kktools
 - 共创：KK HL
 - 仅用于学习与研究，请遵循 ComfyUI 与相关依赖的许可证要求。

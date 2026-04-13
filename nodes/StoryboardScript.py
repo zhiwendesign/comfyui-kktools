@@ -6,6 +6,7 @@ ComfyUI Custom Node: kkStoryboardScript
 import re
 import json
 import ast
+import random
 import requests
 
 PROVIDER_MODEL_OPTIONS = {
@@ -61,18 +62,26 @@ JSON 对象格式如下：
       "景别": "全景",
       "运镜方式": "固定",
       "时长": "4秒",
-      "画面内容/动作描述": "描述镜头中的主体、动作、构图、环境和关键细节",
-      "音频": "环境音或对白，可选"
+      "画面": "描述镜头中的主体、动作、构图、环境和关键细节",
+      "音效": "环境音效、背景音乐等声音描述",
+      "台词": "（人物，语气）\"台词内容\"，没有台词则留空",
+      "字幕": "画面对应的字幕内容，没有字幕则留空"
     }
   ]
 }
 
 要求：
 1. shot_list 必须是数组，镜号按顺序递增。
-2. 每个镜头必须包含 景别、运镜方式、时长、画面内容/动作描述。
-3. script_text 必须是可直接阅读的完整分镜脚本文本，并与 shot_list 内容一致。
-4. 保持剧情连贯、镜头可执行，避免空泛概述。
-5. 除 JSON 外不要输出任何其他内容。"""
+2. 每个镜头必须包含 景别、运镜方式、时长、画面，其他字段根据实际内容填写。
+3. 台词格式必须严格遵循：（人物名，语气状态）\"具体台词内容\"，例如：（小明，开心地）\"今天天气真好！\"
+4. script_text 必须是可直接阅读的完整分镜脚本文本，格式为：
+画面：... 
+音效：... 
+台词：（人物，语气）\"...\" 
+字幕：...
+并与 shot_list 内容一致。
+5. 保持剧情连贯、镜头可执行，避免空泛概述。
+6. 除 JSON 外不要输出任何其他内容。"""
 
 class StoryboardScriptBase:
     """分镜节点共享逻辑"""
@@ -81,13 +90,13 @@ class StoryboardScriptBase:
     def _get_provider_models(cls, provider):
         return list(PROVIDER_MODEL_OPTIONS.get(provider, PROVIDER_MODEL_OPTIONS["deepseek"]))
 
-    def _generate_storyboard_locally(self, input_text, style, max_shots, include_audio):
+    def _generate_storyboard_locally(self, input_text, style, max_shots, include_audio, seconds_per_shot=4, enable_random_duration=False, min_shot_duration=2, max_shot_duration=5):
         """使用内置规则生成分镜"""
         # 分析输入文本，提取场景元素
         scenes = self._analyze_text(input_text)
 
         # 生成分镜头
-        shots = self._generate_shots(scenes, style, max_shots, include_audio)
+        shots = self._generate_shots(scenes, style, max_shots, include_audio, seconds_per_shot, enable_random_duration, min_shot_duration, max_shot_duration)
 
         # 格式化为文本
         script_text = self._format_script(shots, style)
@@ -105,6 +114,10 @@ class StoryboardScriptBase:
         style,
         max_shots,
         include_audio,
+        seconds_per_shot,
+        enable_random_duration,
+        min_shot_duration,
+        max_shot_duration,
         api_key,
         provider,
         model,
@@ -121,6 +134,10 @@ class StoryboardScriptBase:
             style=style,
             max_shots=max_shots,
             include_audio=include_audio,
+            seconds_per_shot=seconds_per_shot,
+            enable_random_duration=enable_random_duration,
+            min_shot_duration=min_shot_duration,
+            max_shot_duration=max_shot_duration,
         )
         max_output_tokens = self._estimate_max_output_tokens(max_shots, include_audio)
 
@@ -134,7 +151,7 @@ class StoryboardScriptBase:
         )
 
         storyboard_data = self._parse_storyboard_payload(response_text)
-        shots = self._normalize_shot_items(storyboard_data.get("shot_list"), max_shots, include_audio)
+        shots = self._normalize_shot_items(storyboard_data.get("shot_list"), max_shots, include_audio, seconds_per_shot, enable_random_duration, min_shot_duration, max_shot_duration)
         if not shots:
             raise ValueError("API 返回的 shot_list 为空。")
 
@@ -173,9 +190,13 @@ class StoryboardScriptBase:
             f"{custom_system_prompt}"
         )
 
-    def _build_storyboard_user_message(self, input_text, style, max_shots, include_audio):
+    def _build_storyboard_user_message(self, input_text, style, max_shots, include_audio, seconds_per_shot=4, enable_random_duration=False, min_shot_duration=2, max_shot_duration=5):
         """构建分镜生成请求"""
-        audio_requirement = "需要为每个镜头补充音频描述。" if include_audio else "不需要音频字段；如无必要可省略或留空。"
+        audio_requirement = "需要为每个镜头补充音效描述。" if include_audio else "音效字段如无必要可留空。"
+        if enable_random_duration:
+            duration_requirement = f"每个分镜时长在 {min_shot_duration}-{max_shot_duration} 秒之间随机取值，不同镜头的时长可以不同"
+        else:
+            duration_requirement = f"每个分镜固定时长：{seconds_per_shot}秒，所有镜头的时长都必须设置为这个值"
         return f"""请将以下内容改写为分镜头脚本，并严格返回 JSON：
 
 原始内容：
@@ -184,17 +205,22 @@ class StoryboardScriptBase:
 生成要求：
 - 风格：{style}
 - 最大镜头数：{max_shots}
+- {duration_requirement}
 - {audio_requirement}
 - 分镜需要剧情连贯、画面明确、便于实际执行。
-- script_text 需要是完整可读的分镜脚本。
-- shot_list 中每个镜头都要包含：镜号、景别、运镜方式、时长、画面内容/动作描述。"""
+- script_text 需要是完整可读的分镜脚本，格式为：
+  画面：... 
+  音效：... 
+  台词：（人物，语气）"..." 
+  字幕：...
+- shot_list 中每个镜头都要包含：镜号、景别、运镜方式、时长、画面，以及音效、台词、字幕字段。"""
 
     def _estimate_max_output_tokens(self, max_shots, include_audio):
         """估算 LLM 输出 token 上限"""
         base_tokens = 500 + max(1, int(max_shots)) * 180
         if include_audio:
             base_tokens += 120
-        return min(max(base_tokens, 800), 4096)
+        return min(max(base_tokens, 800), 8192)
 
     def _resolve_base_url(self, provider, model):
         if provider == "deepseek":
@@ -256,66 +282,84 @@ class StoryboardScriptBase:
     ):
         """调用多厂商 LLM API"""
         url = self._resolve_base_url(provider, model)
-
-        if provider == "gemini":
-            headers = {
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "system_instruction": {
-                    "parts": [
-                        {
-                            "text": system_message
-                        }
-                    ]
-                },
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [
+        max_retries = 3  # 最多重试3次
+        timeout = 120  # 增加超时时间到120秒
+        
+        for attempt in range(max_retries + 1):
+            try:
+                if provider == "gemini":
+                    headers = {
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "system_instruction": {
+                            "parts": [
+                                {
+                                    "text": system_message
+                                }
+                            ]
+                        },
+                        "contents": [
                             {
-                                "text": user_message
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": user_message
+                                    }
+                                ]
                             }
-                        ]
+                        ],
+                        "generationConfig": {
+                            "temperature": DEFAULT_LLM_TEMPERATURE,
+                            "maxOutputTokens": max_output_tokens,
+                        }
                     }
-                ],
-                "generationConfig": {
-                    "temperature": DEFAULT_LLM_TEMPERATURE,
-                    "maxOutputTokens": max_output_tokens,
-                }
-            }
-            response = requests.post(
-                url,
-                headers=headers,
-                params={"key": api_key},
-                json=payload,
-                timeout=45,
-            )
-        else:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            payload = {
-                "model": model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_message
-                    },
-                    {
-                        "role": "user",
-                        "content": user_message
+                    response = requests.post(
+                        url,
+                        headers=headers,
+                        params={"key": api_key},
+                        json=payload,
+                        timeout=timeout,
+                    )
+                else:
+                    headers = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}"
                     }
-                ],
-                "max_tokens": max_output_tokens,
-                "temperature": DEFAULT_LLM_TEMPERATURE,
-                "stream": False
-            }
-            response = requests.post(url, headers=headers, json=payload, timeout=45)
+                    payload = {
+                        "model": model,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": system_message
+                            },
+                            {
+                                "role": "user",
+                                "content": user_message
+                            }
+                        ],
+                        "max_tokens": max_output_tokens,
+                        "temperature": DEFAULT_LLM_TEMPERATURE,
+                        "stream": False
+                    }
+                    response = requests.post(url, headers=headers, json=payload, timeout=timeout)
 
-        response.raise_for_status()
-        result = response.json()
+                response.raise_for_status()
+                result = response.json()
+                break
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries:
+                    # 最后一次重试失败，抛出更友好的错误
+                    error_msg = f"API请求失败（已重试{max_retries}次）：{str(e)}\n"
+                    error_msg += "可能的解决方案：\n"
+                    error_msg += "1. 检查网络连接是否正常\n"
+                    error_msg += "2. 确认API密钥是否正确\n"
+                    error_msg += "3. 尝试切换其他LLM提供商（如openai、doubao、gemini）\n"
+                    error_msg += "4. 检查对应API服务是否正常运行"
+                    raise ConnectionError(error_msg) from e
+                print(f"⚠️ 第{attempt + 1}次请求失败，正在重试... 错误：{str(e)}")
+                import time
+                time.sleep(1)  # 重试前等待1秒
 
         if provider == "gemini":
             content = self._parse_gemini_content(result)
@@ -394,10 +438,14 @@ class StoryboardScriptBase:
 
         return min(max(duration, 1), 30)
 
-    def _normalize_shot_items(self, raw_shots, max_shots, include_audio):
+    def _normalize_shot_items(self, raw_shots, max_shots, include_audio, seconds_per_shot=4, enable_random_duration=False, min_shot_duration=2, max_shot_duration=5):
         """将 API 返回的镜头列表规范为内部格式"""
         if not isinstance(raw_shots, list):
             raise ValueError("API 返回的 shot_list 不是列表。")
+        
+        # 确保min <= max
+        min_dur = min(min_shot_duration, max_shot_duration)
+        max_dur = max(min_shot_duration, max_shot_duration)
 
         normalized_shots = []
         for index, raw_item in enumerate(raw_shots[:max_shots]):
@@ -410,23 +458,35 @@ class StoryboardScriptBase:
                 continue
 
             description = str(
-                raw_item.get("画面内容/动作描述")
+                raw_item.get("画面")
+                or raw_item.get("画面内容/动作描述")
                 or raw_item.get("description")
-                or raw_item.get("画面")
                 or ""
             ).strip()
             if not description:
                 continue
 
-            audio = str(raw_item.get("音频") or raw_item.get("audio") or "").strip() if include_audio else ""
+            sound_effect = str(raw_item.get("音效") or raw_item.get("音频") or raw_item.get("audio") or "").strip() if include_audio else ""
+            lines = str(raw_item.get("台词") or raw_item.get("lines") or "").strip()
+            subtitle = str(raw_item.get("字幕") or raw_item.get("subtitle") or "").strip()
+            
+            # 计算时长
+            if enable_random_duration:
+                # 随机在min和max之间取值，忽略LLM返回的时长
+                duration = random.randint(min_dur, max_dur)
+            else:
+                # 使用LLM返回的时长，没有则用默认值
+                duration = self._normalize_duration(raw_item.get("时长") or raw_item.get("duration") or seconds_per_shot)
 
             normalized_shots.append({
                 "shot_num": index + 1,
                 "shot_size": str(raw_item.get("景别") or raw_item.get("shot_size") or "中景").strip() or "中景",
                 "camera_move": str(raw_item.get("运镜方式") or raw_item.get("camera_move") or "固定").strip() or "固定",
-                "duration": self._normalize_duration(raw_item.get("时长") or raw_item.get("duration") or 4),
+                "duration": duration,
                 "description": description,
-                "audio": audio,
+                "sound_effect": sound_effect,
+                "lines": lines,
+                "subtitle": subtitle,
             })
 
         return normalized_shots
@@ -470,7 +530,7 @@ class StoryboardScriptBase:
         
         return scenes
     
-    def _generate_shots(self, scenes, style, max_shots, include_audio):
+    def _generate_shots(self, scenes, style, max_shots, include_audio, seconds_per_shot=4, enable_random_duration=False, min_shot_duration=2, max_shot_duration=5):
         """生成分镜头列表"""
         shots = []
         
@@ -488,6 +548,10 @@ class StoryboardScriptBase:
         else:  # 专业
             detail_factor = 0.7
         
+        # 确保min <= max
+        min_dur = min(min_shot_duration, max_shot_duration)
+        max_dur = max(min_shot_duration, max_shot_duration)
+        
         # 为每个场景生成镜头
         for i, scene in enumerate(scenes[:max_shots]):
             shot_num = i + 1
@@ -498,16 +562,21 @@ class StoryboardScriptBase:
             # 选择运镜方式
             camera_move = self._select_camera_move(scene, i)
             
-            # 生成时长（基础2-8秒，根据场景复杂度调整）
-            duration = self._calculate_duration(scene, style)
+            # 计算时长
+            if enable_random_duration:
+                # 随机在min和max之间取值
+                duration = random.randint(min_dur, max_dur)
+            else:
+                # 使用用户指定的固定时长
+                duration = seconds_per_shot
             
             # 生成画面描述
             description = self._generate_description(scene, shot_size, camera_move, style)
             
             # 生成音频描述（如果需要）
-            audio = ""
+            sound_effect = ""
             if include_audio:
-                audio = self._generate_audio(scene, style)
+                sound_effect = self._generate_audio(scene, style)
             
             shot = {
                 "shot_num": shot_num,
@@ -515,7 +584,9 @@ class StoryboardScriptBase:
                 "camera_move": camera_move,
                 "duration": duration,
                 "description": description,
-                "audio": audio if include_audio else ""
+                "sound_effect": sound_effect if include_audio else "",
+                "lines": "",
+                "subtitle": ""
             }
             
             shots.append(shot)
@@ -624,48 +695,26 @@ class StoryboardScriptBase:
     def _format_script(self, shots, style):
         """格式化为脚本文本"""
         lines = []
+        current_time = 0
         
-        # 表头
-        if style == "简洁":
-            lines.append("镜号 | 景别 | 运镜 | 时长 | 画面描述")
-            lines.append("-" * 50)
+        for shot in shots:
+            shot_num = shot['shot_num']
+            duration = shot['duration']
+            start_time = current_time
+            end_time = current_time + duration
+            current_time = end_time
             
-            for shot in shots:
-                line = f"{shot['shot_num']:02d} | {shot['shot_size']} | {shot['camera_move']} | {shot['duration']}s | {shot['description'][:40]}"
-                lines.append(line)
+            lines.append(f"镜头{shot_num}（{start_time}-{end_time}秒）")
+            lines.append(f"画面：{shot['description']}")
+            if shot.get('sound_effect'):
+                lines.append(f"音效：{shot['sound_effect']}")
+            if shot.get('lines'):
+                lines.append(f"台词：{shot['lines']}")
+            if shot.get('subtitle'):
+                lines.append(f"字幕：{shot['subtitle']}")
+            lines.append("")
         
-        elif style == "详细":
-            lines.append("=" * 80)
-            lines.append("分镜头脚本")
-            lines.append("=" * 80)
-            lines.append(f"{'镜号':<4} {'景别':<6} {'运镜方式':<8} {'时长':<6} {'画面内容/动作描述'}")
-            lines.append("-" * 80)
-            
-            for shot in shots:
-                line = f"{shot['shot_num']:<4} {shot['shot_size']:<6} {shot['camera_move']:<8} {shot['duration']}秒   {shot['description']}"
-                lines.append(line)
-            
-            if any(shot.get('audio') for shot in shots):
-                lines.append("")
-                lines.append("-" * 80)
-                lines.append("音频说明:")
-                for shot in shots:
-                    if shot.get('audio'):
-                        lines.append(f"  镜{shot['shot_num']}: {shot['audio']}")
-        
-        else:  # 专业
-            lines.append("┌────┬──────┬────────┬──────┬────────────────────────────────────┐")
-            lines.append("│镜号│ 景别 │ 运镜方式 │ 时长 │ 画面内容/动作描述                 │")
-            lines.append("├────┼──────┼────────┼──────┼────────────────────────────────────┤")
-            
-            for shot in shots:
-                desc = shot['description'][:36] + "..." if len(shot['description']) > 36 else shot['description']
-                line = f"│{shot['shot_num']:^3}│{shot['shot_size']:^5}│{shot['camera_move']:^7}│{shot['duration']:^4}s│{desc:<36}│"
-                lines.append(line)
-            
-            lines.append("└────┴──────┴────────┴──────┴────────────────────────────────────┘")
-        
-        return "\n".join(lines)
+        return "\n".join(lines).strip()
     
     def _to_list_format(self, shots):
         """转换为列表格式"""
@@ -677,11 +726,15 @@ class StoryboardScriptBase:
                 "景别": shot['shot_size'],
                 "运镜方式": shot['camera_move'],
                 "时长": f"{shot['duration']}秒",
-                "画面内容/动作描述": shot['description']
+                "画面": shot['description']
             }
             
-            if shot.get('audio'):
-                shot_item["音频"] = shot['audio']
+            if shot.get('sound_effect'):
+                shot_item["音效"] = shot['sound_effect']
+            if shot.get('lines'):
+                shot_item["台词"] = shot['lines']
+            if shot.get('subtitle'):
+                shot_item["字幕"] = shot['subtitle']
             
             shot_list.append(shot_item)
         
@@ -705,7 +758,7 @@ class kkStoryboardScript(StoryboardScriptBase):
                 "max_shots": ("INT", {
                     "default": 6,
                     "min": 1,
-                    "max": 20,
+                    "max": 30,
                     "step": 1,
                     "display": "number"
                 }),
@@ -714,23 +767,56 @@ class kkStoryboardScript(StoryboardScriptBase):
                     "label_off": "不包含",
                     "label_on": "包含"
                 }),
+                "seconds_per_shot": ("INT", {
+                    "default": 4,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "每个分镜的时长（秒）"
+                }),
+                "enable_random_duration": ("BOOLEAN", {
+                    "default": False,
+                    "label_off": "固定时长",
+                    "label_on": "随机时长"
+                }),
+                "min_shot_duration": ("INT", {
+                    "default": 2,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "随机最小时长（秒）"
+                }),
+                "max_shot_duration": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "随机最大时长（秒）"
+                }),
             }
         }
 
     RETURN_TYPES = ("STRING", "LIST")
     RETURN_NAMES = ("script_text", "shot_list")
     FUNCTION = "generate_storyboard"
-    CATEGORY = "kktools/分镜"
+    CATEGORY = "🌟kktools/分镜"
 
-    def generate_storyboard(self, input_text, style="专业", max_shots=6, include_audio=False):
+    def generate_storyboard(self, input_text, style="专业", max_shots=6, include_audio=False, seconds_per_shot=4, enable_random_duration=False, min_shot_duration=2, max_shot_duration=5):
         """使用默认规则生成分镜"""
         print(f"\n📽️ 默认分镜生成开始")
         print(f"  输入文本: {input_text[:100]}...")
         print(f"  风格: {style}")
         print(f"  最大镜头数: {max_shots}")
+        if enable_random_duration:
+            print(f"  分镜时长: 随机 {min_shot_duration}-{max_shot_duration} 秒")
+        else:
+            print(f"  每个分镜时长: {seconds_per_shot}秒")
 
         try:
-            return self._generate_storyboard_locally(input_text, style, max_shots, include_audio)
+            return self._generate_storyboard_locally(input_text, style, max_shots, include_audio, seconds_per_shot, enable_random_duration, min_shot_duration, max_shot_duration)
         except Exception as e:
             error_msg = f"❌ 生成失败: {str(e)}"
             print(error_msg)
@@ -767,7 +853,7 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
                 "max_shots": ("INT", {
                     "default": 6,
                     "min": 1,
-                    "max": 20,
+                    "max": 30,
                     "step": 1,
                     "display": "number"
                 }),
@@ -775,6 +861,35 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
                     "default": False,
                     "label_off": "不包含",
                     "label_on": "包含"
+                }),
+                "seconds_per_shot": ("INT", {
+                    "default": 4,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "每个分镜的时长（秒）"
+                }),
+                "enable_random_duration": ("BOOLEAN", {
+                    "default": False,
+                    "label_off": "固定时长",
+                    "label_on": "随机时长"
+                }),
+                "min_shot_duration": ("INT", {
+                    "default": 2,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "随机最小时长（秒）"
+                }),
+                "max_shot_duration": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "placeholder": "随机最大时长（秒）"
                 }),
                 "system_prompt": ("STRING", {
                     "default": "",
@@ -787,7 +902,7 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
     RETURN_TYPES = ("STRING", "LIST")
     RETURN_NAMES = ("script_text", "shot_list")
     FUNCTION = "generate_storyboard_llm"
-    CATEGORY = "kktools/分镜"
+    CATEGORY = "🌟kktools/分镜"
 
     def generate_storyboard_llm(
         self,
@@ -797,6 +912,10 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
         model,
         max_shots=6,
         include_audio=False,
+        seconds_per_shot=4,
+        enable_random_duration=False,
+        min_shot_duration=2,
+        max_shot_duration=5,
         system_prompt="",
     ):
         """使用 LLM 生成分镜"""
@@ -805,6 +924,10 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
         print(f"  输入文本: {input_text[:100]}...")
         print(f"  风格: {style}")
         print(f"  最大镜头数: {max_shots}")
+        if enable_random_duration:
+            print(f"  分镜时长: 随机 {min_shot_duration}-{max_shot_duration} 秒")
+        else:
+            print(f"  每个分镜时长: {seconds_per_shot}秒")
         print(f"  Provider: {provider}")
         print(f"  Model: {model}")
 
@@ -814,6 +937,10 @@ class kkStoryboardScriptLLM(StoryboardScriptBase):
                 style=style,
                 max_shots=max_shots,
                 include_audio=include_audio,
+                seconds_per_shot=seconds_per_shot,
+                enable_random_duration=enable_random_duration,
+                min_shot_duration=min_shot_duration,
+                max_shot_duration=max_shot_duration,
                 api_key=api_key,
                 provider=provider,
                 model=model,
@@ -846,7 +973,7 @@ class kkStoryboardShotOutput:
                 }),
             },
             "optional": {
-                "output_format": (["完整", "简洁", "纯文本"], {
+                "output_format": (["完整", "简洁", "纯文本", "分镜"], {
                     "default": "完整",
                     "description": "输出格式"
                 }),
@@ -856,23 +983,32 @@ class kkStoryboardShotOutput:
                     "label_on": "自动",
                     "description": "自动输出下一个镜头"
                 }),
+                "group_size": ("INT", {
+                    "default": 1,
+                    "min": 1,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number",
+                    "description": "每几个分镜为一组输出"
+                }),
             }
         }
     
     RETURN_TYPES = ("STRING", "INT", "INT")
     RETURN_NAMES = ("shot_string", "current_index", "total_count")
     FUNCTION = "output_shot"
-    CATEGORY = "kktools/分镜"
+    CATEGORY = "🌟kktools/分镜"
     
-    def output_shot(self, shot_list, shot_index, output_format="完整", auto_next=False):
+    def output_shot(self, shot_list, shot_index, output_format="完整", auto_next=False, group_size=1):
         """
         从镜头列表输出指定的分镜
         
         Args:
             shot_list: 镜头列表（JSON格式）
             shot_index: 要输出的镜头索引
-            output_format: 输出格式（完整/简洁/纯文本）
+            output_format: 输出格式（完整/简洁/纯文本/分镜）
             auto_next: 是否自动输出下一个
+            group_size: 每几个分镜为一组输出
             
         Returns:
             shot_string: 格式化的分镜字符串
@@ -882,6 +1018,7 @@ class kkStoryboardShotOutput:
         print(f"\n🎬 分镜输出开始")
         print(f"  镜头索引: {shot_index}")
         print(f"  输出格式: {output_format}")
+        print(f"  分组大小: {group_size}")
         
         try:
             # 解析镜头列表
@@ -899,18 +1036,47 @@ class kkStoryboardShotOutput:
             elif shot_index >= total_count:
                 shot_index = total_count - 1
             
-            # 获取当前镜头
-            current_shot = shots[shot_index]
+            # 计算要输出的镜头范围
+            end_index = min(shot_index + group_size - 1, total_count - 1)
+            output_shots = shots[shot_index:end_index + 1]
             
-            # 格式化输出
-            shot_string = self._format_shot(current_shot, output_format, shot_index + 1, total_count)
+            # 格式化输出多个镜头
+            shot_strings = []
+            current_time = 0
+            
+            # 先计算到shot_index的起始时间
+            for i in range(shot_index):
+                duration_str = shots[i].get("时长", "4秒")
+                match = re.search(r"(\d+)", str(duration_str))
+                dur = int(match.group(1)) if match else 4
+                current_time += dur
+            
+            for idx, shot in enumerate(output_shots):
+                shot_num = shot_index + idx + 1
+                # 计算当前镜头的时间范围
+                duration_str = shot.get("时长", "4秒")
+                match = re.search(r"(\d+)", str(duration_str))
+                current_dur = int(match.group(1)) if match else 4
+                start_time = current_time
+                end_time = current_time + current_dur
+                current_time = end_time
+                
+                # 格式化单个镜头
+                shot_str = self._format_shot(shot, output_format, shot_num, total_count, start_time, end_time)
+                shot_strings.append(shot_str)
+                
+                # 不同镜头之间加空行分隔
+                if idx < len(output_shots) - 1:
+                    shot_strings.append("\n")
+            
+            shot_string = "\n".join(shot_strings)
             
             # 确定下一个索引（如果自动下一个）
             next_index = shot_index
-            if auto_next and shot_index < total_count - 1:
-                next_index = shot_index + 1
+            if auto_next and end_index < total_count - 1:
+                next_index = end_index + 1
             
-            print(f"✅ 输出镜头 {shot_index + 1}/{total_count}")
+            print(f"✅ 输出镜头 {shot_index + 1}-{end_index + 1}/{total_count}")
             print(f"  内容: {shot_string[:100]}...")
             
             return (shot_string, next_index if auto_next else shot_index, total_count)
@@ -956,7 +1122,7 @@ class kkStoryboardShotOutput:
         
         return shots
     
-    def _format_shot(self, shot, output_format, current_num, total_count):
+    def _format_shot(self, shot, output_format, current_num, total_count, start_time=0, end_time=0):
         """格式化单个分镜"""
         
         # 获取镜头数据
@@ -964,14 +1130,31 @@ class kkStoryboardShotOutput:
         shot_size = shot.get("景别", shot.get("shot_size", "中景"))
         camera_move = shot.get("运镜方式", shot.get("camera_move", "固定"))
         duration = shot.get("时长", shot.get("duration", "4秒"))
-        description = shot.get("画面内容/动作描述", shot.get("description", ""))
-        audio = shot.get("音频", shot.get("audio", ""))
+        description = shot.get("画面", shot.get("画面内容/动作描述", shot.get("description", "")))
+        sound_effect = shot.get("音效", shot.get("音频", shot.get("audio", "")))
+        lines = shot.get("台词", shot.get("lines", ""))
+        subtitle = shot.get("字幕", shot.get("subtitle", ""))
         
-        if output_format == "简洁":
+        if output_format == "分镜":
+            # 用户要求的分镜格式
+            result = f"镜头{current_num}（{start_time}-{end_time}秒）"
+            result += f"\n画面：{description}"
+            if sound_effect:
+                result += f"\n音效：{sound_effect}"
+            if lines:
+                result += f"\n台词：{lines}"
+            if subtitle:
+                result += f"\n字幕：{subtitle}"
+        
+        elif output_format == "简洁":
             # 简洁格式
-            result = f"景别: {shot_size}； 运镜: {camera_move}； 时长: {duration}； 画面描述: {description}"
-            if audio:
-                result += f"； 音频: {audio}"
+            result = f"景别: {shot_size}； 运镜: {camera_move}； 时长: {duration}； 画面: {description}"
+            if sound_effect:
+                result += f"； 音效: {sound_effect}"
+            if lines:
+                result += f"； 台词: {lines}"
+            if subtitle:
+                result += f"； 字幕: {subtitle}"
             
         elif output_format == "纯文本":
             # 纯文本格式，只返回画面描述
@@ -987,13 +1170,23 @@ class kkStoryboardShotOutput:
 ║ 运镜: {camera_move}                                                  
 ║ 时长: {duration}                                                     
 ║──────────────────────────────────────────────────────────────║
-║ 画面描述:                                                          
+║ 画面:                                                              
 ║ {description}                                                      
 """
-            if audio:
+            if sound_effect:
                 result += f"""
 ║──────────────────────────────────────────────────────────────║
-║ 音频: {audio}                                                        
+║ 音效: {sound_effect}                                                      
+"""
+            if lines:
+                result += f"""
+║──────────────────────────────────────────────────────────────║
+║ 台词: {lines}                                                            
+"""
+            if subtitle:
+                result += f"""
+║──────────────────────────────────────────────────────────────║
+║ 字幕: {subtitle}                                                          
 """
             result += """
 ╚══════════════════════════════════════════════════════════════╝"""
@@ -1016,7 +1209,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 __all__ = ['kkStoryboardScript', 'kkStoryboardScriptLLM', 'kkStoryboardShotOutput']
 
-print("✅ 分镜头脚本节点已加载")
+print("✅ 🌟kktools 分镜头脚本节点已加载")
 print("   📋 分镜头脚本生成(默认): 使用本地规则生成分镜")
 print("   🤖 分镜头脚本生成(LLM): 使用大模型生成分镜")
 print("   🎬 分镜输出(单条): 从镜头列表输出指定分镜")

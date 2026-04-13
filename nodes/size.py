@@ -42,7 +42,7 @@ class kkSizeNode:
     RETURN_TYPES = ("LATENT", "INT", "INT")
     RETURN_NAMES = ("latent", "width", "height")
     FUNCTION = "generate"
-    CATEGORY = "kktools/尺寸"
+    CATEGORY = "🌟kktools/尺寸"
     
     def generate(self, size_mode, aspect_ratio, custom_width, custom_height, batch_size):
         """生成latent张量并返回尺寸信息"""

@@ -35,7 +35,7 @@ class kkRandomSelector:
     RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("selected_value", "selected_group", "all_groups")
     FUNCTION = "random_select"
-    CATEGORY = "kktools/随机"
+    CATEGORY = "🌟kktools/随机"
     
     def random_select(self, json_config, target_groups="", seed=0):
         """从JSON配置中随机选择一个值"""

@@ -62,7 +62,7 @@ class kkMathExpressionNode:
     RETURN_TYPES = ("FLOAT", "INT", "STRING")
     RETURN_NAMES = ("float_result", "int_result", "string_result")
     FUNCTION = "evaluate_expression"
-    CATEGORY = "kktools/数学计算"
+    CATEGORY = "🌟kktools/数学计算"
     
     def evaluate_expression(self, expression, a, b, c=0.0, d=0.0, round_decimals=6):
         """
@@ -198,7 +198,7 @@ class kkRegexNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("result",)
     FUNCTION = "regex_operation"
-    CATEGORY = "kktools/数学计算"
+    CATEGORY = "🌟kktools/数学计算"
     
     def regex_operation(self, text, pattern, mode, replacement=""):
         """
@@ -282,7 +282,7 @@ class kkRegexNodeAdvanced:
     RETURN_TYPES = ("STRING", "INT", "STRING", "STRING")
     RETURN_NAMES = ("result", "match_count", "matched_text", "info")
     FUNCTION = "regex_operation_advanced"
-    CATEGORY = "kktools/数学计算"
+    CATEGORY = "🌟kktools/数学计算"
     
     def regex_operation_advanced(self, text, pattern, mode, replacement="", flags="none"):
         """

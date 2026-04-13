@@ -237,7 +237,7 @@ class kkVideoFirstLastFrames(_VideoNodeMixin):
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "AUDIO")
     RETURN_NAMES = ("first_frame", "last_frame", "first_last_frames", "audio")
     FUNCTION = "extract_frames"
-    CATEGORY = "kktools/视频"
+    CATEGORY = "🌟kktools/视频"
 
     def extract_frames(self, video):
         components = self._get_video_components(video)
@@ -269,7 +269,7 @@ class kkVideoFramesAdvanced(_VideoNodeMixin):
     RETURN_TYPES = ("IMAGE", "FLOAT", "INT", "STRING")
     RETURN_NAMES = ("images", "fps", "extracted_count", "info")
     FUNCTION = "extract_frames_advanced"
-    CATEGORY = "kktools/视频"
+    CATEGORY = "🌟kktools/视频"
 
     def extract_frames_advanced(self, video, extract_mode, interval_seconds):
         components = self._get_video_components(video)
@@ -327,7 +327,7 @@ class kkMergeVideos(_VideoNodeMixin):
     RETURN_TYPES = ("VIDEO",)
     RETURN_NAMES = ("video",)
     FUNCTION = "merge_videos"
-    CATEGORY = "kktools/视频"
+    CATEGORY = "🌟kktools/视频"
 
     def _resize_images(self, images, target_height, target_width):
         frames, height, width, channels = images.shape

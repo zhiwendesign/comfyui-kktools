@@ -1,6 +1,6 @@
 """
-ComfyUI Custom Nodes: kktools Nodes
-kktools自定义节点集合
+ComfyUI Custom Nodes: 🌟kktools Nodes
+🌟kktools自定义节点集合
 """
 
 import os
@@ -124,7 +124,7 @@ def discover_and_load_nodes():
     return node_class_mappings, node_display_name_mappings
 
 # 导入所有节点类
-print("🔄 开始加载 kktools Nodes...")
+print("🔄 开始加载 🌟kktools Nodes...")
 
 # 使用自动发现机制加载节点
 NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS = discover_and_load_nodes()
@@ -162,12 +162,12 @@ if not NODE_CLASS_MAPPINGS:
                     NODE_DISPLAY_NAME_MAPPINGS[class_name] = build_node_display_name(class_name)
                     print(f"   ✅ {class_name} 手动加载成功")
 
-print(f"✅ kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} 个节点\n")
+print(f"✅ 🌟kktools Nodes 加载完成！共注册 {len(NODE_CLASS_MAPPINGS)} 个节点\n")
 
 # 导出
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
 
 # 元信息
 __version__ = "3.5.0"
-__author__ = "kktools"
-__description__ = "kktools Custom Nodes Collection for ComfyUI"
+__author__ = "🌟kktools"
+__description__ = "🌟kktools Custom Nodes Collection for ComfyUI"

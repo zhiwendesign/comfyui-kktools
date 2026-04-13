@@ -35,7 +35,7 @@ class kkStringNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("trimmed_text",)
     FUNCTION = "trim_string"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def trim_string(self, text, skip_start, skip_end):
         """
@@ -100,7 +100,7 @@ class kkStringNodeAdvanced:
     RETURN_TYPES = ("STRING", "INT", "INT", "INT")
     RETURN_NAMES = ("trimmed_text", "original_length", "trimmed_length", "removed_chars")
     FUNCTION = "trim_string_advanced"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def trim_string_advanced(self, text, skip_start, skip_end):
         """
@@ -170,7 +170,7 @@ class kkStringMergeNode:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("merged_string",)
     FUNCTION = "merge_strings"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def merge_strings(self, string1="", string2="", separator="", string3="", string4=""):
         """
@@ -241,7 +241,7 @@ class kkStringToIntNode:
     RETURN_TYPES = ("INT", "INT", "INT", "INT")
     RETURN_NAMES = ("int1", "int2", "int3", "int4")
     FUNCTION = "strings_to_ints"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
 
     def strings_to_ints(self, string1="", string2="", string3="", string4=""):
         """
@@ -333,7 +333,7 @@ class kkInputNode:
     RETURN_TYPES = ("STRING", "INT", "FLOAT", "STRING", "INT", "FLOAT")
     RETURN_NAMES = ("string_output_1", "int_output_1", "float_output_1", "string_output_2", "int_output_2", "float_output_2")
     FUNCTION = "process_input"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def process_input(self, input_type_1, string_value_1, int_value_1, float_value_1,
                      input_type_2, string_value_2, int_value_2, float_value_2):
@@ -431,7 +431,7 @@ class kkReplaceNode:
     RETURN_TYPES = ("STRING", "INT")
     RETURN_NAMES = ("replaced_text", "replace_count")
     FUNCTION = "replace_string"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def replace_string(self, text, old_text, new_text, replace_all):
         """
@@ -518,7 +518,7 @@ class kkSomethingToAny:
     RETURN_TYPES = ("STRING", "INT", "FLOAT")
     RETURN_NAMES = ("string_output", "int_output", "float_output")
     FUNCTION = "convert_any"
-    CATEGORY = "kktools/字符串"
+    CATEGORY = "🌟kktools/字符串"
     
     def convert_any(self, input_type, output_type, string_input, int_input, float_input, boolean_input):
         """

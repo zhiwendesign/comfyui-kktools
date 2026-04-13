@@ -27,7 +27,7 @@ class kkPadImageToCanvas:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "pad_image"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
 
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量 (Batch, H, W, C) 转换为 PIL 图像列表"""
@@ -139,7 +139,7 @@ class kkImageFrame:
 
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "create_image_frame"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
 
     @classmethod
     def get_font_options(cls):
@@ -518,7 +518,7 @@ class kkResize:
     RETURN_TYPES = ("IMAGE", "MASK")
     RETURN_NAMES = ("image", "mask")
     FUNCTION = "resize_both"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
 
     def tensor_to_pil(self, img_tensor):
         """将 ComfyUI 图像张量转换为 PIL 图像"""
@@ -782,7 +782,7 @@ class kkGetImage:
     RETURN_TYPES = ("INT", "INT")
     RETURN_NAMES = ("width", "height")
     FUNCTION = "get_image_size"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
 
     def get_image_size(self, image):
         # 获取图像的基本信息
@@ -850,7 +850,7 @@ class kkBatchImageLoader:
     RETURN_TYPES = ("IMAGE", "MASK", "INT", "STRING")
     RETURN_NAMES = ("images", "masks", "loaded_count", "file_info")
     FUNCTION = "load_images"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
     
     def load_images(self, directory, load_order, load_interval, start_index, max_images, file_extensions, seed, batch_index=0):
         """
@@ -1067,7 +1067,7 @@ class kkImageTileSplit2x2:
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE", "IMAGE")
     RETURN_NAMES = ("image_tl", "image_tr", "image_bl", "image_br")
     FUNCTION = "split_image"
-    CATEGORY = "kktools/图像"
+    CATEGORY = "🌟kktools/图像"
     OUTPUT_IS_LIST = (True, True, True, True)
 
     def tensor_to_pil(self, img_tensor):
