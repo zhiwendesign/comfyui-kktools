@@ -1,5 +1,5 @@
-import torch
 import torch.nn.functional as torch_functional
+import torch
 
 
 class _VideoNodeMixin:

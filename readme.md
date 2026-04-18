@@ -50,6 +50,7 @@ pip install torchaudio
 - 如果你手里有旧工作流，请留意：
   - 当前全部节点都已切换为 `kk...` 前缀命名
   - 旧工作流里的旧节点名需要重新选择或替换
+  - 旧工作流如果使用过 `kkVideoTextOCR`，需要手动移除或改用其他文本提取方案
 
 ## 📁 项目结构
 
@@ -333,7 +334,7 @@ pip install torchaudio
 ### 节点总览工作流
 
 - [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)
-- 覆盖当前全部节点
+- 用于快速浏览当前节点能力
 - 每个节点都配有最小演示和说明卡
 
 ### 模块工作流
