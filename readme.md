@@ -308,22 +308,39 @@ pip install torchaudio
 ### kkStoryboardScript（默认分镜）
 
 - 使用本地规则把一段描述文本转成分镜脚本。
-- 支持 `max_shots`、`include_audio`、`seconds_per_shot`，也支持固定时长或随机时长两种节奏。
+- 支持 `max_shots`（最大镜头数，1-30）、`include_audio`（是否包含音频）、`seconds_per_shot`（每个分镜时长）。
+- 支持固定时长或随机时长两种节奏：
+  - 固定时长：设置 `seconds_per_shot`，所有镜头使用相同时长
+  - 随机时长：开启 `enable_random_duration`，设置 `min_shot_duration` 和 `max_shot_duration`，每个镜头时长在范围内随机
+- 输出格式：
+  ```
+  镜头1（0-4秒）
+  画面：...
+  音效：...
+  台词：（人物，语气）"..."
+  字幕：...
+  ```
 - 输出：分镜文本、结构化镜头列表
 
 ### kkStoryboardScriptLLM（LLM分镜）
 
 - 使用 LLM 生成分镜脚本，支持 DeepSeek、OpenAI、Gemini、豆包。
-- 支持 `api_key`、`provider`、`model`、`max_shots`、`include_audio`、`seconds_per_shot`、`enable_random_duration`、`system_prompt`
+- 支持参数：`api_key`、`provider`、`model`、`max_shots`（1-30）、`include_audio`、`seconds_per_shot`、`enable_random_duration`、`min_shot_duration`、`max_shot_duration`、`system_prompt`
 - 需要填写有效 `api_key`；生成失败时会返回错误文本和空镜头列表，方便在工作流中继续排查。
 - 适合复杂剧情、风格化分镜、需要更强理解能力的文本转镜头任务。
+- 输出格式与默认分镜一致，包含画面、音效、台词、字幕字段。
 - 输出：分镜文本、结构化镜头列表
 
 ### kkStoryboardShotOutput（分镜输出）
 
-- 从分镜节点生成的 `shot_list` 中取出指定一条镜头，并格式化输出。
-- 支持 `完整`、`简洁`、`纯文本`、`分镜` 四种输出格式。
-- 支持 `auto_next`、`group_size`，便于按镜头或按组推进下游工作流。
+- 从分镜节点生成的 `shot_list` 中取出指定镜头，并格式化输出。
+- 支持四种输出格式：
+  - `完整`：带边框的详细格式
+  - `简洁`：精简的一行格式
+  - `纯文本`：仅输出画面描述
+  - `分镜`：标准分镜格式（推荐）
+- 支持 `auto_next`：自动切换到下一个镜头/下一组
+- 支持 `group_size`：分组输出，每 N 个分镜为一组同时输出
 - 可用于逐镜头推进工作流、逐条喂给后续图像或视频节点。
 - 输出：镜头文本、当前索引、总镜头数
 
