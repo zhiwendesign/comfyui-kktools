@@ -1,0 +1,301 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        40,
+        20
+      ],
+      "size": [
+        1080,
+        100
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "🎬 视频处理模块 (video.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。\n合作交流：kkcomfy"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        60,
+        170
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kkVideoFirstLastFrames（视频首尾帧提取）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n从 VIDEO 中提取首帧、尾帧，以及首尾两帧批次。\n\n最小演示\n- 连接任意 VIDEO\n\n输出\n- first_frame\n- last_frame\n- first_last_frames\n- audio"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 3,
+      "type": "kkVideoFirstLastFrames",
+      "pos": [
+        520,
+        170
+      ],
+      "size": [
+        320,
+        100
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "first_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "first_last_frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkVideoFirstLastFrames"
+      }
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        60,
+        480
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kkVideoFramesAdvanced（视频抽帧高级）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n从 VIDEO 中提取全部帧，或按时间间隔抽帧。\n\n模式\n- every_frame\n- interval_seconds\n\n最小演示\n- 连接 VIDEO\n- every_frame 模式查看 fps 和数量\n\n输出\n- images\n- fps\n- extracted_count\n- info"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 5,
+      "type": "kkVideoFramesAdvanced",
+      "pos": [
+        520,
+        480
+      ],
+      "size": [
+        350,
+        105
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "extracted_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkVideoFramesAdvanced"
+      },
+      "widgets_values": [
+        "every_frame",
+        1.0
+      ]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        60,
+        790
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kkMergeVideos（视频合并）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n合并多个 VIDEO 输入并输出单个 VIDEO，同时按顺序拼接每段视频对应的音频。\n\n核心参数\n- size_reference\n- width / height\n- fps\n\n最小演示\n- 连接 video1 / video2\n- size_reference=keep\n\n输出\n- video"
+      ],
+      "color": "#6d5bb3",
+      "bgcolor": "#4a3f7d"
+    },
+    {
+      "id": 7,
+      "type": "kkMergeVideos",
+      "pos": [
+        520,
+        790
+      ],
+      "size": [
+        380,
+        180
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video1",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video2",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video3",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video4",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "video5",
+          "type": "VIDEO",
+          "link": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkMergeVideos"
+      },
+      "widgets_values": [
+        "keep",
+        0,
+        0,
+        0.0
+      ]
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "🎬 视频处理模块 (video.py)",
+      "bounding": [
+        40,
+        110,
+        980,
+        680
+      ],
+      "color": "#6d5bb3",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.75,
+      "offset": [
+        250,
+        80
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    }
+  },
+  "version": 0.4
+}
