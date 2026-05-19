@@ -5,7 +5,7 @@
 
 ## 📋 概述
 
-kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，包含 9 个模块、29 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
+kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，包含 9 个模块、31 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
 
 当前版本的几个统一规则：
 - 节点显示名默认使用 `英文名（中文名）`
@@ -39,6 +39,9 @@ pip install torchaudio
 - 可选依赖：`torchaudio`
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
+- 图像 API 节点：
+  - `kkimage2_灵思API`：在节点内填写灵思 API Key。
+  - `kkimage2_GAPI`：可在节点内填写 `API_Key`，也可设置环境变量 `GAPI_API_KEY`。
 - 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
 ## 🧭 快速上手
@@ -63,7 +66,7 @@ pip install torchaudio
 
 ## 🧩 源码入口
 
-- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)
+- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
 - 数学模块：[nodes/Math.py](nodes/Math.py)
 - 提示词模块：[nodes/prompts.py](nodes/prompts.py)
 - 尺寸模块：[nodes/size.py](nodes/size.py)
@@ -75,7 +78,7 @@ pip install torchaudio
 
 ## 🧾 节点清单
 
-- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`
+- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_GAPI`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
 - 提示词模块：`kkBatchPrompt`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
@@ -89,7 +92,7 @@ pip install torchaudio
 
 ## 🖼️ 图像模块
 
-源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
 
 ### kkPadImageToCanvas（图像填充到画布）
 
@@ -149,6 +152,27 @@ pip install torchaudio
 - 支持 `row-major`、`column-major`、`diagonal` 三种输出顺序，并可设置分块重叠。
 - 遇到奇数尺寸或分块尺寸不一致时，会自动 padding 到统一尺寸，方便继续接入宫格合并或批处理节点。
 - 输出 `merged_tiles` 以及最多 16 个 `tile_xx` 子图，适合大图切块工作流。
+
+### kkimage2_灵思API
+
+- 基于灵思 MindAPI 的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 支持 `gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率和生成数量。
+- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`count`
+- 可选输入：`image`
+- 不接 `image` 时为文生图；接入 `image` 时为参考图图生图。
+- `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
+- 输出：`IMAGE`、`raw_json`
+
+### kkimage2_GAPI
+
+- 基于 GAPI 图像接口的 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 支持 `gpt-image-2-plus`、`gpt-image-2`、`gpt-image-1`、`dall-e-3`，可设置比例、分辨率、画质、风格预设、输出格式和代理。
+- 常用参数：`提示词`、`模型`、`画幅比例`、`分辨率`、`画质`、`风格预设`、`生成张数`、`输出格式`、`API_Key`、`接口地址`
+- 可选输入：`参考图1` 到 `参考图5`
+- 不接参考图时为文生图；接入任意参考图时自动切换为图生图。
+- `代理` 默认留空表示不走系统代理；可填写 `http://127.0.0.1:7890`，或填写 `system` 使用系统环境代理。
+- `参考图上传长边` 用于上传前压缩参考图，默认 `1536`，可降低大图图生图时的接口超时概率。
+- 输出：`IMAGE`、`状态`
 
 ---
 
@@ -390,6 +414,8 @@ pip install torchaudio
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
 - 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
 - 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
+- 图像 API：`kkimage2_灵思API` 和 `kkimage2_GAPI` 需要有效接口 Key；接口异常时会在 `raw_json` 或 `状态` 中提供排查信息。
+- GAPI 代理：`kkimage2_GAPI` 的 `代理` 留空会强制不走代理；如需走本机代理请显式填写代理地址或 `system`。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
 - 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
 - 图像切分与合并：`kkImageTileSplit2x2`、`kkImageSplit`、`kkImageGridMerge` 会在输出 batch 前统一尺寸，减少奇数分辨率导致的 `Sizes of tensors must match` 错误。

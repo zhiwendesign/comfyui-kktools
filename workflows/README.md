@@ -36,6 +36,8 @@
   - `kkImageTileSplit2x2`（图像2x2分块）
   - `kkImageGridMerge`（图像宫格合并）
   - `kkImageSplit`（图像切割）
+  - `kkimage2_灵思API`
+  - `kkimage2_GAPI`
 - **说明**：收录图像处理模块下所有节点的最小演示，每个节点配有说明卡
 
 #### `kkworkflow_math.json`
