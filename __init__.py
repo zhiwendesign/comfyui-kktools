@@ -22,11 +22,13 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkBatchImageLoader": "批量图像加载",
     "kkBatchPrompt": "批量提示词",
     "kkGetImage": "获取图像尺寸",
+    "kkImageAPI": "图像API",
     "kkImageFrame": "图像边框",
     "kkImageSplit": "图像切割",
     "kkImageTileSplit2x2": "图像2x2分块",
     "kkInputNode": "多类型输入",
     "kkLLM": "多厂商LLM",
+    "kkLingsiNativePromptImage": "灵思原生Prompt生图",
     "kkMathExpressionNode": "数学表达式",
     "kkMergeVideos": "视频合并",
     "kkPadImageToCanvas": "图像填充到画布",
@@ -48,9 +50,17 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkVideoFramesAdvanced": "视频抽帧高级",
 }
 
+NODE_DISPLAY_NAME_OVERRIDES = {
+    "kkImageAPI": "kk-image api（图像API）",
+}
+
 
 def build_node_display_name(class_name):
     """统一生成节点显示名：EnglishName（中文名称）"""
+    override_name = NODE_DISPLAY_NAME_OVERRIDES.get(class_name)
+    if override_name:
+        return override_name
+
     chinese_name = NODE_CHINESE_NAME_MAPPINGS.get(class_name)
     if chinese_name:
         return f"{class_name}（{chinese_name}）"
@@ -148,6 +158,7 @@ if not NODE_CLASS_MAPPINGS:
         ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkMergeVideos"]),
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
+        ("lingsi.py", ["kkLingsiNativePromptImage"]),
     ]
     
     for file_name, class_names in nodes_to_load:
