@@ -18,6 +18,7 @@ CHAT_ENDPOINT = "https://www.mindapi.cc/v1/chat/completions"
 IMAGE_BASE_URL = "https://www.mindapi.cc/v1"
 IMAGE_GENERATIONS_ENDPOINT = f"{IMAGE_BASE_URL}/images/generations"
 IMAGE_EDITS_ENDPOINT = f"{IMAGE_BASE_URL}/images/edits"
+BANANA_GENERATE_ENDPOINT = "https://www.mindapi.cc/pt/v1/api/generate"
 ENDPOINT = CHAT_ENDPOINT
 REQUEST_TIMEOUT_SECONDS = 300
 MAX_PIXELS = 8_294_400
@@ -59,13 +60,6 @@ SAFE_1K_SIZES = {
     (3, 1): "1776x592",
     (1, 3): "592x1776",
 }
-LINGSi_GPT_IMAGE_COMPATIBLE_SIZES = [
-    "1024x1024",
-    "1024x1536",
-    "1536x1024",
-    "1024x1792",
-    "1792x1024",
-]
 GPT_IMAGE_SIZE_TABLE = {
     ("1:1",  "1K"): "1024x1024", ("1:1",  "2K"): "2048x2048", ("1:1",  "4K"): "2880x2880",
     ("16:9", "1K"): "1280x720",  ("16:9", "2K"): "2048x1152", ("16:9", "4K"): "3840x2160",
@@ -128,6 +122,10 @@ def is_gpt_image_model(model):
     return re.match(r"^gpt-image-2(?:$|[-_])", str(model or ""), re.I) is not None
 
 
+def is_banana_model(model):
+    return str(model or "") in {"nano-banana-2", "nano-banana-pro"}
+
+
 def size_from_aspect(aspect_ratio, max_edge):
     match = re.match(r"^(\d+)\s*[:x]\s*(\d+)$", str(aspect_ratio or "").strip(), re.I)
     if not match:
@@ -168,33 +166,6 @@ def size_from_image(image):
     if not size:
         return None
     return _fit_dimensions(size[0], size[1])
-
-
-def parse_size(size):
-    match = re.match(r"^(\d+)x(\d+)$", str(size or "").strip(), re.I)
-    if not match:
-        return None
-    return int(match.group(1)), int(match.group(2))
-
-
-def _aspect_ratio_value(aspect_ratio, fallback_size=None):
-    match = re.match(r"^(\d+)\s*[:x]\s*(\d+)$", str(aspect_ratio or "").strip(), re.I)
-    if match:
-        return max(1, int(match.group(1))) / max(1, int(match.group(2)))
-    if fallback_size:
-        return max(1, fallback_size[0]) / max(1, fallback_size[1])
-    return 1.0
-
-
-def lingsi_gpt_image_upstream_size(aspect_ratio, fallback_size=None):
-    target_ratio = _aspect_ratio_value(aspect_ratio, fallback_size)
-
-    def score(size_text):
-        size = parse_size(size_text)
-        ratio = size[0] / size[1]
-        return abs(math.log(max(0.01, ratio) / max(0.01, target_ratio)))
-
-    return min(LINGSi_GPT_IMAGE_COMPATIBLE_SIZES, key=score)
 
 
 def _data_url_summary(value):
@@ -301,6 +272,20 @@ def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_u
         body["extra_body"] = {"google": {"image_config": image_config}}
 
     return body, effective_resolution, size
+
+
+def build_banana_request_body(model, prompt, aspect_ratio, resolution, image_base64=None):
+    images = []
+    if image_base64:
+        images.append(image_base64)
+    return {
+        "model": model,
+        "prompt": str(prompt or ""),
+        "images": images,
+        "aspectRatio": aspect_ratio,
+        "imageSize": resolution,
+        "replyType": "json",
+    }
 
 
 def _http_post_json(api_key, body, stream=False, endpoint=CHAT_ENDPOINT):
@@ -676,6 +661,10 @@ def tensor_to_data_url(image):
     return f"data:image/png;base64,{encoded}"
 
 
+def tensor_to_base64_png(image):
+    return base64.b64encode(tensor_to_png_bytes(image)).decode("ascii")
+
+
 def tensor_to_png_bytes(image):
     import numpy as np
     from PIL import Image
@@ -711,31 +700,15 @@ def image_bytes_to_tensor(image_bytes):
     return tensor
 
 
-def image_bytes_to_tensor_info(image_bytes, target_size=None, target_fit="resize"):
+def image_bytes_to_tensor_info(image_bytes):
     import numpy as np
     import torch
     from PIL import Image, ImageOps
-
-    resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
 
     with Image.open(io.BytesIO(image_bytes)) as pil_image:
         pil_image = ImageOps.exif_transpose(pil_image).convert("RGB")
         original_size = pil_image.size
         resized = False
-        if target_size and pil_image.size != target_size:
-            if target_fit == "cover":
-                target_ratio = max(1, target_size[0]) / max(1, target_size[1])
-                current_ratio = pil_image.size[0] / max(1, pil_image.size[1])
-                if current_ratio > target_ratio:
-                    new_width = max(1, int(round(pil_image.size[1] * target_ratio)))
-                    left = max(0, (pil_image.size[0] - new_width) // 2)
-                    pil_image = pil_image.crop((left, 0, left + new_width, pil_image.size[1]))
-                elif current_ratio < target_ratio:
-                    new_height = max(1, int(round(pil_image.size[0] / target_ratio)))
-                    top = max(0, (pil_image.size[1] - new_height) // 2)
-                    pil_image = pil_image.crop((0, top, pil_image.size[0], top + new_height))
-            pil_image = pil_image.resize(target_size, resampling)
-            resized = True
         final_size = pil_image.size
         array = np.asarray(pil_image).astype(np.float32) / 255.0
     return torch.from_numpy(array)[None,], original_size, final_size, resized
@@ -859,6 +832,7 @@ class kkLingsiNativePromptImage:
 
         has_input_image = image is not None
         is_gpt_image = is_gpt_image_model(model)
+        is_banana = is_banana_model(model)
         effective_resolution = effective_resolution_for_model(model, resolution)
         endpoint = CHAT_ENDPOINT
         route = "/chat/completions"
@@ -870,30 +844,24 @@ class kkLingsiNativePromptImage:
         requested_size = None
         upstream_size = None
         output_target_size = None
-        output_target_tuple = None
-        output_target_fit = "resize"
         candidate_exclude_values = []
         reference_image_bytes = None
         skipped_input_images = []
 
         if is_gpt_image:
-            # 查表获取精确尺寸，fallback 到动态计算
+            # GPT image uses the exact size selected by aspect ratio and resolution.
             if aspect_ratio != "auto":
-                table_size = GPT_IMAGE_SIZE_TABLE.get((aspect_ratio, effective_resolution))
-                if table_size:
-                    requested_size = table_size
-                else:
-                    requested_size = size_from_aspect(aspect_ratio, EDGE_FROM_RESOLUTION[effective_resolution])
+                requested_size = GPT_IMAGE_SIZE_TABLE.get((aspect_ratio, effective_resolution))
+                if not requested_size:
+                    raise RuntimeError(
+                        f"Unsupported gpt-image-2 size mapping: aspect_ratio={aspect_ratio}, "
+                        f"resolution={effective_resolution}"
+                    )
             elif has_input_image:
                 requested_size = size_from_image(image)
 
             if requested_size:
-                fallback_size = _image_tensor_size(image) if has_input_image else None
-                upstream_size = lingsi_gpt_image_upstream_size(aspect_ratio, fallback_size)
-                output_target_size = requested_size
-                output_target_tuple = parse_size(output_target_size)
-                if upstream_size != requested_size:
-                    output_target_fit = "cover"
+                upstream_size = requested_size
 
             if has_input_image:
                 endpoint = IMAGE_EDITS_ENDPOINT
@@ -903,7 +871,7 @@ class kkLingsiNativePromptImage:
                 multipart_fields = {
                     "model": model,
                     "prompt": prompt,
-                    "n": str(count),
+                    "n": "1",
                 }
                 if upstream_size:
                     multipart_fields["size"] = upstream_size
@@ -934,14 +902,32 @@ class kkLingsiNativePromptImage:
                     "headers": _masked_headers("application/json"),
                     "body": _sanitize_debug_value(request_body),
                 }
+        elif is_banana:
+            endpoint = BANANA_GENERATE_ENDPOINT
+            route = "/pt/v1/api/generate"
+            reference_image_base64 = tensor_to_base64_png(image) if has_input_image else None
+            reference_data_url = (
+                f"data:image/png;base64,{reference_image_base64}"
+                if reference_image_base64
+                else None
+            )
+            if reference_image_base64:
+                candidate_exclude_values.append(reference_image_base64)
+            if reference_data_url:
+                candidate_exclude_values.append(reference_data_url)
+                reference_image_bytes = _image_bytes_from_data_url(reference_data_url)
+            request_body = build_banana_request_body(
+                model=model,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                resolution=resolution,
+                image_base64=reference_image_base64,
+            )
+            request_summary = {
+                "headers": _masked_headers("application/json"),
+                "body": _sanitize_debug_value(request_body),
+            }
         else:
-            # Gemini 路径：用 size_from_aspect 动态计算目标输出尺寸
-            if aspect_ratio != "auto":
-                gemini_target = size_from_aspect(aspect_ratio, EDGE_FROM_RESOLUTION[effective_resolution])
-                if gemini_target:
-                    output_target_size = gemini_target
-                    output_target_tuple = parse_size(output_target_size)
-                    output_target_fit = "cover"
             reference_data_url = tensor_to_data_url(image) if has_input_image else None
             if reference_data_url:
                 candidate_exclude_values.append(reference_data_url)
@@ -968,9 +954,8 @@ class kkLingsiNativePromptImage:
         debug = None
         output_tensors = []
         response_items = []
-        target_size = output_target_tuple
-        # 所有路径都通过 n=count 让上游一次性返回 count 张；如果上游不 honor n，最多再补到 count 次
-        loop_count = max(1, count)
+        # Banana and GPT image edits use one request per image; GPT image generations can ask upstream for count.
+        loop_count = count if (is_banana or (is_gpt_image and has_input_image)) else 1
 
         print(
             f"[Lingsi] model={model} route={route} aspect_ratio={aspect_ratio} "
@@ -1024,13 +1009,7 @@ class kkLingsiNativePromptImage:
                             })
                             image_fetch_attempts.extend(attempts)
                             continue
-                        image_tensor, original_size, final_size, resized = image_bytes_to_tensor_info(
-                            image_bytes,
-                            target_size=target_size,
-                            target_fit=output_target_fit,
-                        )
-                        if target_size is None:
-                            target_size = final_size
+                        image_tensor, original_size, final_size, resized = image_bytes_to_tensor_info(image_bytes)
                         output_tensors.append(image_tensor)
                         response_items.append({
                             "index": len(output_tensors),
@@ -1080,6 +1059,43 @@ class kkLingsiNativePromptImage:
                     raise RuntimeError(_json_dumps(debug))
 
             print(f"[Lingsi] done, collected {len(output_tensors)} image(s)")
+
+            output_sizes = {
+                (item["output_size"]["width"], item["output_size"]["height"])
+                for item in response_items
+            }
+            if len(output_sizes) > 1:
+                debug = _debug_package(
+                    ok=False,
+                    model=model,
+                    requested_resolution=resolution,
+                    effective_resolution=effective_resolution,
+                    aspect_ratio=aspect_ratio,
+                    has_input_image=has_input_image,
+                    request_body=request_body,
+                    endpoint=endpoint,
+                    route=route,
+                    request_summary=request_summary,
+                    requested_size=requested_size,
+                    upstream_size=upstream_size,
+                    output_target_size=output_target_size,
+                    requested_count=count,
+                    generated_count=len(output_tensors),
+                    response_payload=response_payload,
+                    parsed_images=candidates,
+                    skipped_images=skipped_input_images,
+                    responses=response_items,
+                    error="API returned images with mismatched sizes; local resize is disabled",
+                )
+                debug["returned_sizes"] = [
+                    {
+                        "index": item["index"],
+                        "width": item["output_size"]["width"],
+                        "height": item["output_size"]["height"],
+                    }
+                    for item in response_items
+                ]
+                raise RuntimeError(_json_dumps(debug))
 
             image_batch = concat_image_tensors(output_tensors)
             debug = _debug_package(
