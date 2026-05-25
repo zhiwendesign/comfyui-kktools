@@ -1,3 +1,8 @@
+"""
+ComfyUI Custom Node: kkLingsiNativePromptImage
+灵思原生 Prompt 生图节点 - 调用 MindAPI 生成图像
+"""
+
 import base64
 import io
 import json
@@ -13,10 +18,9 @@ CHAT_ENDPOINT = "https://www.mindapi.cc/v1/chat/completions"
 IMAGE_BASE_URL = "https://www.mindapi.cc/v1"
 IMAGE_GENERATIONS_ENDPOINT = f"{IMAGE_BASE_URL}/images/generations"
 IMAGE_EDITS_ENDPOINT = f"{IMAGE_BASE_URL}/images/edits"
+BANANA_GENERATE_ENDPOINT = "https://www.mindapi.cc/pt/v1/api/generate"
 ENDPOINT = CHAT_ENDPOINT
 REQUEST_TIMEOUT_SECONDS = 300
-REQUEST_RETRY_DELAYS_SECONDS = [2, 5, 10]
-RETRYABLE_HTTP_STATUS = {429, 500, 502, 503, 504}
 MAX_PIXELS = 8_294_400
 
 MODELS = [
@@ -56,13 +60,6 @@ SAFE_1K_SIZES = {
     (3, 1): "1776x592",
     (1, 3): "592x1776",
 }
-LINGSi_GPT_IMAGE_COMPATIBLE_SIZES = [
-    "1024x1024",
-    "1024x1536",
-    "1536x1024",
-    "1024x1792",
-    "1792x1024",
-]
 GPT_IMAGE_SIZE_TABLE = {
     ("1:1",  "1K"): "1024x1024", ("1:1",  "2K"): "2048x2048", ("1:1",  "4K"): "2880x2880",
     ("16:9", "1K"): "1280x720",  ("16:9", "2K"): "2048x1152", ("16:9", "4K"): "3840x2160",
@@ -125,6 +122,10 @@ def is_gpt_image_model(model):
     return re.match(r"^gpt-image-2(?:$|[-_])", str(model or ""), re.I) is not None
 
 
+def is_banana_model(model):
+    return str(model or "") in {"nano-banana-2", "nano-banana-pro"}
+
+
 def size_from_aspect(aspect_ratio, max_edge):
     match = re.match(r"^(\d+)\s*[:x]\s*(\d+)$", str(aspect_ratio or "").strip(), re.I)
     if not match:
@@ -165,33 +166,6 @@ def size_from_image(image):
     if not size:
         return None
     return _fit_dimensions(size[0], size[1])
-
-
-def parse_size(size):
-    match = re.match(r"^(\d+)x(\d+)$", str(size or "").strip(), re.I)
-    if not match:
-        return None
-    return int(match.group(1)), int(match.group(2))
-
-
-def _aspect_ratio_value(aspect_ratio, fallback_size=None):
-    match = re.match(r"^(\d+)\s*[:x]\s*(\d+)$", str(aspect_ratio or "").strip(), re.I)
-    if match:
-        return max(1, int(match.group(1))) / max(1, int(match.group(2)))
-    if fallback_size:
-        return max(1, fallback_size[0]) / max(1, fallback_size[1])
-    return 1.0
-
-
-def lingsi_gpt_image_upstream_size(aspect_ratio, fallback_size=None):
-    target_ratio = _aspect_ratio_value(aspect_ratio, fallback_size)
-
-    def score(size_text):
-        size = parse_size(size_text)
-        ratio = size[0] / size[1]
-        return abs(math.log(max(0.01, ratio) / max(0.01, target_ratio)))
-
-    return min(LINGSi_GPT_IMAGE_COMPATIBLE_SIZES, key=score)
 
 
 def _data_url_summary(value):
@@ -267,12 +241,13 @@ def effective_resolution_for_model(model, resolution):
     return resolution
 
 
-def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_url=None):
+def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_url=None, count=1):
     effective_resolution = effective_resolution_for_model(model, resolution)
     content = _build_user_content(prompt, aspect_ratio, reference_data_url)
     body = {
         "model": model,
         "messages": [{"role": "user", "content": content}],
+        "n": max(1, int(count or 1)),
     }
 
     size = None
@@ -299,6 +274,20 @@ def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_u
     return body, effective_resolution, size
 
 
+def build_banana_request_body(model, prompt, aspect_ratio, resolution, image_base64=None):
+    images = []
+    if image_base64:
+        images.append(image_base64)
+    return {
+        "model": model,
+        "prompt": str(prompt or ""),
+        "images": images,
+        "aspectRatio": aspect_ratio,
+        "imageSize": resolution,
+        "replyType": "json",
+    }
+
+
 def _http_post_json(api_key, body, stream=False, endpoint=CHAT_ENDPOINT):
     data = json.dumps(body, ensure_ascii=False).encode("utf-8")
     headers = _headers(
@@ -306,43 +295,24 @@ def _http_post_json(api_key, body, stream=False, endpoint=CHAT_ENDPOINT):
         "application/json",
         "text/event-stream" if stream else "application/json",
     )
-    attempts = []
 
-    for attempt_index in range(len(REQUEST_RETRY_DELAYS_SECONDS) + 1):
-        request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-                content_type = response.headers.get("Content-Type", "")
-                status = getattr(response, "status", None) or response.getcode()
-                response_headers = dict(response.headers.items())
-                if stream and "json" not in content_type.lower():
-                    return _read_sse_response(response, status, response_headers)
-                return _read_json_response(response, status, response_headers)
-        except urllib.error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", "replace")
-            attempts.append({
-                "attempt": attempt_index + 1,
-                "type": "http",
-                "status": exc.code,
-                "body": raw,
-            })
-            if exc.code in RETRYABLE_HTTP_STATUS and attempt_index < len(REQUEST_RETRY_DELAYS_SECONDS):
-                time.sleep(REQUEST_RETRY_DELAYS_SECONDS[attempt_index])
-                continue
-            raise MindAPIHttpError(exc.code, raw, attempts) from exc
-        except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
-            attempts.append({
-                "attempt": attempt_index + 1,
-                "error": str(exc),
-            })
-            if attempt_index >= len(REQUEST_RETRY_DELAYS_SECONDS):
-                message = (
-                    "MindAPI request failed after "
-                    f"{len(attempts)} attempts: {exc}. "
-                    "This is a network/TLS connection reset before a valid API response."
-                )
-                raise MindAPINetworkError(message, attempts) from exc
-            time.sleep(REQUEST_RETRY_DELAYS_SECONDS[attempt_index])
+    request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            content_type = response.headers.get("Content-Type", "")
+            status = getattr(response, "status", None) or response.getcode()
+            response_headers = dict(response.headers.items())
+            if stream and "json" not in content_type.lower():
+                return _read_sse_response(response, status, response_headers)
+            return _read_json_response(response, status, response_headers)
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", "replace")
+        attempts = [{"attempt": 1, "type": "http", "status": exc.code, "body": raw}]
+        raise MindAPIHttpError(exc.code, raw, attempts) from exc
+    except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
+        attempts = [{"attempt": 1, "error": str(exc)}]
+        message = f"MindAPI request failed: {exc}."
+        raise MindAPINetworkError(message, attempts) from exc
 
 
 def _multipart_body(fields, files):
@@ -378,39 +348,20 @@ def _multipart_body(fields, files):
 def _http_post_multipart(api_key, endpoint, fields, files):
     boundary, data = _multipart_body(fields, files)
     headers = _headers(api_key, f"multipart/form-data; boundary={boundary}", "application/json")
-    attempts = []
 
-    for attempt_index in range(len(REQUEST_RETRY_DELAYS_SECONDS) + 1):
-        request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-                status = getattr(response, "status", None) or response.getcode()
-                return _read_json_response(response, status, dict(response.headers.items()))
-        except urllib.error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", "replace")
-            attempts.append({
-                "attempt": attempt_index + 1,
-                "type": "http",
-                "status": exc.code,
-                "body": raw,
-            })
-            if exc.code in RETRYABLE_HTTP_STATUS and attempt_index < len(REQUEST_RETRY_DELAYS_SECONDS):
-                time.sleep(REQUEST_RETRY_DELAYS_SECONDS[attempt_index])
-                continue
-            raise MindAPIHttpError(exc.code, raw, attempts) from exc
-        except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
-            attempts.append({
-                "attempt": attempt_index + 1,
-                "error": str(exc),
-            })
-            if attempt_index >= len(REQUEST_RETRY_DELAYS_SECONDS):
-                message = (
-                    "MindAPI request failed after "
-                    f"{len(attempts)} attempts: {exc}. "
-                    "This is a network/TLS connection reset before a valid API response."
-                )
-                raise MindAPINetworkError(message, attempts) from exc
-            time.sleep(REQUEST_RETRY_DELAYS_SECONDS[attempt_index])
+    request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            status = getattr(response, "status", None) or response.getcode()
+            return _read_json_response(response, status, dict(response.headers.items()))
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", "replace")
+        attempts = [{"attempt": 1, "type": "http", "status": exc.code, "body": raw}]
+        raise MindAPIHttpError(exc.code, raw, attempts) from exc
+    except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
+        attempts = [{"attempt": 1, "error": str(exc)}]
+        message = f"MindAPI request failed: {exc}."
+        raise MindAPINetworkError(message, attempts) from exc
 
 
 def _read_json_response(response, status, headers):
@@ -529,11 +480,36 @@ def _extract_stream_piece(data):
     return ""
 
 
-def _push_candidate(candidates, seen, value, source):
+def _candidate_exclusion_set(values):
+    excluded = set()
+    for value in values or []:
+        text = str(value or "").strip()
+        if not text:
+            continue
+        excluded.add(text)
+        if text.startswith("data:image/") and "," in text:
+            excluded.add(text.split(",", 1)[1].strip())
+    return excluded
+
+
+def _is_excluded_candidate(value, excluded):
+    text = str(value or "").strip()
+    if not text:
+        return False
+    if text in excluded:
+        return True
+    if text.startswith("data:image/") and "," in text:
+        return text.split(",", 1)[1].strip() in excluded
+    return False
+
+
+def _push_candidate(candidates, seen, value, source, excluded=None):
     if not value:
         return
     text = str(value).strip()
     if not text or text in seen:
+        return
+    if _is_excluded_candidate(text, excluded or set()):
         return
     if not (text.startswith("data:image/") or text.startswith("http://") or text.startswith("https://")):
         return
@@ -545,23 +521,23 @@ def _push_candidate(candidates, seen, value, source):
     })
 
 
-def _extract_from_text(text, candidates, seen, source):
+def _extract_from_text(text, candidates, seen, source, excluded=None):
     value = str(text or "")
     for match in re.finditer(r"data:image/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=_-]+", value, re.I):
-        _push_candidate(candidates, seen, match.group(0), source)
+        _push_candidate(candidates, seen, match.group(0), source, excluded)
 
     for match in re.finditer(r"!\[[^\]]*\]\(([^)\s]+)\)", value, re.I):
-        _push_candidate(candidates, seen, match.group(1), source)
+        _push_candidate(candidates, seen, match.group(1), source, excluded)
 
     urls = []
     for match in re.finditer(r"https?://[^\s)<>'\"]+", value, re.I):
         url = match.group(0).rstrip(".,;:!?)]")
         urls.append(url)
         if re.search(r"\.(png|jpe?g|webp|gif|bmp)(\?|$)", url, re.I):
-            _push_candidate(candidates, seen, url, source)
+            _push_candidate(candidates, seen, url, source, excluded)
 
     if not candidates and urls:
-        _push_candidate(candidates, seen, urls[-1], source)
+        _push_candidate(candidates, seen, urls[-1], source, excluded)
 
 
 def _maybe_data_url_from_base64(value, mime="image/png"):
@@ -573,49 +549,50 @@ def _maybe_data_url_from_base64(value, mime="image/png"):
     return f"data:{mime};base64,{text}"
 
 
-def _walk_for_images(value, candidates, seen, source="response"):
+def _walk_for_images(value, candidates, seen, source="response", excluded=None):
     if isinstance(value, str):
-        _extract_from_text(value, candidates, seen, source)
+        _extract_from_text(value, candidates, seen, source, excluded)
         return
     if isinstance(value, list):
         for index, item in enumerate(value):
-            _walk_for_images(item, candidates, seen, f"{source}[{index}]")
+            _walk_for_images(item, candidates, seen, f"{source}[{index}]", excluded)
         return
     if not isinstance(value, dict):
         return
 
     image_url = value.get("image_url")
     if isinstance(image_url, dict):
-        _push_candidate(candidates, seen, image_url.get("url"), f"{source}.image_url.url")
+        _push_candidate(candidates, seen, image_url.get("url"), f"{source}.image_url.url", excluded)
     elif isinstance(image_url, str):
-        _push_candidate(candidates, seen, image_url, f"{source}.image_url")
+        _push_candidate(candidates, seen, image_url, f"{source}.image_url", excluded)
 
     for key in ("url", "output_url"):
         if isinstance(value.get(key), str):
-            _push_candidate(candidates, seen, value[key], f"{source}.{key}")
+            _push_candidate(candidates, seen, value[key], f"{source}.{key}", excluded)
 
     for key in ("b64_json", "base64", "image_base64"):
         if isinstance(value.get(key), str):
             data_url = value[key] if value[key].startswith("data:image/") else _maybe_data_url_from_base64(value[key])
-            _push_candidate(candidates, seen, data_url, f"{source}.{key}")
+            _push_candidate(candidates, seen, data_url, f"{source}.{key}", excluded)
 
     inline_data = value.get("inline_data") or value.get("inlineData")
     if isinstance(inline_data, dict) and inline_data.get("data"):
         mime = inline_data.get("mime_type") or inline_data.get("mimeType") or "image/png"
         data_url = _maybe_data_url_from_base64(inline_data.get("data"), mime)
-        _push_candidate(candidates, seen, data_url, f"{source}.inline_data")
+        _push_candidate(candidates, seen, data_url, f"{source}.inline_data", excluded)
 
     for key, item in value.items():
-        _walk_for_images(item, candidates, seen, f"{source}.{key}")
+        _walk_for_images(item, candidates, seen, f"{source}.{key}", excluded)
 
 
-def extract_image_candidates(response_payload):
+def extract_image_candidates(response_payload, exclude_values=None):
     candidates = []
     seen = set()
-    _walk_for_images(response_payload, candidates, seen)
+    excluded = _candidate_exclusion_set(exclude_values)
+    _walk_for_images(response_payload, candidates, seen, excluded=excluded)
     content_text = response_payload.get("content_text") if isinstance(response_payload, dict) else ""
     if content_text:
-        _extract_from_text(content_text, candidates, seen, "content_text")
+        _extract_from_text(content_text, candidates, seen, "content_text", excluded)
     return candidates
 
 
@@ -684,6 +661,10 @@ def tensor_to_data_url(image):
     return f"data:image/png;base64,{encoded}"
 
 
+def tensor_to_base64_png(image):
+    return base64.b64encode(tensor_to_png_bytes(image)).decode("ascii")
+
+
 def tensor_to_png_bytes(image):
     import numpy as np
     from PIL import Image
@@ -719,31 +700,15 @@ def image_bytes_to_tensor(image_bytes):
     return tensor
 
 
-def image_bytes_to_tensor_info(image_bytes, target_size=None, target_fit="resize"):
+def image_bytes_to_tensor_info(image_bytes):
     import numpy as np
     import torch
     from PIL import Image, ImageOps
-
-    resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
 
     with Image.open(io.BytesIO(image_bytes)) as pil_image:
         pil_image = ImageOps.exif_transpose(pil_image).convert("RGB")
         original_size = pil_image.size
         resized = False
-        if target_size and pil_image.size != target_size:
-            if target_fit == "cover":
-                target_ratio = max(1, target_size[0]) / max(1, target_size[1])
-                current_ratio = pil_image.size[0] / max(1, pil_image.size[1])
-                if current_ratio > target_ratio:
-                    new_width = max(1, int(round(pil_image.size[1] * target_ratio)))
-                    left = max(0, (pil_image.size[0] - new_width) // 2)
-                    pil_image = pil_image.crop((left, 0, left + new_width, pil_image.size[1]))
-                elif current_ratio < target_ratio:
-                    new_height = max(1, int(round(pil_image.size[0] / target_ratio)))
-                    top = max(0, (pil_image.size[1] - new_height) // 2)
-                    pil_image = pil_image.crop((0, top, pil_image.size[0], top + new_height))
-            pil_image = pil_image.resize(target_size, resampling)
-            resized = True
         final_size = pil_image.size
         array = np.asarray(pil_image).astype(np.float32) / 255.0
     return torch.from_numpy(array)[None,], original_size, final_size, resized
@@ -785,6 +750,7 @@ def _debug_package(
     response_payload=None,
     parsed_images=None,
     selected_image=None,
+    skipped_images=None,
     responses=None,
     error=None,
 ):
@@ -808,6 +774,7 @@ def _debug_package(
         "generated_count": generated_count,
         "parsed_images": [_candidate_debug(item) for item in (parsed_images or [])],
         "selected_image": _candidate_debug(selected_image) if selected_image else None,
+        "skipped_images": skipped_images or [],
         "responses": responses or [],
         "error": error,
     }
@@ -818,7 +785,7 @@ def _debug_package(
     return package
 
 
-class kkimage2_灵思API:
+class kkLingsiNativePromptImage:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -826,7 +793,7 @@ class kkimage2_灵思API:
                 "api_key": ("STRING", {"default": "", "multiline": False}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
                 "model": (MODELS, {"default": "gpt-image-2"}),
-                "aspect_ratio": (ASPECT_RATIOS, {"default": "1:1"}),
+                "aspect_ratio": (ASPECT_RATIOS, {"default": "auto"}),
                 "resolution": (RESOLUTIONS, {"default": "1K"}),
                 "count": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
             },
@@ -838,7 +805,7 @@ class kkimage2_灵思API:
     RETURN_TYPES = ("IMAGE", "STRING")
     RETURN_NAMES = ("image", "raw_json")
     FUNCTION = "generate"
-    CATEGORY = "🌟kktools/图像"
+    CATEGORY = "🌟kktools/AI生图"
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -848,7 +815,7 @@ class kkimage2_灵思API:
         api_key = str(api_key or "").strip()
         prompt = str(prompt or "").strip()
         model = str(model or "").strip()
-        aspect_ratio = str(aspect_ratio or "1:1").strip()
+        aspect_ratio = str(aspect_ratio or "auto").strip()
         resolution = str(resolution or "1K").strip().upper()
         count = max(1, min(12, int(count or 1)))
 
@@ -865,6 +832,7 @@ class kkimage2_灵思API:
 
         has_input_image = image is not None
         is_gpt_image = is_gpt_image_model(model)
+        is_banana = is_banana_model(model)
         effective_resolution = effective_resolution_for_model(model, resolution)
         endpoint = CHAT_ENDPOINT
         route = "/chat/completions"
@@ -876,32 +844,30 @@ class kkimage2_灵思API:
         requested_size = None
         upstream_size = None
         output_target_size = None
-        output_target_tuple = None
-        output_target_fit = "resize"
+        candidate_exclude_values = []
+        reference_image_bytes = None
+        skipped_input_images = []
 
         if is_gpt_image:
-            # 查表获取精确尺寸，fallback 到动态计算
+            # GPT image uses the exact size selected by aspect ratio and resolution.
             if aspect_ratio != "auto":
-                table_size = GPT_IMAGE_SIZE_TABLE.get((aspect_ratio, effective_resolution))
-                if table_size:
-                    requested_size = table_size
-                else:
-                    requested_size = size_from_aspect(aspect_ratio, EDGE_FROM_RESOLUTION[effective_resolution])
+                requested_size = GPT_IMAGE_SIZE_TABLE.get((aspect_ratio, effective_resolution))
+                if not requested_size:
+                    raise RuntimeError(
+                        f"Unsupported gpt-image-2 size mapping: aspect_ratio={aspect_ratio}, "
+                        f"resolution={effective_resolution}"
+                    )
             elif has_input_image:
                 requested_size = size_from_image(image)
 
             if requested_size:
-                fallback_size = _image_tensor_size(image) if has_input_image else None
-                upstream_size = lingsi_gpt_image_upstream_size(aspect_ratio, fallback_size)
-                output_target_size = requested_size
-                output_target_tuple = parse_size(output_target_size)
-                if upstream_size != requested_size:
-                    output_target_fit = "cover"
+                upstream_size = requested_size
 
             if has_input_image:
                 endpoint = IMAGE_EDITS_ENDPOINT
                 route = "/images/edits"
                 image_png = tensor_to_png_bytes(image)
+                reference_image_bytes = image_png
                 multipart_fields = {
                     "model": model,
                     "prompt": prompt,
@@ -936,21 +902,43 @@ class kkimage2_灵思API:
                     "headers": _masked_headers("application/json"),
                     "body": _sanitize_debug_value(request_body),
                 }
+        elif is_banana:
+            endpoint = BANANA_GENERATE_ENDPOINT
+            route = "/pt/v1/api/generate"
+            reference_image_base64 = tensor_to_base64_png(image) if has_input_image else None
+            reference_data_url = (
+                f"data:image/png;base64,{reference_image_base64}"
+                if reference_image_base64
+                else None
+            )
+            if reference_image_base64:
+                candidate_exclude_values.append(reference_image_base64)
+            if reference_data_url:
+                candidate_exclude_values.append(reference_data_url)
+                reference_image_bytes = _image_bytes_from_data_url(reference_data_url)
+            request_body = build_banana_request_body(
+                model=model,
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                resolution=resolution,
+                image_base64=reference_image_base64,
+            )
+            request_summary = {
+                "headers": _masked_headers("application/json"),
+                "body": _sanitize_debug_value(request_body),
+            }
         else:
-            # Gemini 路径：用 size_from_aspect 动态计算目标输出尺寸
-            if aspect_ratio != "auto":
-                gemini_target = size_from_aspect(aspect_ratio, EDGE_FROM_RESOLUTION[effective_resolution])
-                if gemini_target:
-                    output_target_size = gemini_target
-                    output_target_tuple = parse_size(output_target_size)
-                    output_target_fit = "cover"
             reference_data_url = tensor_to_data_url(image) if has_input_image else None
+            if reference_data_url:
+                candidate_exclude_values.append(reference_data_url)
+                reference_image_bytes = _image_bytes_from_data_url(reference_data_url)
             request_body, effective_resolution, _size = build_request_body(
                 model=model,
                 prompt=prompt,
                 aspect_ratio=aspect_ratio,
                 resolution=resolution,
                 reference_data_url=reference_data_url,
+                count=count,
             )
             request_stream = bool(request_body.get("stream"))
             request_summary = {
@@ -966,22 +954,25 @@ class kkimage2_灵思API:
         debug = None
         output_tensors = []
         response_items = []
-        target_size = output_target_tuple
-        # gpt-image-2 纯文生图：一次请求 n=count；其他路径：循环 count 次
-        use_batch_request = is_gpt_image and not has_input_image
-        loop_count = 1 if use_batch_request else count
+        # Banana and GPT image edits use one request per image; GPT image generations can ask upstream for count.
+        loop_count = count if (is_banana or (is_gpt_image and has_input_image)) else 1
 
         print(
             f"[Lingsi] model={model} route={route} aspect_ratio={aspect_ratio} "
             f"resolution={resolution} eff_resolution={effective_resolution} "
             f"requested_size={requested_size} upstream_size={upstream_size} "
             f"output_target={output_target_size} count={count} "
-            f"batch={use_batch_request} has_image={has_input_image}"
+            f"has_image={has_input_image}"
         )
 
         try:
             for index in range(loop_count):
-                print(f"[Lingsi] request {index + 1}/{loop_count} route={route}")
+                if len(output_tensors) >= count:
+                    break
+                print(
+                    f"[Lingsi] iter {index + 1}/{loop_count} route={route} "
+                    f"collected={len(output_tensors)}/{count}"
+                )
                 if is_gpt_image and has_input_image:
                     response_payload = _http_post_multipart(
                         api_key=api_key,
@@ -996,21 +987,29 @@ class kkimage2_灵思API:
                         stream=request_stream,
                         endpoint=endpoint,
                     )
-                candidates = extract_image_candidates(response_payload)
+                candidates = extract_image_candidates(
+                    response_payload,
+                    exclude_values=candidate_exclude_values,
+                )
                 print(f"[Lingsi] got {len(candidates)} image candidate(s)")
 
                 collected_in_response = 0
+                image_fetch_attempts = []
                 for candidate in candidates:
                     attempts = []
                     try:
                         image_bytes = image_bytes_from_candidate(candidate, api_key)
-                        image_tensor, original_size, final_size, resized = image_bytes_to_tensor_info(
-                            image_bytes,
-                            target_size=target_size,
-                            target_fit=output_target_fit,
-                        )
-                        if target_size is None:
-                            target_size = final_size
+                        if reference_image_bytes and image_bytes == reference_image_bytes:
+                            skipped = _candidate_debug(candidate)
+                            skipped["reason"] = "matches_input_image"
+                            skipped_input_images.append(skipped)
+                            attempts.append({
+                                "candidate": _candidate_debug(candidate),
+                                "skipped": "matches_input_image",
+                            })
+                            image_fetch_attempts.extend(attempts)
+                            continue
+                        image_tensor, original_size, final_size, resized = image_bytes_to_tensor_info(image_bytes)
                         output_tensors.append(image_tensor)
                         response_items.append({
                             "index": len(output_tensors),
@@ -1023,10 +1022,7 @@ class kkimage2_灵思API:
                             "image_fetch_attempts": attempts,
                         })
                         collected_in_response += 1
-                        # 非批量模式：每次请求只取一张
-                        if not use_batch_request:
-                            break
-                        # 批量模式：取够 count 张就停
+                        # 收够 count 张就停
                         if len(output_tensors) >= count:
                             break
                     except Exception as exc:
@@ -1034,6 +1030,7 @@ class kkimage2_灵思API:
                             "candidate": _candidate_debug(candidate),
                             "error": str(exc),
                         })
+                        image_fetch_attempts.extend(attempts)
 
                 if collected_in_response == 0:
                     debug = _debug_package(
@@ -1054,13 +1051,51 @@ class kkimage2_灵思API:
                         generated_count=len(output_tensors),
                         response_payload=response_payload,
                         parsed_images=candidates,
+                        skipped_images=skipped_input_images,
                         responses=response_items,
                         error=f"No usable image was found in MindAPI response #{index + 1}.",
                     )
-                    debug["image_fetch_attempts"] = attempts
+                    debug["image_fetch_attempts"] = image_fetch_attempts
                     raise RuntimeError(_json_dumps(debug))
 
             print(f"[Lingsi] done, collected {len(output_tensors)} image(s)")
+
+            output_sizes = {
+                (item["output_size"]["width"], item["output_size"]["height"])
+                for item in response_items
+            }
+            if len(output_sizes) > 1:
+                debug = _debug_package(
+                    ok=False,
+                    model=model,
+                    requested_resolution=resolution,
+                    effective_resolution=effective_resolution,
+                    aspect_ratio=aspect_ratio,
+                    has_input_image=has_input_image,
+                    request_body=request_body,
+                    endpoint=endpoint,
+                    route=route,
+                    request_summary=request_summary,
+                    requested_size=requested_size,
+                    upstream_size=upstream_size,
+                    output_target_size=output_target_size,
+                    requested_count=count,
+                    generated_count=len(output_tensors),
+                    response_payload=response_payload,
+                    parsed_images=candidates,
+                    skipped_images=skipped_input_images,
+                    responses=response_items,
+                    error="API returned images with mismatched sizes; local resize is disabled",
+                )
+                debug["returned_sizes"] = [
+                    {
+                        "index": item["index"],
+                        "width": item["output_size"]["width"],
+                        "height": item["output_size"]["height"],
+                    }
+                    for item in response_items
+                ]
+                raise RuntimeError(_json_dumps(debug))
 
             image_batch = concat_image_tensors(output_tensors)
             debug = _debug_package(
@@ -1081,6 +1116,7 @@ class kkimage2_灵思API:
                 generated_count=len(output_tensors),
                 parsed_images=candidates,
                 selected_image=response_items[0]["selected_image"] if response_items else None,
+                skipped_images=skipped_input_images,
                 responses=response_items,
             )
             return image_batch, _json_dumps(debug)
@@ -1103,6 +1139,7 @@ class kkimage2_灵思API:
                 generated_count=len(output_tensors),
                 response_payload={"status": exc.status, "body": exc.body},
                 parsed_images=candidates,
+                skipped_images=skipped_input_images,
                 responses=response_items,
                 error=str(exc),
             )
@@ -1127,6 +1164,7 @@ class kkimage2_灵思API:
                 generated_count=len(output_tensors),
                 response_payload=response_payload,
                 parsed_images=candidates,
+                skipped_images=skipped_input_images,
                 responses=response_items,
                 error=str(exc),
             )
@@ -1153,6 +1191,7 @@ class kkimage2_灵思API:
                 generated_count=len(output_tensors),
                 response_payload=response_payload,
                 parsed_images=candidates,
+                skipped_images=skipped_input_images,
                 responses=response_items,
                 error=str(exc),
             )
@@ -1161,10 +1200,16 @@ class kkimage2_灵思API:
             raise RuntimeError(_json_dumps(debug)) from exc
 
 
+class kkimage2_灵思API(kkLingsiNativePromptImage):
+    pass
+
+
 NODE_CLASS_MAPPINGS = {
+    "kkLingsiNativePromptImage": kkLingsiNativePromptImage,
     "kkimage2_灵思API": kkimage2_灵思API,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "kkLingsiNativePromptImage": "kkLingsiNativePromptImage（灵思原生Prompt生图）",
     "kkimage2_灵思API": "kkimage2_灵思API",
 }

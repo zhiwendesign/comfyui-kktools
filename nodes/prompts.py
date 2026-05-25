@@ -51,6 +51,14 @@ PROVIDER_MODEL_OPTIONS = {
     ],
 }
 
+LEGACY_SYSTEM_MESSAGES = {
+    "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
+}
+LEGACY_SYSTEM_MESSAGE_MARKERS = (
+    "AI绘画提示词优化专家",
+    "请根据用户要求优化提示词",
+)
+
 
 class kkBatchPrompt:
     """批量提示词节点 - 用于批量加载和处理提示词"""
@@ -215,9 +223,9 @@ class kkLLM:
                     "placeholder": "留空使用对应厂商默认 API 地址"
                 }),
                 "system_message": ("STRING", {
-                    "default": "你是一个专业的AI绘画提示词优化专家。请根据用户要求优化提示词，直接输出优化后的提示词，不要添加任何解释或标记。",
+                    "default": "",
                     "multiline": True,
-                    "placeholder": "输入系统角色设定"
+                    "placeholder": "可选：输入系统角色设定；留空则不发送 system 消息"
                 }),
             },
             "optional": {
@@ -276,8 +284,8 @@ class kkLLM:
             if not api_key.strip():
                 return (base_prompt, base_prompt, "警告: 未提供API密钥，返回原始提示词")
             
-            # 构建用户消息
-            user_message = self._build_user_message(base_prompt, max_length)
+            # 原样发送用户输入，不额外拼接任何提示词指令。
+            user_message = base_prompt
             
             # 调用对应 LLM API
             optimized_prompt = self._call_llm_api(
@@ -304,10 +312,6 @@ class kkLLM:
             error_msg = f"优化提示词时出错: {str(e)}"
             print(f"kkLLM Error: {error_msg}")
             return (base_prompt, base_prompt, f"错误: {error_msg}")
-    
-    def _build_user_message(self, base_prompt, max_length):
-        """构建用户消息"""
-        return f"请优化以下AI绘画提示词，使其更加详细、具有表现力，包含适当的技术细节和画质描述，保持核心内容不变但提升整体质量。输出长度不超过{max_length}字符：\n\n{base_prompt}"
     
     @classmethod
     def _get_provider_models(cls, provider):
@@ -348,6 +352,14 @@ class kkLLM:
 
         raise ValueError(f"不支持的 provider: {provider}")
 
+    def _normalize_system_message(self, system_message):
+        text = str(system_message or "").strip()
+        if text in LEGACY_SYSTEM_MESSAGES:
+            return ""
+        if all(marker in text for marker in LEGACY_SYSTEM_MESSAGE_MARKERS):
+            return ""
+        return text
+
     def _parse_openai_compatible_content(self, result):
         content = result["choices"][0]["message"]["content"]
         if isinstance(content, list):
@@ -381,19 +393,13 @@ class kkLLM:
         try:
             resolved_model = self._resolve_model(provider, model, custom_model)
             url = self._resolve_base_url(provider, base_url, resolved_model)
+            system_message = self._normalize_system_message(system_message)
 
             if provider == "gemini":
                 headers = {
                     "Content-Type": "application/json",
                 }
                 payload = {
-                    "system_instruction": {
-                        "parts": [
-                            {
-                                "text": system_message
-                            }
-                        ]
-                    },
                     "contents": [
                         {
                             "role": "user",
@@ -409,6 +415,14 @@ class kkLLM:
                         "maxOutputTokens": max_length,
                     }
                 }
+                if str(system_message or "").strip():
+                    payload["system_instruction"] = {
+                        "parts": [
+                            {
+                                "text": system_message
+                            }
+                        ]
+                    }
                 response = requests.post(
                     url,
                     headers=headers,
@@ -421,18 +435,19 @@ class kkLLM:
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {api_key}"
                 }
+                messages = []
+                if str(system_message or "").strip():
+                    messages.append({
+                        "role": "system",
+                        "content": system_message
+                    })
+                messages.append({
+                    "role": "user",
+                    "content": user_message
+                })
                 payload = {
                     "model": resolved_model,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": system_message
-                        },
-                        {
-                            "role": "user",
-                            "content": user_message
-                        }
-                    ],
+                    "messages": messages,
                     "max_tokens": max_length,
                     "temperature": temperature,
                     "stream": False
@@ -478,17 +493,10 @@ class kkLLM:
         """本地提示词优化备选方案"""
         try:
             # 基础清理和简单优化
-            optimized = ' '.join(base_prompt.split())
-            
-            # 添加通用质量提升关键词
-            optimized += ", masterpiece, best quality, highly detailed, high resolution, 8K"
-            
-            # 移除可能的重复逗号
-            optimized = re.sub(r',+', ',', optimized)
-            optimized = optimized.strip(',').strip()
+            optimized = str(base_prompt or "")
             
             print(f"Local Optimization Applied: {optimized[:100]}...")
-            return optimized[:500]  # 限制长度
+            return optimized
             
         except Exception as e:
             print(f"Local optimization error: {e}")
