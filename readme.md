@@ -41,7 +41,7 @@ pip install torchaudio
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
 - 图像 API 节点：
   - `kkimage2_灵思API`：在节点内填写灵思 API Key。
-  - `kkimage2_GAPI`：可在节点内填写 `API_Key`，也可设置环境变量 `GAPI_API_KEY`。
+  - `kkimage2_Zuco`：在节点内填写 Zuco API Key，也可设置环境变量 `ZUCO_API_KEY`。
 - 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
 ## 🧭 快速上手
@@ -66,7 +66,7 @@ pip install torchaudio
 
 ## 🧩 源码入口
 
-- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_zuco.py](nodes/kkimage2_zuco.py)
 - 数学模块：[nodes/Math.py](nodes/Math.py)
 - 提示词模块：[nodes/prompts.py](nodes/prompts.py)
 - 尺寸模块：[nodes/size.py](nodes/size.py)
@@ -78,7 +78,7 @@ pip install torchaudio
 
 ## 🧾 节点清单
 
-- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_GAPI`
+- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_Zuco`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
 - 提示词模块：`kkBatchPrompt`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
@@ -163,18 +163,16 @@ pip install torchaudio
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
 - 输出：`IMAGE`、`raw_json`
 
-### kkimage2_GAPI
+### kkimage2_Zuco
 
-- 基于 GAPI 图像接口的 Prompt 生图节点，支持纯文生图和可选参考图图生图。
-- 支持 `gpt-image-2-plus`、`gpt-image-2`、`gpt-image-1`、`dall-e-3`，可设置比例、分辨率、画质、风格预设、输出格式和代理。
-- 常用参数：`提示词`、`模型`、`画幅比例`、`分辨率`、`画质`、`风格预设`、`生成张数`、`输出格式`、`API_Key`、`接口地址`
-- 可选输入：`参考图1` 到 `参考图5`
-- 不接参考图时为文生图；接入任意参考图时自动切换为图生图。
-- `代理` 默认留空表示不走系统代理；可填写 `http://127.0.0.1:7890`，或填写 `system` 使用系统环境代理。
-- `参考图上传长边` 用于上传前压缩参考图，默认 `1536`，可降低大图图生图时的接口超时概率。
-- 输出：`IMAGE`、`状态`
-
----
+- 合并 Zuco Image2 Text to Image 和 Image to Image 的单节点，固定使用 `gpt-image-2`。
+- 不接 `image` 时为文生图；接入 `image` 时自动切换为图生图。
+- 支持 `mask` 局部重绘；`mask` 只能和单张 `image` 一起使用。
+- `size` 内置 `auto`、`1024x1024`、`1024x1536`、`1536x1024`、`2048x2048`、`2048x1152`、`1152x2048`、`3840x2160`、`2160x3840` 和 `Custom`。
+- 选择 `Custom` 时使用 `custom_width` 和 `custom_height`，宽高必须为 16 的倍数。
+- 常用参数：`api_key`、`prompt`、`size`、`custom_width`、`custom_height`、`output_format`
+- 可选输入：`image`、`mask`、`timeout_seconds`
+- 输出：`IMAGE`、`status`
 
 ## 🔢 数学模块
 
@@ -229,10 +227,10 @@ pip install torchaudio
 
 ### kkSizeNode（尺寸生成）
 
-- 生成指定尺寸的 latent，同时输出最终宽高。
+- 生成指定尺寸的 latent，同时输出最终宽高和比例。
 - 支持 `preset` 和 `custom` 两种模式，预设尺寸针对 SDXL 做了优化。
 - 所有尺寸会自动校正为 8 的倍数。
-- 输出：`LATENT`、`width`、`height`
+- 输出：`LATENT`、`width`、`height`、`ratio`
 
 ---
 
@@ -414,8 +412,7 @@ pip install torchaudio
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
 - 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
 - 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
-- 图像 API：`kkimage2_灵思API` 和 `kkimage2_GAPI` 需要有效接口 Key；接口异常时会在 `raw_json` 或 `状态` 中提供排查信息。
-- GAPI 代理：`kkimage2_GAPI` 的 `代理` 留空会强制不走代理；如需走本机代理请显式填写代理地址或 `system`。
+- 图像 API：`kkimage2_灵思API` 和 `kkimage2_Zuco` 需要有效接口 Key；接口异常时会在 `raw_json` 或 `status` 中提供排查信息。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
 - 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
 - 图像切分与合并：`kkImageTileSplit2x2`、`kkImageSplit`、`kkImageGridMerge` 会在输出 batch 前统一尺寸，减少奇数分辨率导致的 `Sizes of tensors must match` 错误。

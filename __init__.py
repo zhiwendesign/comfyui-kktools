@@ -16,6 +16,7 @@ if current_dir not in sys.path:
 # nodes 文件夹路径
 nodes_dir = os.path.join(current_dir, "nodes")
 WEB_DIRECTORY = "./web"
+DISABLED_NODE_CLASSES = {"kkimage2_GAPI"}
 
 NODE_CHINESE_NAME_MAPPINGS = {
     "kkAudioMerge4": "音频四合一",
@@ -115,6 +116,9 @@ def discover_and_load_nodes():
                 hasattr(attr, 'RETURN_TYPES') and 
                 hasattr(attr, 'FUNCTION') and 
                 hasattr(attr, 'CATEGORY')):
+                if attr_name in DISABLED_NODE_CLASSES:
+                    print(f"      ⏭️  跳过禁用节点: {attr_name}")
+                    continue
                 
                 # 添加到映射
                 node_class_mappings[attr_name] = attr
@@ -150,6 +154,8 @@ if not NODE_CLASS_MAPPINGS:
         ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkMergeVideos"]),
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
+        ("kkimage2_zuco.py", ["kkimage2_Zuco"]),
+        ("lingsi.py", ["kkLingsiNativePromptImage", "kkimage2_灵思API"]),
     ]
     
     for file_name, class_names in nodes_to_load:
@@ -159,6 +165,9 @@ if not NODE_CLASS_MAPPINGS:
         module = load_module_from_file(module_name, file_path)
         if module:
             for class_name in class_names:
+                if class_name in DISABLED_NODE_CLASSES:
+                    print(f"   ⏭️  {class_name} 已禁用，跳过手动加载")
+                    continue
                 if hasattr(module, class_name):
                     NODE_CLASS_MAPPINGS[class_name] = getattr(module, class_name)
                     NODE_DISPLAY_NAME_MAPPINGS[class_name] = build_node_display_name(class_name)

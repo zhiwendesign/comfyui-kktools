@@ -4,6 +4,7 @@ ComfyUI Custom Node: Size
 """
 
 import torch
+from math import gcd
 
 class kkSizeNode:
     """尺寸节点（尺寸生成） - 支持预设比例和自定义尺寸"""
@@ -39,8 +40,8 @@ class kkSizeNode:
             }
         }
     
-    RETURN_TYPES = ("LATENT", "INT", "INT")
-    RETURN_NAMES = ("latent", "width", "height")
+    RETURN_TYPES = ("LATENT", "INT", "INT", "STRING")
+    RETURN_NAMES = ("latent", "width", "height", "ratio")
     FUNCTION = "generate"
     CATEGORY = "🌟kktools/尺寸"
     
@@ -65,6 +66,11 @@ class kkSizeNode:
         # 确保尺寸是8的倍数（latent要求）
         width = (width // 8) * 8
         height = (height // 8) * 8
+        if size_mode == "preset":
+            ratio = aspect_ratio
+        else:
+            common_divisor = gcd(width, height)
+            ratio = f"{width // common_divisor}:{height // common_divisor}"
         
         # 计算latent尺寸（通常是实际尺寸的1/8）
         latent_width = width // 8
@@ -79,11 +85,12 @@ class kkSizeNode:
         print(f"  Aspect Ratio: {aspect_ratio}")
         print(f"  Final Width: {width}")
         print(f"  Final Height: {height}")
+        print(f"  Ratio: {ratio}")
         print(f"  Latent Width: {latent_width}")
         print(f"  Latent Height: {latent_height}")
         print(f"  Batch Size: {batch_size}")
         
-        return ({"samples": latent_tensor}, width, height)
+        return ({"samples": latent_tensor}, width, height, ratio)
 
 
 # ComfyUI 节点注册
