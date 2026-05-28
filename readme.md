@@ -78,7 +78,7 @@ pip install torchaudio
 
 ## 🧾 节点清单
 
-- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_Zuco`
+- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_Zuco`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
 - 提示词模块：`kkBatchPrompt`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
@@ -93,6 +93,15 @@ pip install torchaudio
 ## 🖼️ 图像模块
 
 源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+
+### kkImageOverlay（图像叠加）
+
+- 将 `image2` 叠加到 `image1` 上，输出尺寸保持为 `image1` 的尺寸。
+- 支持位置：`左上`、`左中`、`左下`、`居中`、`上中`、`下中`、`右上`、`右中`、`右下`。
+- 支持 `margin_x`、`margin_y` 设置水平和垂直边距；居中位置下作为偏移量使用。
+- 支持 `image2` 自带 alpha 透明通道，也可接入透明 PNG 的 `mask` 作为叠加透明通道。
+- 输入批次数不一致时，会复用较短输入的最后一张图。
+- 输出：`IMAGE`
 
 ### kkPadImageToCanvas（图像填充到画布）
 

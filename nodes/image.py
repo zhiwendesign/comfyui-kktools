@@ -5,6 +5,116 @@ import os
 import glob
 import random
 
+class kkImageOverlay:
+    """将 image2 按指定位置叠加到 image1 上。"""
+
+    POSITIONS = ["左上", "左中", "左下", "居中", "上中", "下中", "右上", "右中", "右下"]
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "position": (cls.POSITIONS, {"default": "居中"}),
+                "margin_x": ("INT", {"default": 0, "min": -8192, "max": 8192, "step": 1}),
+                "margin_y": ("INT", {"default": 0, "min": -8192, "max": 8192, "step": 1}),
+            },
+            "optional": {
+                "mask": ("MASK",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "overlay_image"
+    CATEGORY = "🌟kktools/图像"
+
+    def tensor_to_pil(self, image_batch):
+        images = []
+        batch_size, height, width, channels = image_batch.shape
+        for index in range(batch_size):
+            array = (image_batch[index].detach().cpu().numpy() * 255.0).clip(0, 255).astype(np.uint8)
+            if channels == 1:
+                array = array.reshape(height, width)
+            else:
+                array = array.reshape(height, width, channels)
+            images.append(Image.fromarray(array))
+        return images
+
+    def pil_to_tensor(self, images):
+        tensors = []
+        for image in images:
+            array = np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
+            tensors.append(torch.from_numpy(array)[None,])
+        return torch.cat(tensors, dim=0)
+
+    def get_position(self, position, base_size, overlay_size, margin_x, margin_y):
+        base_w, base_h = base_size
+        overlay_w, overlay_h = overlay_size
+
+        x_left = margin_x
+        x_center = (base_w - overlay_w) // 2 + margin_x
+        x_right = base_w - overlay_w - margin_x
+        y_top = margin_y
+        y_center = (base_h - overlay_h) // 2 + margin_y
+        y_bottom = base_h - overlay_h - margin_y
+
+        position_map = {
+            "左上": (x_left, y_top),
+            "左中": (x_left, y_center),
+            "左下": (x_left, y_bottom),
+            "居中": (x_center, y_center),
+            "上中": (x_center, y_top),
+            "下中": (x_center, y_bottom),
+            "右上": (x_right, y_top),
+            "右中": (x_right, y_center),
+            "右下": (x_right, y_bottom),
+        }
+        return position_map.get(position, (x_center, y_center))
+
+    def apply_mask_to_overlay(self, overlay, mask_batch, index):
+        if mask_batch is None:
+            return overlay
+
+        if hasattr(mask_batch, "dim") and mask_batch.dim() == 3:
+            mask = mask_batch[min(index, mask_batch.shape[0] - 1)]
+        else:
+            mask = mask_batch
+
+        mask_array = (1.0 - mask.detach().cpu().numpy()).clip(0, 1)
+        mask_image = Image.fromarray((mask_array * 255.0).astype(np.uint8)).resize(overlay.size, Image.Resampling.LANCZOS)
+
+        overlay_rgba = overlay.convert("RGBA")
+        alpha = overlay_rgba.getchannel("A")
+        combined_alpha = Image.fromarray(
+            ((np.asarray(alpha, dtype=np.float32) * np.asarray(mask_image, dtype=np.float32)) / 255.0)
+            .clip(0, 255)
+            .astype(np.uint8)
+        )
+        overlay_rgba.putalpha(combined_alpha)
+        return overlay_rgba
+
+    def overlay_image(self, image1, image2, position, margin_x, margin_y, mask=None):
+        base_images = self.tensor_to_pil(image1)
+        overlay_images = self.tensor_to_pil(image2)
+        batch_size = max(len(base_images), len(overlay_images))
+        results = []
+
+        for index in range(batch_size):
+            base = base_images[min(index, len(base_images) - 1)].convert("RGBA")
+            overlay = overlay_images[min(index, len(overlay_images) - 1)].convert("RGBA")
+            overlay = self.apply_mask_to_overlay(overlay, mask, index)
+            x, y = self.get_position(position, base.size, overlay.size, margin_x, margin_y)
+
+            layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+            layer.paste(overlay, (x, y), overlay)
+            composed = Image.alpha_composite(base, layer)
+            results.append(composed)
+
+        return (self.pil_to_tensor(results),)
+
+
 class kkPadImageToCanvas:
     """
     一个 ComfyUI 节点，用于将输入图像放置到指定尺寸和颜色的新画布上。
@@ -2016,6 +2126,7 @@ def _debug_package(
 
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
+    "kkImageOverlay": kkImageOverlay,
     "kkPadImageToCanvas": kkPadImageToCanvas,
     "kkImageFrame": kkImageFrame,
     "kkResize": kkResize,
@@ -2026,6 +2137,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "kkImageOverlay": "kkImageOverlay（图像叠加）",
     "kkPadImageToCanvas": "kkPadImageToCanvas（图像填充到画布）",
     "kkImageFrame": "kkImageFrame（图像边框）",
     "kkResize": "kkResize（图像蒙版同步调整）",

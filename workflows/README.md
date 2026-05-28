@@ -28,6 +28,7 @@
 #### `kkworkflow_image.json`
 - **模块**：图像处理模块
 - **包含节点**：
+  - `kkImageOverlay`（图像叠加）
   - `kkPadImageToCanvas`（图像填充到画布）
   - `kkImageFrame`（图像边框）
   - `kkResize`（图像蒙版同步调整）
