@@ -178,8 +178,9 @@ pip install torchaudio
 - 不接 `image` 时为文生图；接入 `image` 时自动切换为图生图。
 - 支持 `mask` 局部重绘；`mask` 只能和单张 `image` 一起使用。
 - `size` 内置 `auto`、`1024x1024`、`1024x1536`、`1536x1024`、`2048x2048`、`2048x1152`、`1152x2048`、`3840x2160`、`2160x3840` 和 `Custom`。
+- `resolution` 支持 `1K`、`2K`、`4K`；非 `Custom` 尺寸会按所选 `size` 的比例和分辨率自动换算。
 - 选择 `Custom` 时使用 `custom_width` 和 `custom_height`，宽高必须为 16 的倍数。
-- 常用参数：`api_key`、`prompt`、`size`、`custom_width`、`custom_height`、`output_format`
+- 常用参数：`api_key`、`prompt`、`size`、`resolution`、`custom_width`、`custom_height`、`output_format`
 - 可选输入：`image`、`mask`、`timeout_seconds`
 - 输出：`IMAGE`、`status`
 

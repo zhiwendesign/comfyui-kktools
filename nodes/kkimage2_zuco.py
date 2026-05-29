@@ -8,6 +8,7 @@
 import base64
 import io
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -27,6 +28,14 @@ REQUEST_TIMEOUT_SECONDS = 600
 MAX_REFERENCE_PIXELS = 2048 * 2048
 SYSTEM_CA_FILE = Path("/etc/ssl/cert.pem")
 OUTPUT_FORMATS = ["png", "jpeg", "webp"]
+RESOLUTIONS = ["1K", "2K", "4K"]
+RESOLUTION_MAX_EDGE = {
+    "1K": 1024,
+    "2K": 2048,
+    "4K": 3840,
+}
+MIN_OUTPUT_PIXELS = 655_360
+MAX_OUTPUT_PIXELS = 8_294_400
 SIZE_OPTIONS = [
     "auto",
     "1024x1024",
@@ -94,19 +103,66 @@ def _resolve_size(width: int, height: int) -> str:
     if ratio > 3:
         raise RuntimeError(f"画幅比例不能超过 3:1，当前为 {width}x{height}")
     total_pixels = width * height
-    if not 655_360 <= total_pixels <= 8_294_400:
-        raise RuntimeError(f"总像素必须在 655,360 到 8,294,400 之间，当前为 {total_pixels:,}")
+    if not MIN_OUTPUT_PIXELS <= total_pixels <= MAX_OUTPUT_PIXELS:
+        raise RuntimeError(f"总像素必须在 {MIN_OUTPUT_PIXELS:,} 到 {MAX_OUTPUT_PIXELS:,} 之间，当前为 {total_pixels:,}")
     return f"{width}x{height}"
 
 
-def _resolve_size_option(size: str, custom_width: int, custom_height: int) -> str:
+def _snap16(value: float) -> int:
+    return max(256, min(3840, int(round(value / 16) * 16)))
+
+
+def _size_from_template(size: str, resolution: str) -> str:
+    try:
+        template_width, template_height = [int(part) for part in size.lower().split("x", 1)]
+    except Exception:
+        raise RuntimeError(f"不支持的 size: {size}")
+
+    if template_width <= 0 or template_height <= 0:
+        raise RuntimeError(f"不支持的 size: {size}")
+
+    max_edge = RESOLUTION_MAX_EDGE.get(str(resolution or "1K").upper(), 1024)
+    aspect = template_width / template_height
+    if aspect >= 1.0:
+        width = _snap16(max_edge)
+        height = _snap16(max_edge / aspect)
+    else:
+        height = _snap16(max_edge)
+        width = _snap16(max_edge * aspect)
+
+    pixels = width * height
+    if pixels < MIN_OUTPUT_PIXELS:
+        scale = (MIN_OUTPUT_PIXELS / pixels) ** 0.5
+        width = _snap16(width * scale)
+        height = _snap16(height * scale)
+    elif pixels > MAX_OUTPUT_PIXELS:
+        scale = (MAX_OUTPUT_PIXELS / pixels) ** 0.5
+        width = _snap16(width * scale)
+        height = _snap16(height * scale)
+
+    while width * height > MAX_OUTPUT_PIXELS and width >= 272 and height >= 272:
+        if width >= height:
+            width -= 16
+        else:
+            height -= 16
+
+    while width * height < MIN_OUTPUT_PIXELS and width <= 3824 and height <= 3824:
+        if width >= height:
+            width += 16
+        else:
+            height += 16
+
+    return _resolve_size(width, height)
+
+
+def _resolve_size_option(size: str, resolution: str, custom_width: int, custom_height: int) -> str:
     size = str(size or "auto").strip()
     if size == "auto":
         return "auto"
     if size == "Custom":
         return _resolve_size(custom_width, custom_height)
     if size in SIZE_OPTIONS:
-        return size
+        return _size_from_template(size, resolution)
     raise RuntimeError(f"不支持的 size: {size}")
 
 
@@ -195,25 +251,37 @@ def _response_to_images(payload: dict, headers: dict, timeout: int, verify) -> t
     return torch.stack(tensors, dim=0)
 
 
-def _post_with_ca_fallback(url: str, *, headers: dict, timeout: int, json_body=None, files=None, data=None) -> tuple[dict, str]:
+def _post_with_ca_fallback(url: str, *, headers: dict, timeout: int, retries: int = 0, json_body=None, files=None, data=None) -> tuple[dict, str]:
     last_error = None
+    retry_statuses = {408, 409, 425, 429, 500, 502, 503, 504}
+    total_attempts = max(0, min(5, int(retries or 0))) + 1
     for verify in _verify_paths():
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                json=json_body,
-                files=files,
-                data=data,
-                timeout=timeout,
-                verify=verify,
-            )
-            if response.status_code < 200 or response.status_code >= 300:
-                raise RuntimeError(f"Zuco Image API 错误 HTTP {response.status_code}: {_extract_error(response)}")
-            return response.json(), str(verify)
-        except requests.exceptions.SSLError as exc:
-            last_error = exc
-            continue
+        for attempt in range(total_attempts):
+            try:
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json=json_body,
+                    files=files,
+                    data=data,
+                    timeout=timeout,
+                    verify=verify,
+                )
+                if response.status_code in retry_statuses and attempt < total_attempts - 1:
+                    time.sleep(min(8.0, 1.5 * (attempt + 1)))
+                    continue
+                if response.status_code < 200 or response.status_code >= 300:
+                    raise RuntimeError(f"Zuco Image API 错误 HTTP {response.status_code}: {_extract_error(response)}")
+                return response.json(), str(verify)
+            except requests.exceptions.SSLError as exc:
+                last_error = exc
+                break
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+                last_error = exc
+                if attempt < total_attempts - 1:
+                    time.sleep(min(8.0, 1.5 * (attempt + 1)))
+                    continue
+                raise RuntimeError(f"连接 Zuco Image API 失败：{exc}") from exc
     raise RuntimeError(f"连接 Zuco Image API 失败：{last_error}")
 
 
@@ -228,11 +296,13 @@ class kkimage2_Zuco:
                 "custom_width": ("INT", {"default": 1024, "min": 256, "max": 3840, "step": 16}),
                 "custom_height": ("INT", {"default": 1024, "min": 256, "max": 3840, "step": 16}),
                 "output_format": (OUTPUT_FORMATS, {"default": "png"}),
+                "resolution": (RESOLUTIONS, {"default": "1K"}),
             },
             "optional": {
                 "image": ("IMAGE",),
                 "mask": ("MASK",),
                 "timeout_seconds": ("INT", {"default": REQUEST_TIMEOUT_SECONDS, "min": 1, "max": 3600}),
+                "retry_count": ("INT", {"default": 2, "min": 0, "max": 5, "step": 1}),
             },
         }
 
@@ -253,13 +323,15 @@ class kkimage2_Zuco:
         custom_width=1024,
         custom_height=1024,
         output_format="png",
+        resolution="1K",
         image=None,
         mask=None,
         timeout_seconds=REQUEST_TIMEOUT_SECONDS,
+        retry_count=2,
     ):
         key = _resolve_api_key(api_key)
         prompt = _resolve_prompt(prompt)
-        size = _resolve_size_option(size, custom_width, custom_height)
+        size = _resolve_size_option(size, resolution, custom_width, custom_height)
         timeout = max(1, int(timeout_seconds or REQUEST_TIMEOUT_SECONDS))
         headers = {
             "Authorization": f"Bearer {key}",
@@ -278,6 +350,7 @@ class kkimage2_Zuco:
                 headers=headers,
                 json_body=payload,
                 timeout=timeout,
+                retries=retry_count,
             )
             images = _response_to_images(payload_response, headers, timeout, verify_used)
             return (images, f"Zuco 文生图完成 · 输出 {images.shape[0]} 张 · 尺寸 {size} · 模型 {ZUCO_MODEL}")
@@ -309,6 +382,7 @@ class kkimage2_Zuco:
             data=data,
             files=files,
             timeout=timeout,
+            retries=retry_count,
         )
         images = _response_to_images(payload_response, headers, timeout, verify_used)
         return (images, f"Zuco 图生图完成 · 输出 {images.shape[0]} 张 · 输入 {batch_size} 张 · 尺寸 {size} · 模型 {ZUCO_MODEL}")
