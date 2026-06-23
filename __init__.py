@@ -106,6 +106,8 @@ def discover_and_load_nodes():
         
         if module is None:
             continue
+
+        module_display_name_mappings = getattr(module, "NODE_DISPLAY_NAME_MAPPINGS", {})
             
         # 查找模块中的节点类
         for attr_name in dir(module):
@@ -124,7 +126,7 @@ def discover_and_load_nodes():
                 # 添加到映射
                 node_class_mappings[attr_name] = attr
                 
-                node_display_name_mappings[attr_name] = build_node_display_name(attr_name)
+                node_display_name_mappings[attr_name] = module_display_name_mappings.get(attr_name) or build_node_display_name(attr_name)
                 print(f"      ✅ 注册节点: {attr_name} -> {node_display_name_mappings[attr_name]}")
     
     return node_class_mappings, node_display_name_mappings
@@ -134,6 +136,13 @@ print("🔄 开始加载 🌟kktools Nodes...")
 
 # 使用自动发现机制加载节点
 NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS = discover_and_load_nodes()
+
+try:
+    from imagen_studio_routes import register_routes as register_imagen_studio_routes
+
+    register_imagen_studio_routes()
+except Exception as exc:
+    print(f"[kktools Imagen Studio] 模板库接口注册失败：{exc}")
 
 # 手动加载特定节点（备用方案，如果自动发现失败）
 if not NODE_CLASS_MAPPINGS:

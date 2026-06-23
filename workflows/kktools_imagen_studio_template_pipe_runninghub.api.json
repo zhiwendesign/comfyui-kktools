@@ -1,0 +1,64 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "example-reference.png"
+    }
+  },
+  "2": {
+    "class_type": "ImagenStudioTemplateDistiller",
+    "inputs": {
+      "参考图像": ["1", 0],
+      "模板类型": "海报",
+      "模板名称": "束化示例模板",
+      "模板需求": "提取可复用的整体视觉风格。",
+      "配置路径": "",
+      "最长边": 2400
+    }
+  },
+  "3": {
+    "class_type": "ImagenStudioTemplateIngest",
+    "inputs": {
+      "模板束": ["2", 0],
+      "覆盖同名": true,
+      "缩略图": ["1", 0]
+    }
+  },
+  "4": {
+    "class_type": "ImagenStudioTemplateSelector",
+    "inputs": {
+      "模板ID": "把这里替换为已保存模板ID，或在UI工作流里用卡片选择"
+    }
+  },
+  "5": {
+    "class_type": "ImagenStudioTemplateComposer",
+    "inputs": {
+      "模板束": ["4", 0],
+      "用户需求": "生成一张未来感咖啡馆宣传海报，招牌文字为 CyberBrew。",
+      "画面比例": "16:9",
+      "提示词语言": "中文",
+      "配置路径": "",
+      "最长边": 2400
+    }
+  },
+  "6": {
+    "class_type": "ImagenStudioRunningHubRHArtG2",
+    "inputs": {
+      "模板束": ["5", 0],
+      "渠道": "第三方低价渠道",
+      "画面比例": "16:9",
+      "分辨率": "1k",
+      "质量": "medium",
+      "配置路径": "",
+      "参考图像": ["1", 0],
+      "正向提示词": ""
+    }
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "ImagenStudio",
+      "images": ["6", 0]
+    }
+  }
+}

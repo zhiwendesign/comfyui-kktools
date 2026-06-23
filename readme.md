@@ -345,6 +345,52 @@ pip install torchaudio
 
 ---
 
+## Imagen Studio 模板工具
+
+kktools 已集成 Imagen Studio 模板工作流节点，节点名称保持原 Imagen Studio class key，方便旧工作流继续识别：
+
+- `Imagen Studio 模板蒸馏`：参考图像 -> 模板束。
+- `Imagen Studio 模板入库`：模板束 -> 本地模板库。
+- `Imagen Studio 模板选择器`：从模板库卡片选择模板，支持搜索、缩略图、改名、删除。
+- `Imagen Studio 模板拼装`：模板束 + 用户需求 -> 正向提示词。
+- `Imagen Studio RunningHub 生图`：模板束 -> RunningHub RHArt G2 图片。
+
+### 配置位置
+
+Imagen Studio 在 kktools 内使用独立运行目录：
+
+```text
+ComfyUI/custom_nodes/comfyui-kktools/imagen-studio/config.json
+ComfyUI/custom_nodes/comfyui-kktools/imagen-studio/templates/
+```
+
+可从 `imagen-studio/config.example.json` 复制出 `config.json`，填写：
+
+- `apiKey / baseUrl / visionModel / textModel`
+- `runninghubApiKey / runninghubBaseUrl`
+
+真实 `config.json` 和 `templates/` 已加入 `.gitignore`，不会提交到仓库。
+
+### RunningHub
+
+`Imagen Studio RunningHub 生图` 支持：
+
+- 渠道：`第三方低价渠道 / 官方渠道`
+- 文生图：不连接 `参考图像`
+- 图生图：连接 `参考图像`
+- 质量：`low / medium / high`
+
+RunningHub 提交会始终发送 `quality` 字段，避免接口返回 `field 'quality' is required`。
+
+示例工作流：
+
+```text
+workflows/kktools_imagen_studio_template_pipe_runninghub.workflow.json
+workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
+```
+
+---
+
 ## 🎞️ 分镜模块
 
 源码位置：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)

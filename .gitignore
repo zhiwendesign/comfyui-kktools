@@ -44,3 +44,9 @@ Thumbs.db
 
 # Node files
 node_modules/
+
+# Imagen Studio runtime data
+/imagen-studio/config.json
+/imagen-studio/config.json.bak
+/imagen-studio/data/config.json
+/imagen-studio/templates/

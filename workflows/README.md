@@ -20,6 +20,7 @@
   - 视频：`kkworkflow_video.json`
   - 音频：`kkworkflow_Audio.json`
   - 分镜：`kkworkflow_storyboard.json`
+  - Imagen Studio：`kktools_imagen_studio_template_pipe_runninghub.workflow.json`
 
 ## 🎯 工作流索引
 
@@ -101,6 +102,20 @@
   - `kkStoryboardScriptLLM`（LLM分镜）
   - `kkStoryboardShotOutput`（分镜输出）
 - **说明**：收录分镜模块下所有节点的最小演示
+
+#### `kktools_imagen_studio_template_pipe_runninghub.workflow.json`
+- **模块**：Imagen Studio 模板工具
+- **包含节点**：
+  - `Imagen Studio 模板蒸馏`
+  - `Imagen Studio 模板入库`
+  - `Imagen Studio 模板选择器`
+  - `Imagen Studio 模板拼装`
+  - `Imagen Studio RunningHub 生图`
+- **说明**：展示模板蒸馏入库、模板选择、提示词拼装和 RunningHub 生图的完整节点束流程
+
+#### `kktools_imagen_studio_template_pipe_runninghub.api.json`
+- **模块**：Imagen Studio 模板工具
+- **说明**：对应 API 格式示例，适合通过 ComfyUI API 调用同一套模板束工作流
 
 ## ⚠️ 使用建议
 
