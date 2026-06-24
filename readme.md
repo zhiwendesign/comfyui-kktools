@@ -40,7 +40,7 @@ pip install torchaudio
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
 - 图像 API 节点：
-  - `kkimage2_灵思API`：在节点内填写灵思 API Key。
+  - `kkimage2_灵思API`：在节点内填写 API Key 和可选 `base_url`，默认使用 MindAPI，也可接入兼容第三方站点。
   - `kkimage2_Zuco`：在节点内填写 Zuco API Key，也可设置环境变量 `ZUCO_API_KEY`。
 - 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
@@ -164,9 +164,10 @@ pip install torchaudio
 
 ### kkimage2_灵思API
 
-- 基于灵思 MindAPI 的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 基于灵思 MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
 - 支持 `gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率和生成数量。
-- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`count`
+- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`count`、`base_url`
+- `base_url` 默认是 `https://www.mindapi.cc`；填第三方兼容站点时，节点仍会自动使用当前固定路由。
 - 可选输入：`image`
 - 不接 `image` 时为文生图；接入 `image` 时为参考图图生图。
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
@@ -393,20 +394,41 @@ workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
 
 ## Imagen Studio PPT 节点
 
-kktools 还集成了一组独立的 PPT 节点，节点之间统一通过 `IMAGEN_PPT_PIPE` 传递页面计划和 prompt：
+kktools 还集成了一组独立的 PPT 节点，和模板节点一样使用统一的 `IMAGEN_STUDIO_PIPE` 节点束；同一根线可以继续传递模板信息、PPT 页面计划、prompt、RunningHub 结果和导出路径：
 
 - `Imagen Studio PPT 大纲草拟`
 - `Imagen Studio PPT 大纲规划`
 - `Imagen Studio PPT 设计规范`
 - `Imagen Studio PPT 页面拼装`
 - `Imagen Studio PPT RunningHub 批量生图`
+- `Imagen Studio PPT 束拆包`
+- `Imagen Studio PPT 图像写回`
 - `Imagen Studio PPT 导出`
 
 它们复用现有的 Imagen Studio 模板库、配置文件和 RunningHub 接口，不依赖原项目的 PPT 工作台页面或 deck 历史。
 
-`Imagen Studio PPT RunningHub 批量生图` 默认每页等待 30 分钟，并提供 `单页超时分钟`、`轮询间隔秒` 参数；PPT 页面排队或生成较慢时可直接调大。
+这种束化方式参考 EasyUse 的统一 pipe 思路：能连线代表类型兼容，节点运行时仍会检查自己需要的字段；比如 PPT 设计节点需要先有页面计划，缺字段时会给中文错误提示。
 
-推荐导出连线：`PPT RunningHub 批量生图.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面 URL 下载图片生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
+`Imagen Studio PPT 页面拼装` 支持并发调用 LLM 拼装每页 prompt，`并发数` 默认 20、最大 50，输出仍按 PPT 页序排列。
+
+`kkimage2_灵思API` 可以直接连接 `PPT束`，一次性并发生成所有页面并把图片路径写回束内；`并发数` 默认 3、最大 20。遇到 429 限流会自动重试，默认重试 6 次，基础等待 15 秒并指数退避，单次等待最多 500 秒。生成后把 `kkimage2_灵思API.PPT束` 接到 `PPT 导出.PPT束` 即可导出 PPTX。
+
+`Imagen Studio PPT RunningHub 批量生图` 仍可作为 RunningHub 渠道使用，支持并发提交页面任务，`并发数` 默认 50、最大 100；同时保留 `单页超时分钟`、`轮询间隔秒` 参数。
+
+`Imagen Studio PPT 页面拼装`、`kkimage2_灵思API` 的 PPT 批量模式和 `Imagen Studio PPT RunningHub 批量生图` 会在节点内部显示运行状态条，包括当前页、阶段、完成数和失败提示；更详细的排队、轮询、兜底信息会同步打印到 ComfyUI 控制台。页面拼装还提供 `单页超时秒`，默认 180 秒。
+
+单页调试时，也可以使用 `Imagen Studio PPT 束拆包` 把指定页的 `正向提示词` 拆成普通 `STRING`，再连接到 `kkimage2_灵思API.prompt`。拆包节点会额外输出 `当前页码`，可直接连接到 `Imagen Studio PPT 图像写回.页码`，这样拆第几页就会自动写回第几页。
+
+```text
+PPT 页面拼装.PPT束 -> PPT 束拆包.PPT束
+PPT 束拆包.正向提示词 -> kkimage2_灵思API.prompt
+kkimage2_灵思API.image -> PPT 图像写回.图像
+PPT 束拆包.PPT束 -> PPT 图像写回.PPT束
+PPT 束拆包.当前页码 -> PPT 图像写回.页码
+PPT 图像写回.PPT束 -> PPT 导出.PPT束
+```
+
+推荐导出连线：`kkimage2_灵思API.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面图片路径或 URL 生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
 
 PPTX 默认保存到 ComfyUI 输出目录下的 `output/imagen-ppt/`，节点右侧 `PPT文件路径` 会返回完整文件路径。
 

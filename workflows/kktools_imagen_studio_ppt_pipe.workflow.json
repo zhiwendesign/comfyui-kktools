@@ -1,4 +1,4 @@
-{
+﻿{
   "last_node_id": 8,
   "last_link_id": 8,
   "nodes": [
@@ -20,7 +20,7 @@
         { "name": "模板名称", "type": "STRING", "slot_index": 5, "links": null }
       ],
       "properties": { "Node name for S&R": "ImagenStudioTemplateSelector" },
-      "widgets_values": [""]
+      "widgets_values": ["", 180, 20]
     },
     {
       "id": 2,
@@ -57,7 +57,7 @@
         { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "link": 2 }
       ],
       "outputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "slot_index": 0, "links": [4] },
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [4] },
         { "name": "页面计划JSON", "type": "STRING", "slot_index": 1, "links": null },
         { "name": "PPT标题", "type": "STRING", "slot_index": 2, "links": null }
       ],
@@ -73,10 +73,10 @@
       "order": 3,
       "mode": 0,
       "inputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "link": 4 }
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 4 }
       ],
       "outputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "slot_index": 0, "links": [5] },
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [5] },
         { "name": "设计规范JSON", "type": "STRING", "slot_index": 1, "links": null },
         { "name": "参考图分析JSON", "type": "STRING", "slot_index": 2, "links": null }
       ],
@@ -87,15 +87,15 @@
       "id": 5,
       "type": "ImagenStudioPPTPageComposer",
       "pos": [2100, 110],
-      "size": [390, 190],
+      "size": [390, 250],
       "flags": {},
       "order": 4,
       "mode": 0,
       "inputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "link": 5 }
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 5 }
       ],
       "outputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "slot_index": 0, "links": [6] },
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [6] },
         { "name": "Prompt列表JSON", "type": "STRING", "slot_index": 1, "links": null },
         { "name": "页面JSON", "type": "STRING", "slot_index": 2, "links": null }
       ],
@@ -104,22 +104,22 @@
     },
     {
       "id": 6,
-      "type": "ImagenStudioPPTRunningHubBatch",
+      "type": "kkimage2_灵思API",
       "pos": [2540, 100],
-      "size": [420, 260],
+      "size": [450, 360],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "link": 6 }
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 6 }
       ],
       "outputs": [
-        { "name": "图像", "type": "IMAGE", "slot_index": 0, "links": [8] },
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "slot_index": 1, "links": [7] },
-        { "name": "结果JSON", "type": "STRING", "slot_index": 2, "links": null }
+        { "name": "image", "type": "IMAGE", "slot_index": 0, "links": [8] },
+        { "name": "raw_json", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 2, "links": [7] }
       ],
-      "properties": { "Node name for S&R": "ImagenStudioPPTRunningHubBatch" },
-      "widgets_values": ["第三方低价渠道", "1k", "medium", 30, 5, ""]
+      "properties": { "Node name for S&R": "kkimage2_灵思API" },
+      "widgets_values": ["", "", "gpt-image-2", "16:9", "1K", 1, "https://www.mindapi.cc", 3, 6, 15]
     },
     {
       "id": 7,
@@ -130,7 +130,7 @@
       "order": 6,
       "mode": 0,
       "inputs": [
-        { "name": "PPT束", "type": "IMAGEN_PPT_PIPE", "link": 7 }
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 7 }
       ],
       "outputs": [
         { "name": "PPT文件路径", "type": "STRING", "slot_index": 0, "links": null },
@@ -159,10 +159,10 @@
     [1, 1, 0, 2, 0, "IMAGEN_STUDIO_PIPE"],
     [2, 1, 0, 3, 1, "IMAGEN_STUDIO_PIPE"],
     [3, 2, 0, 3, 0, "STRING"],
-    [4, 3, 0, 4, 0, "IMAGEN_PPT_PIPE"],
-    [5, 4, 0, 5, 0, "IMAGEN_PPT_PIPE"],
-    [6, 5, 0, 6, 0, "IMAGEN_PPT_PIPE"],
-    [7, 6, 1, 7, 0, "IMAGEN_PPT_PIPE"],
+    [4, 3, 0, 4, 0, "IMAGEN_STUDIO_PIPE"],
+    [5, 4, 0, 5, 0, "IMAGEN_STUDIO_PIPE"],
+    [6, 5, 0, 6, 0, "IMAGEN_STUDIO_PIPE"],
+    [7, 6, 2, 7, 0, "IMAGEN_STUDIO_PIPE"],
     [8, 6, 0, 8, 0, "IMAGE"]
   ],
   "groups": [

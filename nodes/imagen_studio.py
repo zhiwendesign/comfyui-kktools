@@ -133,7 +133,8 @@ TEMPLATE_LIBRARY_DIR_NAME = "templates"
 TEMPLATE_INDEX_FILENAME = "index.json"
 TEMPLATE_THUMBNAIL_DIR_NAME = "thumbnails"
 TEMPLATE_SAVE_CATEGORY_OPTIONS_CN = ("自动",) + CATEGORY_OPTIONS_CN
-IMAGEN_STUDIO_PIPE_TYPE = "IMAGEN_STUDIO_PIPE"
+IMAGEN_PIPE_TYPE = "IMAGEN_STUDIO_PIPE"
+IMAGEN_STUDIO_PIPE_TYPE = IMAGEN_PIPE_TYPE
 IMAGEN_STUDIO_PIPE_VERSION = 1
 
 
@@ -871,6 +872,7 @@ def call_agent(
     temperature: float,
     response_format: dict[str, str] | None = None,
     vision_response_format_fallback: bool = False,
+    timeout: int = 300,
 ) -> Any:
     messages = [
         {"role": "system", "content": system_prompt},
@@ -879,7 +881,7 @@ def call_agent(
 
     def call(format_value: dict[str, str] | None):
         raw = call_with_retry(
-            lambda: chat_completion(task_config, messages, temperature, response_format=format_value),
+            lambda: chat_completion(task_config, messages, temperature, response_format=format_value, timeout=timeout),
             tries=2,
             base_delay=1.0,
         )
@@ -1663,17 +1665,36 @@ def resolve_template_pipe(template_pipe: Any, template_id: str, library_dir: str
     pipe = coerce_pipe_value(template_pipe)
     candidate_id = str(template_id or pipe.get("template_id") or "").strip()
     if pipe:
-        template_json = str(pipe.get("template_json") or "").strip()
-        if not template_json:
-            template_obj = as_object(pipe.get("template"))
-            if template_obj:
-                template_json = json.dumps(template_obj, ensure_ascii=False, indent=2)
+        template_source = pipe
+        template_json = str(template_source.get("template_json") or "").strip()
+        template_obj = as_object(template_source.get("template"))
+        if not template_json and not template_obj:
+            nested_pipe = coerce_pipe_value(pipe.get("template_pipe"))
+            nested_template_json = str(nested_pipe.get("template_json") or "").strip()
+            nested_template_obj = as_object(nested_pipe.get("template"))
+            if nested_template_json or nested_template_obj:
+                template_source = nested_pipe
+                template_json = nested_template_json
+                template_obj = nested_template_obj
+        if not template_json and template_obj:
+            template_json = json.dumps(template_obj, ensure_ascii=False, indent=2)
         if template_json:
             pipe["template_json"] = template_json
+            if not as_object(pipe.get("template")) and template_obj:
+                pipe["template"] = template_obj
+            for key in ("style_prompt_en", "style_prompt_zh", "negative_prompt"):
+                if not str(pipe.get(key) or "").strip() and str(template_source.get(key) or "").strip():
+                    pipe[key] = str(template_source.get(key) or "").strip()
             if candidate_id and not str(pipe.get("template_id") or "").strip():
                 pipe["template_id"] = candidate_id
             if not str(pipe.get("template_name") or "").strip():
-                pipe["template_name"] = str(pipe.get("name") or candidate_id or "").strip()
+                pipe["template_name"] = str(
+                    template_source.get("template_name")
+                    or pipe.get("name")
+                    or pick(template_obj, "name")
+                    or candidate_id
+                    or ""
+                ).strip()
             return pipe
     if not candidate_id:
         raise TemplateDistillError("请先选择模板或连接模板束。")
@@ -1690,7 +1711,19 @@ def resolve_template_pipe(template_pipe: Any, template_id: str, library_dir: str
 
 
 def copy_pipe_extra_fields(target: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
-    for key in ("features_json",):
+    for key in (
+        "features_json",
+        "title",
+        "outline_markdown",
+        "page_styles",
+        "pages",
+        "design_brief",
+        "reference_images",
+        "prompt_list_json",
+        "export_path",
+        "export_json",
+        "template_pipe",
+    ):
         if source.get(key):
             target[key] = source[key]
     return target
@@ -1844,12 +1877,10 @@ def run_runninghub_pipe(
     reference_images: Any = None,
     progress_callback: Any = None,
 ) -> dict[str, Any]:
-    base_pipe = coerce_pipe_value(template_pipe)
-    if not base_pipe:
-        raise TemplateDistillError("请先连接模板束。")
+    base_pipe = coerce_pipe_value(template_pipe) or {}
     prompt = str(prompt_override or base_pipe.get("prompt") or "").strip()
     if not prompt:
-        raise TemplateDistillError("模板束中缺少正向提示词，请先连接模板拼装节点。")
+        raise TemplateDistillError("请输入正向提示词，或连接包含正向提示词的模板束。")
 
     runninghub = run_runninghub_rhart_g2(
         prompt=prompt,
@@ -2078,7 +2109,6 @@ class ImagenStudioRunningHubRHArtG2:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "模板束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "连接“模板拼装”的模板束输出。"}),
                 "渠道": (RUNNINGHUB_CHANNEL_OPTIONS_CN, {"default": "第三方低价渠道", "tooltip": "选择 RunningHub 第三方低价渠道或官方渠道。"}),
                 "画面比例": (ASPECT_RATIO_OPTIONS_CN, {"default": "1:1", "tooltip": "发送给 RunningHub 的 aspectRatio；自动会按 1:1 处理。"}),
                 "分辨率": (RUNNINGHUB_RESOLUTIONS, {"default": "1k", "tooltip": "发送给 RunningHub 的 resolution。"}),
@@ -2086,8 +2116,9 @@ class ImagenStudioRunningHubRHArtG2:
                 "配置路径": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用节点目录 config.json", "tooltip": "可选，指向包含 runninghubApiKey 的独立配置文件或目录。"}),
             },
             "optional": {
+                "模板束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接“模板拼装”的模板束输出；不连接时请填写正向提示词。"}),
                 "参考图像": ("IMAGE", {"tooltip": "可选，连接后自动切换为图生图，并把整批图片作为 imageUrls 发送给 RunningHub。"}),
-                "正向提示词": ("STRING", {"default": "", "multiline": True, "placeholder": "可选，非空时覆盖模板束中的正向提示词。", "tooltip": "手动覆盖发送给 RunningHub RHArt G2 的 prompt。"}),
+                "正向提示词": ("STRING", {"default": "", "multiline": True, "placeholder": "不接模板束时必填；接模板束时可覆盖束内 prompt。", "tooltip": "手动填写或覆盖发送给 RunningHub RHArt G2 的 prompt。"}),
             },
         }
 
@@ -2096,7 +2127,7 @@ class ImagenStudioRunningHubRHArtG2:
     FUNCTION = "generate"
     CATEGORY = NODE_CATEGORY_CN
     OUTPUT_NODE = True
-    DESCRIPTION = "读取模板束中的正向提示词，按所选渠道调用 RunningHub RHArt G2；未接参考图像时走文生图，接入参考图像时自动切换为图生图，并支持 low / medium / high 质量档位。"
+    DESCRIPTION = "读取模板束中的正向提示词，或直接使用手填正向提示词，按所选渠道调用 RunningHub RHArt G2；未接参考图像时走文生图，接入参考图像时自动切换为图生图，并支持 low / medium / high 质量档位。"
     OUTPUT_TOOLTIPS = (
         "下载后的 ComfyUI IMAGE。",
         "写入 RunningHub taskId 和结果URL后的模板束。",

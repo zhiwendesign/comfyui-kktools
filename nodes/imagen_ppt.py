@@ -5,8 +5,10 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +33,9 @@ studio = _load_imagen_studio()
 TemplateDistillError = studio.TemplateDistillError
 
 
-IMAGEN_PPT_PIPE_TYPE = "IMAGEN_PPT_PIPE"
+IMAGEN_PIPE_TYPE = getattr(studio, "IMAGEN_PIPE_TYPE", studio.IMAGEN_STUDIO_PIPE_TYPE)
+IMAGEN_PPT_PIPE_TYPE = IMAGEN_PIPE_TYPE
+LEGACY_IMAGEN_PPT_PIPE_TYPE = "IMAGEN_PPT_PIPE"
 IMAGEN_PPT_PIPE_VERSION = 1
 NODE_CATEGORY_CN = "Imagen Studio/PPT工具"
 PPT_ASPECT_OPTIONS_CN = ("自动", "16:9", "4:3", "1:1", "9:16")
@@ -180,6 +184,40 @@ def read_input(inputs: dict[str, Any], name: str, default: Any = "") -> Any:
     return inputs[name] if name in inputs else default
 
 
+def safe_status_text(value: Any, limit: int = 180) -> str:
+    text = re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
+    text = re.sub(r"sk-[A-Za-z0-9_\-]+", "sk-***", text)
+    return text[:limit]
+
+
+def emit_ppt_status(
+    node_id: Any = None,
+    node_class: str = "",
+    stage: str = "",
+    message: str = "",
+    current: int = 0,
+    total: int = 1,
+    level: str = "info",
+) -> None:
+    payload = {
+        "node_id": "" if node_id is None else str(node_id),
+        "node_class": str(node_class or ""),
+        "stage": str(stage or ""),
+        "message": safe_status_text(message),
+        "current": max(0, int(current or 0)),
+        "total": max(1, int(total or 1)),
+        "level": str(level or "info"),
+    }
+    if payload["message"]:
+        print(f"[ComfyUI Imagen Studio PPT] {payload['message']}")
+    try:
+        from server import PromptServer
+
+        PromptServer.instance.send_sync("imagen-studio/status", payload)
+    except Exception:
+        pass
+
+
 def coerce_dict(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
@@ -196,6 +234,12 @@ def pipe_contains_secret(value: Any) -> bool:
 
 def resolve_template_from_pipe(template_pipe: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     pipe = studio.coerce_pipe_value(template_pipe)
+    if not pipe:
+        return {}, {}
+    try:
+        pipe = studio.resolve_template_pipe(pipe, "")
+    except Exception:
+        pass
     template = as_object(pipe.get("template"))
     if not template and pipe.get("template_json"):
         template = studio.parse_template_json(str(pipe.get("template_json") or ""))
@@ -500,19 +544,23 @@ def pick_page_style_for_block(block: dict[str, Any], index: int, total: int, pag
 
 
 def make_ppt_pipe(**kwargs: Any) -> dict[str, Any]:
-    pipe = {
+    source_pipe = coerce_dict(kwargs.get("template_pipe"))
+    template_obj = as_object(kwargs.get("template")) or as_object(source_pipe.get("template"))
+    pipe = dict(source_pipe)
+    pipe.update({
         "pipe_type": IMAGEN_PPT_PIPE_TYPE,
-        "version": IMAGEN_PPT_PIPE_VERSION,
+        "version": source_pipe.get("version") or IMAGEN_PPT_PIPE_VERSION,
+        "ppt_version": IMAGEN_PPT_PIPE_VERSION,
         "title": str(kwargs.get("title") or "PPT").strip() or "PPT",
         "user_idea": str(kwargs.get("user_idea") or "").strip(),
         "outline_markdown": str(kwargs.get("outline_markdown") or "").strip(),
         "aspect_ratio": str(kwargs.get("aspect_ratio") or "16:9").strip(),
         "prompt_language": str(kwargs.get("prompt_language") or "zh").strip(),
         "target_model": str(kwargs.get("target_model") or "generic-comfyui").strip(),
-        "template_id": str(kwargs.get("template_id") or "").strip(),
-        "template_name": str(kwargs.get("template_name") or "").strip(),
-        "template": as_object(kwargs.get("template")),
-        "template_pipe": as_object(kwargs.get("template_pipe")),
+        "template_id": str(kwargs.get("template_id") or source_pipe.get("template_id") or "").strip(),
+        "template_name": str(kwargs.get("template_name") or source_pipe.get("template_name") or "").strip(),
+        "template": template_obj,
+        "template_pipe": source_pipe,
         "page_styles": kwargs.get("page_styles") if isinstance(kwargs.get("page_styles"), list) else [],
         "pages": kwargs.get("pages") if isinstance(kwargs.get("pages"), list) else [],
         "design_brief": kwargs.get("design_brief") if isinstance(kwargs.get("design_brief"), dict) else {},
@@ -520,7 +568,7 @@ def make_ppt_pipe(**kwargs: Any) -> dict[str, Any]:
         "result_json": str(kwargs.get("result_json") or "").strip(),
         "export_path": str(kwargs.get("export_path") or "").strip(),
         "export_json": str(kwargs.get("export_json") or "").strip(),
-    }
+    })
     if pipe_contains_secret(pipe):
         raise TemplateDistillError("PPT节点束中不应包含 API Key。")
     return pipe
@@ -528,10 +576,15 @@ def make_ppt_pipe(**kwargs: Any) -> dict[str, Any]:
 
 def ensure_ppt_pipe(value: Any) -> dict[str, Any]:
     pipe = coerce_dict(value)
-    if not pipe or pipe.get("pipe_type") != IMAGEN_PPT_PIPE_TYPE:
+    if not pipe:
         raise TemplateDistillError("请连接有效的 PPT节点束。")
+    pipe_type = str(pipe.get("pipe_type") or "").strip()
+    if pipe_type and pipe_type not in (IMAGEN_PPT_PIPE_TYPE, LEGACY_IMAGEN_PPT_PIPE_TYPE):
+        raise TemplateDistillError("请连接有效的 Imagen Studio 节点束。")
     if pipe_contains_secret(pipe):
         raise TemplateDistillError("PPT节点束中不应包含 API Key。")
+    pipe["pipe_type"] = IMAGEN_PPT_PIPE_TYPE
+    pipe.setdefault("ppt_version", IMAGEN_PPT_PIPE_VERSION)
     return pipe
 
 
@@ -666,6 +719,8 @@ def fallback_design_brief(pipe: dict[str, Any], error: str = "") -> dict[str, An
 
 def run_ppt_design_brief(ppt_pipe: Any, reference_images: Any, config_path: str, max_edge: int = 2400) -> dict[str, Any]:
     pipe = dict(ensure_ppt_pipe(ppt_pipe))
+    if not (pipe.get("pages") or []):
+        raise TemplateDistillError("PPT节点束中没有页面，请先连接“PPT 大纲规划”。")
     references = analyze_ppt_references(reference_images, config_path, max_edge=max_edge) if reference_images is not None else []
     payload = {
         "user_idea": pipe.get("user_idea") or "",
@@ -725,7 +780,13 @@ def normalize_compose_result(parsed: dict[str, Any], pipe: dict[str, Any], page:
     }
 
 
-def run_ppt_page_compose(ppt_pipe: Any, config_path: str) -> dict[str, Any]:
+def run_ppt_page_compose(
+    ppt_pipe: Any,
+    config_path: str,
+    page_timeout_seconds: int = 180,
+    concurrency: int = 20,
+    node_id: Any = None,
+) -> dict[str, Any]:
     pipe = dict(ensure_ppt_pipe(ppt_pipe))
     pages = [dict(page) for page in pipe.get("pages") or []]
     if not pages:
@@ -733,8 +794,44 @@ def run_ppt_page_compose(ppt_pipe: Any, config_path: str) -> dict[str, Any]:
     config = studio.load_config(config_path)
     task_config = studio.resolve_task_config(config, "llm")
     total = len(pages)
-    prompt_rows = []
-    for index, page in enumerate(pages):
+    timeout_seconds = max(30, min(900, int(page_timeout_seconds or 180)))
+    try:
+        requested_concurrency = int(concurrency or 20)
+    except Exception:
+        requested_concurrency = 20
+    effective_concurrency = max(1, min(50, requested_concurrency, total))
+    progress_bar = studio.create_comfy_progress_bar(total)
+    prompt_rows: list[Any] = [None] * total
+    emit_ppt_status(
+        node_id,
+        "ImagenStudioPPTPageComposer",
+        "start",
+        f"开始拼装 PPT 页面 prompt，共 {total} 页，并发 {effective_concurrency}。",
+        0,
+        total,
+        "running",
+    )
+
+    completed_count = {"value": 0}
+    completed_lock = threading.Lock()
+
+    def current_completed() -> int:
+        with completed_lock:
+            return completed_count["value"]
+
+    def compose_page(index: int, page: dict[str, Any]) -> tuple[int, dict[str, Any], dict[str, Any], bool, Any, str]:
+        current = index + 1
+        page_no = page.get("pageNo") or current
+        page_title = safe_status_text(page.get("title") or "未命名页面", 60)
+        emit_ppt_status(
+            node_id,
+            "ImagenStudioPPTPageComposer",
+            "page-start",
+            f"第 {page_no}/{total} 页《{page_title}》开始请求 LLM 拼装 prompt。",
+            current_completed(),
+            total,
+            "running",
+        )
         page_style = as_object(page.get("pageStyle")) or None
         payload = {
             "user_idea": pipe.get("user_idea") or "",
@@ -768,13 +865,33 @@ def run_ppt_page_compose(ppt_pipe: Any, config_path: str) -> dict[str, Any]:
                 json.dumps(payload, ensure_ascii=False),
                 temperature=0.5,
                 response_format={"type": "json_object"},
+                timeout=timeout_seconds,
             ))
+            emit_ppt_status(
+                node_id,
+                "ImagenStudioPPTPageComposer",
+                "llm-return",
+                f"第 {page_no}/{total} 页 LLM 已返回，正在整理 JSON。",
+                current_completed(),
+                total,
+                "running",
+            )
         except Exception as exc:
             parsed = {"notes": str(exc)[:200]}
             fallback_used = True
+            emit_ppt_status(
+                node_id,
+                "ImagenStudioPPTPageComposer",
+                "fallback",
+                f"第 {page_no}/{total} 页《{page_title}》LLM 失败，已使用兜底 prompt：{exc}",
+                current_completed(),
+                total,
+                "warning",
+            )
         normalized = normalize_compose_result(parsed, pipe, page, page_style, fallback_used)
+        page = dict(page)
         page.update(normalized)
-        prompt_rows.append({
+        row = {
             "pageNo": page.get("pageNo"),
             "title": page.get("title"),
             "role": page.get("role"),
@@ -782,9 +899,69 @@ def run_ppt_page_compose(ppt_pipe: Any, config_path: str) -> dict[str, Any]:
             "negative": page.get("negative"),
             "notes": page.get("notes"),
             "fallbackUsed": page.get("fallbackUsed"),
-        })
+        }
+        return index, page, row, fallback_used, page_no, page_title
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=effective_concurrency) as executor:
+        future_to_index = {executor.submit(compose_page, index, page): index for index, page in enumerate(pages)}
+        for future in as_completed(future_to_index):
+            try:
+                index, page, row, fallback_used, page_no, page_title = future.result()
+            except Exception as exc:
+                index = future_to_index[future]
+                page = dict(pages[index])
+                page_no = page.get("pageNo") or index + 1
+                page_title = safe_status_text(page.get("title") or "未命名页面", 60)
+                page_style = as_object(page.get("pageStyle")) or None
+                normalized = normalize_compose_result({"notes": str(exc)[:200]}, pipe, page, page_style, True)
+                page.update(normalized)
+                row = {
+                    "pageNo": page.get("pageNo"),
+                    "title": page.get("title"),
+                    "role": page.get("role"),
+                    "prompt": page.get("prompt"),
+                    "negative": page.get("negative"),
+                    "notes": page.get("notes"),
+                    "fallbackUsed": page.get("fallbackUsed"),
+                }
+                fallback_used = True
+                emit_ppt_status(
+                    node_id,
+                    "ImagenStudioPPTPageComposer",
+                    "fallback",
+                    f"第 {page_no}/{total} 页《{page_title}》拼装异常，已使用兜底 prompt：{exc}",
+                    completed,
+                    total,
+                    "warning",
+                )
+            current = completed + 1
+            pages[index] = page
+            prompt_rows[index] = row
+            completed = current
+            with completed_lock:
+                completed_count["value"] = completed
+            studio.update_comfy_progress_bar(progress_bar, current, total)
+            emit_ppt_status(
+                node_id,
+                "ImagenStudioPPTPageComposer",
+                "page-done",
+                f"第 {page_no}/{total} 页《{page_title}》prompt 拼装完成。",
+                current,
+                total,
+                "warning" if fallback_used else "running",
+            )
     pipe["pages"] = pages
-    pipe["prompt_list_json"] = json.dumps(prompt_rows, ensure_ascii=False, indent=2)
+    pipe["prompt_list_json"] = json.dumps([row for row in prompt_rows if row is not None], ensure_ascii=False, indent=2)
+    emit_ppt_status(
+        node_id,
+        "ImagenStudioPPTPageComposer",
+        "done",
+        f"PPT 页面 prompt 拼装完成，共 {total} 页。",
+        total,
+        total,
+        "success",
+    )
     return {
         "pipe": pipe,
         "prompt_list_json": pipe["prompt_list_json"],
@@ -836,14 +1013,27 @@ def run_ppt_runninghub_batch(
     reference_images: Any = None,
     timeout_minutes: int = 30,
     poll_interval_seconds: int = 5,
+    concurrency: int = 50,
+    node_id: Any = None,
 ) -> dict[str, Any]:
     pipe = dict(ensure_ppt_pipe(ppt_pipe))
     pages = [dict(page) for page in pipe.get("pages") or []]
     if not pages:
         raise TemplateDistillError("PPT节点束中没有页面。")
-    images = []
-    results = []
-    total_steps = max(1, len(pages) * 5)
+    page_jobs = []
+    for page_index, page in enumerate(pages):
+        prompt = str(page.get("prompt") or "").strip()
+        if not prompt:
+            raise TemplateDistillError(f"第 {page.get('pageNo') or '?'} 页缺少 prompt，请先连接“PPT 页面拼装”。")
+        page_jobs.append((page_index, page, prompt, page.get("pageNo") or page_index + 1, str(page.get("title") or "").strip()))
+    try:
+        requested_concurrency = int(concurrency or 50)
+    except Exception:
+        requested_concurrency = 50
+    effective_concurrency = max(1, min(100, requested_concurrency, len(page_jobs)))
+    images: list[Any] = [None] * len(pages)
+    results: list[Any] = [None] * len(pages)
+    total_steps = max(1, len(pages))
     progress_bar = None
     try:
         from comfy.utils import ProgressBar
@@ -853,18 +1043,41 @@ def run_ppt_runninghub_batch(
         progress_bar = None
     timeout_seconds = max(60, int(timeout_minutes or 30) * 60)
     poll_interval = max(1, int(poll_interval_seconds or 5))
-    for page_index, page in enumerate(pages):
-        prompt = str(page.get("prompt") or "").strip()
-        if not prompt:
-            raise TemplateDistillError(f"第 {page.get('pageNo') or '?'} 页缺少 prompt，请先连接“PPT 页面拼装”。")
-        page_no = page.get("pageNo") or page_index + 1
-        step_base = page_index * 5
+    completed = 0
+    failed = 0
+    emit_ppt_status(
+        node_id,
+        "ImagenStudioPPTRunningHubBatch",
+        "start",
+        f"开始 RunningHub 批量生图，共 {len(pages)} 页，并发 {effective_concurrency}。",
+        0,
+        total_steps,
+        "running",
+    )
+
+    def generate_page(page_index: int, page: dict[str, Any], prompt: str, page_no: Any, title: str) -> tuple[int, dict[str, Any], Any, dict[str, Any]]:
+        title_text = safe_status_text(title or "未命名页面", 60)
+        emit_ppt_status(
+            node_id,
+            "ImagenStudioPPTRunningHubBatch",
+            "submit",
+            f"第 {page_no}/{len(pages)} 页《{title_text}》提交 RunningHub 任务。",
+            completed,
+            total_steps,
+            "running",
+        )
 
         def progress_callback(stage: str = "", current: int = 0, total: int = 5, message: str = "", status: str = "") -> None:
-            absolute = min(total_steps, step_base + max(0, int(current or 0)))
-            studio.update_comfy_progress_bar(progress_bar, absolute, total_steps)
             if message:
-                print(f"[ComfyUI Imagen Studio PPT] 第 {page_no}/{len(pages)} 页：{message}")
+                emit_ppt_status(
+                    node_id,
+                    "ImagenStudioPPTRunningHubBatch",
+                    stage or "poll",
+                    f"第 {page_no}/{len(pages)} 页《{title_text}》：{message}",
+                    completed,
+                    total_steps,
+                    "running",
+                )
 
         result = studio.run_runninghub_rhart_g2(
             prompt=prompt,
@@ -878,26 +1091,83 @@ def run_ppt_runninghub_batch(
             timeout_seconds=float(timeout_seconds),
             progress_callback=progress_callback,
         )
+        page = dict(page)
         page["taskId"] = result["task_id"]
         page["outputUrl"] = result["output_url"]
         page["resultJson"] = result["result_json"]
-        images.append(result["image"])
-        results.append({
+        row = {
             "pageNo": page.get("pageNo"),
             "title": page.get("title"),
             "taskId": page.get("taskId"),
             "outputUrl": page.get("outputUrl"),
-        })
+            "status": "SUCCESS",
+        }
+        emit_ppt_status(
+            node_id,
+            "ImagenStudioPPTRunningHubBatch",
+            "page-done",
+            f"第 {page_no}/{len(pages)} 页《{title_text}》生图完成。",
+            completed + 1,
+            total_steps,
+            "running",
+        )
+        return page_index, page, result["image"], row
+
+    executor = ThreadPoolExecutor(max_workers=effective_concurrency)
+    future_to_page = {
+        executor.submit(generate_page, page_index, page, prompt, page_no, title): (page_no, title)
+        for page_index, page, prompt, page_no, title in page_jobs
+    }
+    try:
+        for future in as_completed(future_to_page):
+            page_no, title = future_to_page[future]
+            try:
+                page_index, page, image, row = future.result()
+            except Exception as exc:
+                failed += 1
+                for pending in future_to_page:
+                    if pending is not future:
+                        pending.cancel()
+                title_text = f"《{title}》" if title else ""
+                emit_ppt_status(
+                    node_id,
+                    "ImagenStudioPPTRunningHubBatch",
+                    "error",
+                    f"第 {page_no} 页{title_text} RunningHub 生图失败：{exc}",
+                    completed,
+                    total_steps,
+                    "error",
+                )
+                raise TemplateDistillError(f"第 {page_no} 页{title_text} RunningHub 生图失败：{exc}") from exc
+            pages[page_index] = page
+            images[page_index] = image
+            results[page_index] = row
+            completed += 1
+            studio.update_comfy_progress_bar(progress_bar, completed, total_steps)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     pipe["pages"] = pages
     pipe["runninghub"] = {
         "channel": studio.normalize_runninghub_channel_option(channel),
         "resolution": resolution if resolution in studio.RUNNINGHUB_RESOLUTIONS else "1k",
         "quality": studio.normalize_runninghub_quality_option(quality),
+        "concurrency": effective_concurrency,
+        "completed": completed,
+        "failed": failed,
         "timeoutMinutes": int(timeout_seconds / 60),
         "pollIntervalSeconds": poll_interval,
         "results": results,
     }
     pipe["result_json"] = json.dumps(pipe["runninghub"], ensure_ascii=False, indent=2)
+    emit_ppt_status(
+        node_id,
+        "ImagenStudioPPTRunningHubBatch",
+        "done",
+        f"RunningHub 批量生图完成：{completed}/{len(pages)} 页。",
+        completed,
+        total_steps,
+        "success",
+    )
     return {
         "image": normalize_image_batch(images),
         "pipe": pipe,
@@ -905,10 +1175,95 @@ def run_ppt_runninghub_batch(
     }
 
 
+def run_ppt_pipe_unpack(ppt_pipe: Any, page_no: int = 1, output_mode: str = "当前页") -> dict[str, Any]:
+    pipe = dict(ensure_ppt_pipe(ppt_pipe))
+    pages = [dict(page) for page in pipe.get("pages") or []]
+    total = len(pages)
+    if not pages:
+        raise TemplateDistillError("PPT节点束中没有页面，请先连接“PPT 页面拼装”。")
+    current_page_no = max(1, int(page_no or 1))
+    mode = str(output_mode or "当前页").strip()
+    if mode == "全部合并":
+        lines = []
+        negatives = []
+        for index, page in enumerate(pages, start=1):
+            title = str(page.get("title") or f"第 {index} 页").strip()
+            prompt = str(page.get("prompt") or "").strip()
+            negative = str(page.get("negative") or "").strip()
+            lines.append(f"第 {index} 页：{title}\n{prompt}")
+            if negative:
+                negatives.append(f"第 {index} 页：{negative}")
+        return {
+            "pipe": pipe,
+            "prompt": "\n\n---\n\n".join(lines).strip(),
+            "negative": "\n\n---\n\n".join(negatives).strip(),
+            "title": pipe.get("title") or "全部页面",
+            "page_json": json.dumps(pages, ensure_ascii=False, indent=2),
+            "page_count": total,
+            "current_page_no": current_page_no,
+        }
+    page_index = current_page_no - 1
+    if page_index < 0 or page_index >= total:
+        raise TemplateDistillError(f"页码超出范围：{page_no}，当前 PPT 共 {total} 页。")
+    page = pages[page_index]
+    prompt = str(page.get("prompt") or "").strip()
+    if not prompt:
+        raise TemplateDistillError(f"第 {page_no} 页缺少 prompt，请先连接“PPT 页面拼装”。")
+    return {
+        "pipe": pipe,
+        "prompt": prompt,
+        "negative": str(page.get("negative") or "").strip(),
+        "title": str(page.get("title") or f"第 {page_no} 页").strip(),
+        "page_json": json.dumps(page, ensure_ascii=False, indent=2),
+        "page_count": total,
+        "current_page_no": current_page_no,
+    }
+
+
 def safe_filename(value: str, fallback: str = "ppt") -> str:
     clean = re.sub(r'[\\/:*?"<>|]+', "_", str(value or fallback))
     clean = re.sub(r"\s+", "_", clean).strip("._ ")
     return clean[:80] or fallback
+
+
+def output_page_image_dir() -> Path:
+    root = output_export_dir() / "pages"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def save_page_image_from_tensor(images: Any, title: str, page_no: int) -> str:
+    arr = tensor_to_numpy_batch(images)
+    if arr.shape[0] <= 0:
+        raise TemplateDistillError("图像输入为空，无法写回 PPT束。")
+    image = Image.fromarray((np.clip(arr[0], 0, 1) * 255).astype(np.uint8)).convert("RGB")
+    path = output_page_image_dir() / f"{safe_filename(title, 'page')}-p{int(page_no):03d}-{int(time.time())}.png"
+    image.save(path, format="PNG")
+    return str(path)
+
+
+def run_ppt_image_writeback(ppt_pipe: Any, images: Any, page_no: int = 1) -> dict[str, Any]:
+    pipe = dict(ensure_ppt_pipe(ppt_pipe))
+    pages = [dict(page) for page in pipe.get("pages") or []]
+    total = len(pages)
+    if not pages:
+        raise TemplateDistillError("PPT节点束中没有页面。")
+    page_index = int(page_no or 1) - 1
+    if page_index < 0 or page_index >= total:
+        raise TemplateDistillError(f"页码超出范围：{page_no}，当前 PPT 共 {total} 页。")
+    page = pages[page_index]
+    title = str(page.get("title") or f"第 {page_no} 页").strip()
+    image_path = save_page_image_from_tensor(images, title, int(page_no or 1))
+    page["imagePath"] = image_path
+    page["imageSource"] = "writeback"
+    pages[page_index] = page
+    pipe["pages"] = pages
+    pipe["writeback_json"] = json.dumps({
+        "pageNo": page.get("pageNo") or page_no,
+        "title": title,
+        "imagePath": image_path,
+    }, ensure_ascii=False, indent=2)
+    return {"pipe": pipe, "writeback_json": pipe["writeback_json"]}
 
 
 def output_export_dir() -> Path:
@@ -936,6 +1291,16 @@ def image_batch_to_png_bytes(images: Any) -> list[bytes]:
 def page_images_from_pipe(pipe: dict[str, Any]) -> list[bytes]:
     out = []
     for page in pipe.get("pages") or []:
+        image_path = str(page.get("imagePath") or "").strip()
+        if image_path:
+            path = Path(image_path)
+            if not path.exists():
+                raise TemplateDistillError(f"PPT 页面图片不存在：{image_path}")
+            image = Image.open(path).convert("RGB")
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            out.append(buffer.getvalue())
+            continue
         url = str(page.get("outputUrl") or "").strip()
         if not url:
             continue
@@ -1227,7 +1592,7 @@ class ImagenStudioPPTOutlinePlan:
     RETURN_NAMES = ("PPT束", "页面计划JSON", "PPT标题")
     FUNCTION = "plan"
     CATEGORY = NODE_CATEGORY_CN
-    DESCRIPTION = "把 Markdown 大纲拆成 PPT 页面计划，并写入 IMAGEN_PPT_PIPE。"
+    DESCRIPTION = "把 Markdown 大纲拆成 PPT 页面计划，并写入统一 Imagen Studio 节点束。"
 
     def plan(self, **kwargs):
         result = run_ppt_outline_plan(
@@ -1278,7 +1643,10 @@ class ImagenStudioPPTPageComposer:
             "required": {
                 "PPT束": (IMAGEN_PPT_PIPE_TYPE, {"tooltip": "连接 PPT 设计规范或 PPT 大纲规划输出。"}),
                 "配置路径": ("STRING", {"default": ""}),
+                "单页超时秒": ("INT", {"default": 180, "min": 30, "max": 900, "step": 10, "tooltip": "单页 LLM 拼装最长等待秒数。节点卡住时通常是这里在等模型返回。"}),
+                "并发数": ("INT", {"default": 20, "min": 1, "max": 50, "step": 1, "tooltip": "同时拼装多少页 PPT prompt。默认 20，过高可能触发 LLM 渠道限流。"}),
             },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = (IMAGEN_PPT_PIPE_TYPE, "STRING", "STRING")
@@ -1291,6 +1659,9 @@ class ImagenStudioPPTPageComposer:
         result = run_ppt_page_compose(
             read_input(kwargs, "PPT束", None),
             read_input(kwargs, "配置路径", ""),
+            int(read_input(kwargs, "单页超时秒", 180) or 180),
+            int(read_input(kwargs, "并发数", 20) or 20),
+            read_input(kwargs, "unique_id", ""),
         )
         return result["pipe"], result["prompt_list_json"], result["pages_json"]
 
@@ -1304,6 +1675,7 @@ class ImagenStudioPPTRunningHubBatch:
                 "渠道": (studio.RUNNINGHUB_CHANNEL_OPTIONS_CN, {"default": "第三方低价渠道"}),
                 "分辨率": (studio.RUNNINGHUB_RESOLUTIONS, {"default": "1k"}),
                 "质量": (studio.RUNNINGHUB_QUALITY_OPTIONS, {"default": studio.RUNNINGHUB_DEFAULT_QUALITY}),
+                "并发数": ("INT", {"default": 50, "min": 1, "max": 100, "step": 1, "tooltip": "同时提交并等待的 RunningHub 页面任务数量。上游支持 100，并发越高越快，但本机网络压力也更大。"}),
                 "单页超时分钟": ("INT", {"default": 30, "min": 1, "max": 180, "step": 1, "tooltip": "每一页 RunningHub 任务最多等待多久。PPT 页面通常比普通图更慢，默认 30 分钟。"}),
                 "轮询间隔秒": ("INT", {"default": 5, "min": 1, "max": 60, "step": 1, "tooltip": "查询 RunningHub 任务状态的间隔。"}),
                 "配置路径": ("STRING", {"default": ""}),
@@ -1311,6 +1683,7 @@ class ImagenStudioPPTRunningHubBatch:
             "optional": {
                 "参考图像": ("IMAGE", {"tooltip": "可选，连接后每页 RunningHub 调用会走图生图。"}),
             },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("IMAGE", IMAGEN_PPT_PIPE_TYPE, "STRING")
@@ -1329,8 +1702,70 @@ class ImagenStudioPPTRunningHubBatch:
             read_input(kwargs, "参考图像", None),
             int(read_input(kwargs, "单页超时分钟", 30) or 30),
             int(read_input(kwargs, "轮询间隔秒", 5) or 5),
+            int(read_input(kwargs, "并发数", 50) or 50),
+            read_input(kwargs, "unique_id", ""),
         )
         return result["image"], result["pipe"], result["result_json"]
+
+
+class ImagenStudioPPTPipeUnpack:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "PPT束": (IMAGEN_PPT_PIPE_TYPE, {"tooltip": "连接 PPT 页面拼装输出。"}),
+                "页码": ("INT", {"default": 1, "min": 1, "max": 999, "step": 1, "tooltip": "输出第几页的 prompt，1 表示第一页。"}),
+                "输出模式": (("当前页", "全部合并"), {"default": "当前页"}),
+            },
+        }
+
+    RETURN_TYPES = (IMAGEN_PPT_PIPE_TYPE, "STRING", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("PPT束", "正向提示词", "负面提示词", "页面标题", "页面JSON", "页数", "当前页码")
+    FUNCTION = "unpack"
+    CATEGORY = NODE_CATEGORY_CN
+    DESCRIPTION = "像 EasyUse Pipe Out 一样拆开 PPT束，把页面 prompt 输出为普通 STRING。"
+
+    def unpack(self, **kwargs):
+        result = run_ppt_pipe_unpack(
+            read_input(kwargs, "PPT束", None),
+            int(read_input(kwargs, "页码", 1) or 1),
+            read_input(kwargs, "输出模式", "当前页"),
+        )
+        return (
+            result["pipe"],
+            result["prompt"],
+            result["negative"],
+            result["title"],
+            result["page_json"],
+            result["page_count"],
+            result["current_page_no"],
+        )
+
+
+class ImagenStudioPPTImageWriteback:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "PPT束": (IMAGEN_PPT_PIPE_TYPE, {"tooltip": "连接 PPT 束拆包输出的 PPT束。"}),
+                "图像": ("IMAGE", {"tooltip": "连接 kkimage2_灵思API.image 或其他单页生图结果。"}),
+                "页码": ("INT", {"default": 1, "min": 1, "max": 999, "step": 1}),
+            },
+        }
+
+    RETURN_TYPES = (IMAGEN_PPT_PIPE_TYPE, "STRING")
+    RETURN_NAMES = ("PPT束", "写回JSON")
+    FUNCTION = "writeback"
+    CATEGORY = NODE_CATEGORY_CN
+    DESCRIPTION = "把外部生图结果写回 PPT束的指定页面，便于继续导出 PPTX。"
+
+    def writeback(self, **kwargs):
+        result = run_ppt_image_writeback(
+            read_input(kwargs, "PPT束", None),
+            read_input(kwargs, "图像", None),
+            int(read_input(kwargs, "页码", 1) or 1),
+        )
+        return result["pipe"], result["writeback_json"]
 
 
 class ImagenStudioPPTExport:
@@ -1368,6 +1803,8 @@ NODE_CLASS_MAPPINGS = {
     "ImagenStudioPPTDesignBrief": ImagenStudioPPTDesignBrief,
     "ImagenStudioPPTPageComposer": ImagenStudioPPTPageComposer,
     "ImagenStudioPPTRunningHubBatch": ImagenStudioPPTRunningHubBatch,
+    "ImagenStudioPPTPipeUnpack": ImagenStudioPPTPipeUnpack,
+    "ImagenStudioPPTImageWriteback": ImagenStudioPPTImageWriteback,
     "ImagenStudioPPTExport": ImagenStudioPPTExport,
 }
 
@@ -1377,6 +1814,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImagenStudioPPTDesignBrief": "Imagen Studio PPT 设计规范",
     "ImagenStudioPPTPageComposer": "Imagen Studio PPT 页面拼装",
     "ImagenStudioPPTRunningHubBatch": "Imagen Studio PPT RunningHub 批量生图",
+    "ImagenStudioPPTPipeUnpack": "Imagen Studio PPT 束拆包",
+    "ImagenStudioPPTImageWriteback": "Imagen Studio PPT 图像写回",
     "ImagenStudioPPTExport": "Imagen Studio PPT 导出",
 }
 

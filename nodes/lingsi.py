@@ -12,16 +12,51 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 
-CHAT_ENDPOINT = "https://www.mindapi.cc/v1/chat/completions"
-IMAGE_BASE_URL = "https://www.mindapi.cc/v1"
-IMAGE_GENERATIONS_ENDPOINT = f"{IMAGE_BASE_URL}/images/generations"
-IMAGE_EDITS_ENDPOINT = f"{IMAGE_BASE_URL}/images/edits"
-BANANA_GENERATE_ENDPOINT = "https://www.mindapi.cc/pt/v1/api/generate"
+DEFAULT_BASE_URL = "https://www.mindapi.cc"
+IMAGEN_STUDIO_PIPE_TYPE = "IMAGEN_STUDIO_PIPE"
+CHAT_ROUTE = "/v1/chat/completions"
+IMAGE_GENERATIONS_ROUTE = "/v1/images/generations"
+IMAGE_EDITS_ROUTE = "/v1/images/edits"
+BANANA_GENERATE_ROUTE = "/pt/v1/api/generate"
+
+
+def normalize_api_base_url(base_url=None):
+    text = str(base_url or DEFAULT_BASE_URL).strip() or DEFAULT_BASE_URL
+    text = text.rstrip("/")
+    if re.search(r"/v1$", text, re.I):
+        text = text[:-3].rstrip("/")
+    return text or DEFAULT_BASE_URL
+
+
+def api_endpoint(base_url, route):
+    return f"{normalize_api_base_url(base_url)}{route}"
+
+
+def resolve_api_endpoints(base_url=None):
+    return {
+        "chat": api_endpoint(base_url, CHAT_ROUTE),
+        "image_generations": api_endpoint(base_url, IMAGE_GENERATIONS_ROUTE),
+        "image_edits": api_endpoint(base_url, IMAGE_EDITS_ROUTE),
+        "banana_generate": api_endpoint(base_url, BANANA_GENERATE_ROUTE),
+    }
+
+
+CHAT_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, CHAT_ROUTE)
+IMAGE_BASE_URL = api_endpoint(DEFAULT_BASE_URL, "/v1")
+IMAGE_GENERATIONS_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, IMAGE_GENERATIONS_ROUTE)
+IMAGE_EDITS_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, IMAGE_EDITS_ROUTE)
+BANANA_GENERATE_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, BANANA_GENERATE_ROUTE)
 ENDPOINT = CHAT_ENDPOINT
 REQUEST_TIMEOUT_SECONDS = 300
 MAX_PIXELS = 8_294_400
+DEFAULT_LINGSI_PPT_CONCURRENCY = 3
+DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
+DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 15
+MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 500
 
 MODELS = [
     "gpt-image-2",
@@ -785,25 +820,484 @@ def _debug_package(
     return package
 
 
+def safe_status_text(value, limit=180):
+    text = re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
+    text = re.sub(r"sk-[A-Za-z0-9_\-]+", "sk-***", text)
+    text = re.sub(r"Bearer\s+[A-Za-z0-9._\-]+", "Bearer ***", text)
+    return text[:limit]
+
+
+def emit_lingsi_ppt_status(node_id=None, stage="", message="", current=0, total=1, level="info"):
+    payload = {
+        "node_id": "" if node_id is None else str(node_id),
+        "node_class": "kkimage2_灵思API",
+        "stage": str(stage or ""),
+        "message": safe_status_text(message),
+        "current": max(0, int(current or 0)),
+        "total": max(1, int(total or 1)),
+        "level": str(level or "info"),
+    }
+    if payload["message"]:
+        print(f"[Lingsi PPT] {payload['message']}")
+    try:
+        from server import PromptServer
+
+        PromptServer.instance.send_sync("imagen-studio/status", payload)
+    except Exception:
+        pass
+
+
+def try_json(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        return json.loads(value)
+    except Exception:
+        return None
+
+
+def coerce_ppt_pipe(value):
+    if isinstance(value, dict):
+        return dict(value)
+    parsed = try_json(value)
+    if isinstance(parsed, dict):
+        return parsed
+    return {}
+
+
+def pipe_contains_secret(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            lowered = str(key or "").lower()
+            if "apikey" in lowered or "api_key" in lowered or "authorization" in lowered:
+                return True
+            if pipe_contains_secret(item):
+                return True
+    if isinstance(value, list):
+        return any(pipe_contains_secret(item) for item in value)
+    return False
+
+
+def normalize_ppt_aspect_ratio(value):
+    text = str(value or "16:9").strip()
+    if text == "自动" or text.lower() == "auto":
+        return "auto"
+    return text if text in ASPECT_RATIOS else "16:9"
+
+
+def tensor_to_numpy_batch(images):
+    import numpy as np
+
+    if images is None:
+        return np.empty((0, 1, 1, 3), dtype=np.float32)
+    if hasattr(images, "detach"):
+        images = images.detach().cpu().numpy()
+    arr = np.asarray(images).astype(np.float32)
+    if arr.ndim == 3:
+        arr = arr[None, ...]
+    return np.clip(arr, 0.0, 1.0)
+
+
+def numpy_batch_to_comfy(arr):
+    try:
+        import torch
+
+        return torch.from_numpy(arr.astype("float32"))
+    except Exception:
+        return arr.astype("float32")
+
+
+def normalize_image_batch(images):
+    import numpy as np
+    from PIL import Image
+
+    arrays = [tensor_to_numpy_batch(image)[0] for image in images if tensor_to_numpy_batch(image).shape[0] > 0]
+    if not arrays:
+        raise RuntimeError("没有可输出的 PPT 页面图片。")
+    h, w = arrays[0].shape[:2]
+    normalized = []
+    for array in arrays:
+        if array.shape[:2] != (h, w):
+            pil = Image.fromarray((np.clip(array, 0, 1) * 255).astype(np.uint8))
+            pil = pil.resize((w, h), Image.LANCZOS)
+            array = np.asarray(pil).astype(np.float32) / 255.0
+        normalized.append(array)
+    return numpy_batch_to_comfy(np.stack(normalized, axis=0))
+
+
+def lingsi_ppt_output_dir():
+    try:
+        import folder_paths
+
+        root = Path(folder_paths.get_output_directory()) / "imagen-ppt" / "pages"
+    except Exception:
+        root = Path(__file__).resolve().parents[1] / "imagen-studio" / "ppt-exports" / "pages"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def safe_filename(value, fallback="page"):
+    clean = re.sub(r'[\\/:*?"<>|]+', "_", str(value or fallback))
+    clean = re.sub(r"\s+", "_", clean).strip("._ ")
+    return clean[:80] or fallback
+
+
+def save_ppt_page_image(images, title, page_no):
+    import numpy as np
+    from PIL import Image
+
+    arr = tensor_to_numpy_batch(images)
+    if arr.shape[0] <= 0:
+        raise RuntimeError("图像输入为空，无法写回 PPT束。")
+    image = Image.fromarray((np.clip(arr[0], 0, 1) * 255).astype(np.uint8)).convert("RGB")
+    path = lingsi_ppt_output_dir() / f"{safe_filename(title, 'page')}-p{int(page_no):03d}-{int(time.time())}.png"
+    image.save(path, format="PNG")
+    return str(path)
+
+
+def summarize_lingsi_debug(raw_json):
+    parsed = try_json(raw_json) if isinstance(raw_json, str) else raw_json
+    if not isinstance(parsed, dict):
+        return {"rawPreview": safe_status_text(raw_json, 500)}
+    return {
+        "ok": parsed.get("ok"),
+        "endpoint": parsed.get("endpoint"),
+        "route": parsed.get("route"),
+        "model": parsed.get("model"),
+        "aspectRatio": parsed.get("aspect_ratio"),
+        "requestedResolution": parsed.get("requested_resolution"),
+        "effectiveResolution": parsed.get("effective_resolution"),
+        "generatedCount": parsed.get("generated_count"),
+        "selectedImage": parsed.get("selected_image"),
+        "error": parsed.get("error"),
+    }
+
+
+def lingsi_error_summary(exc, api_key=""):
+    text = str(exc or "")
+    if api_key:
+        text = text.replace(api_key, "***")
+    text = re.sub(r"Bearer\s+[A-Za-z0-9._\-]+", "Bearer ***", text)
+    parsed = try_json(text)
+    if isinstance(parsed, dict):
+        bits = [
+            str(parsed.get("error") or "").strip(),
+            f"endpoint={parsed.get('endpoint')}" if parsed.get("endpoint") else "",
+            f"route={parsed.get('route')}" if parsed.get("route") else "",
+        ]
+        return safe_status_text("；".join(item for item in bits if item), 500)
+    return safe_status_text(text, 500)
+
+
+def is_lingsi_rate_limit_error(exc):
+    text = str(exc or "")
+    parsed = try_json(text)
+    status = None
+    error_text = text
+    if isinstance(parsed, dict):
+        response_payload = parsed.get("response_payload")
+        if isinstance(response_payload, dict):
+            status = response_payload.get("status")
+            body = response_payload.get("body")
+            if body:
+                error_text = f"{error_text} {body}"
+        error_text = f"{error_text} {parsed.get('error') or ''}"
+    lowered = str(error_text or "").lower()
+    return (
+        status == 429
+        or "http 429" in lowered
+        or "rate_limit" in lowered
+        or "rate limit" in lowered
+        or "concurrency limit exceeded" in lowered
+        or "upstream rate limit exceeded" in lowered
+    )
+
+
+def lingsi_rate_limit_wait_seconds(attempt, base_seconds):
+    try:
+        base = int(base_seconds or DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS)
+    except Exception:
+        base = DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS
+    base = max(1, min(MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS, base))
+    multiplier = 2 ** max(0, int(attempt or 1) - 1)
+    return min(MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS, base * multiplier)
+
+
+def create_progress_bar(total):
+    try:
+        from comfy.utils import ProgressBar
+
+        return ProgressBar(max(1, int(total or 1)))
+    except Exception:
+        return None
+
+
+def update_progress_bar(progress_bar, current, total):
+    if progress_bar is None:
+        return
+    try:
+        progress_bar.update_absolute(int(current), int(total))
+    except Exception:
+        try:
+            progress_bar.update(int(current))
+        except Exception:
+            pass
+
+
+def generate_lingsi_ppt_batch(
+    api_key,
+    ppt_pipe,
+    model,
+    resolution,
+    base_url=DEFAULT_BASE_URL,
+    concurrency=DEFAULT_LINGSI_PPT_CONCURRENCY,
+    retry_count=DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES,
+    retry_wait_seconds=DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+    node_id=None,
+):
+    pipe = coerce_ppt_pipe(ppt_pipe)
+    if not pipe:
+        raise RuntimeError("请连接有效的 PPT束。")
+    pages = [dict(page) for page in pipe.get("pages") or []]
+    if not pages:
+        raise RuntimeError("PPT束中没有页面，请先连接 PPT 页面拼装。")
+    api_key = str(api_key or "").strip()
+    if not api_key:
+        raise RuntimeError("api_key is required")
+    model = str(model or "gpt-image-2").strip()
+    if model not in MODELS:
+        raise RuntimeError(f"Unsupported model: {model}")
+    resolution = str(resolution or "1K").strip().upper()
+    if resolution not in RESOLUTIONS:
+        raise RuntimeError(f"Unsupported resolution: {resolution}")
+    base_url = normalize_api_base_url(base_url)
+    aspect_ratio = normalize_ppt_aspect_ratio(pipe.get("aspect_ratio") or "16:9")
+    page_jobs = []
+    for page_index, page in enumerate(pages):
+        prompt = str(page.get("prompt") or "").strip()
+        if not prompt:
+            raise RuntimeError(f"第 {page.get('pageNo') or '?'} 页缺少 prompt，请先连接 PPT 页面拼装。")
+        page_jobs.append((page_index, page, prompt, page.get("pageNo") or page_index + 1, str(page.get("title") or "").strip()))
+    try:
+        requested_concurrency = int(concurrency or DEFAULT_LINGSI_PPT_CONCURRENCY)
+    except Exception:
+        requested_concurrency = DEFAULT_LINGSI_PPT_CONCURRENCY
+    effective_concurrency = max(1, min(20, requested_concurrency, len(page_jobs)))
+    try:
+        rate_limit_retries = int(retry_count or 0)
+    except Exception:
+        rate_limit_retries = DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES
+    rate_limit_retries = max(0, min(20, rate_limit_retries))
+    try:
+        rate_limit_wait = int(retry_wait_seconds or DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS)
+    except Exception:
+        rate_limit_wait = DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS
+    rate_limit_wait = max(1, min(MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS, rate_limit_wait))
+    images = [None] * len(page_jobs)
+    results = [None] * len(page_jobs)
+    progress_bar = create_progress_bar(len(page_jobs))
+    completed = 0
+    failed = 0
+    emit_lingsi_ppt_status(
+        node_id,
+        "start",
+        f"开始灵思批量生图，共 {len(page_jobs)} 页，并发 {effective_concurrency}。",
+        0,
+        len(page_jobs),
+        "running",
+    )
+
+    def generate_page(page_index, page, prompt, page_no, title):
+        title_text = safe_status_text(title or "未命名页面", 60)
+        emit_lingsi_ppt_status(
+            node_id,
+            "submit",
+            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》提交灵思生图。",
+            completed,
+            len(page_jobs),
+            "running",
+        )
+        retry_attempts = []
+        retry_index = 0
+        while True:
+            try:
+                image, raw_json = generate_lingsi_image(
+                    api_key=api_key,
+                    prompt=prompt,
+                    model=model,
+                    aspect_ratio=aspect_ratio,
+                    resolution=resolution,
+                    count=1,
+                    image=None,
+                    base_url=base_url,
+                )
+                break
+            except Exception as exc:
+                if not is_lingsi_rate_limit_error(exc) or retry_index >= rate_limit_retries:
+                    raise
+                retry_index += 1
+                wait_seconds = lingsi_rate_limit_wait_seconds(retry_index, rate_limit_wait)
+                summary = lingsi_error_summary(exc, api_key)
+                retry_attempts.append({
+                    "attempt": retry_index,
+                    "waitSeconds": wait_seconds,
+                    "error": summary,
+                })
+                emit_lingsi_ppt_status(
+                    node_id,
+                    "rate-limit",
+                    (
+                        f"第 {page_no}/{len(page_jobs)} 页《{title_text}》触发限流，"
+                        f"{wait_seconds} 秒后重试 {retry_index}/{rate_limit_retries}。"
+                    ),
+                    completed,
+                    len(page_jobs),
+                    "warning",
+                )
+                print(
+                    f"[Lingsi PPT] rate limited page={page_no} title={title_text} "
+                    f"retry={retry_index}/{rate_limit_retries} wait={wait_seconds}s error={summary}"
+                )
+                time.sleep(wait_seconds)
+        page = dict(page)
+        image_path = save_ppt_page_image(image, title_text, int(page_no or page_index + 1))
+        debug = summarize_lingsi_debug(raw_json)
+        if retry_attempts:
+            debug["retryCount"] = len(retry_attempts)
+            debug["retryAttempts"] = retry_attempts
+        page["imagePath"] = image_path
+        page["imageSource"] = "lingsi-batch"
+        page["lingsiDebug"] = debug
+        row = {
+            "pageNo": page.get("pageNo"),
+            "title": page.get("title"),
+            "status": "SUCCESS",
+            "imagePath": image_path,
+            "debug": debug,
+            "retryCount": len(retry_attempts),
+        }
+        emit_lingsi_ppt_status(
+            node_id,
+            "page-done",
+            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》灵思生图完成。",
+            completed + 1,
+            len(page_jobs),
+            "running",
+        )
+        return page_index, page, image, row
+
+    executor = ThreadPoolExecutor(max_workers=effective_concurrency)
+    future_to_page = {
+        executor.submit(generate_page, page_index, page, prompt, page_no, title): (page_no, title)
+        for page_index, page, prompt, page_no, title in page_jobs
+    }
+    try:
+        for future in as_completed(future_to_page):
+            page_no, title = future_to_page[future]
+            try:
+                page_index, page, image, row = future.result()
+            except Exception as exc:
+                failed += 1
+                for pending in future_to_page:
+                    if pending is not future:
+                        pending.cancel()
+                title_text = f"《{title}》" if title else ""
+                summary = lingsi_error_summary(exc, api_key)
+                emit_lingsi_ppt_status(
+                    node_id,
+                    "error",
+                    f"第 {page_no} 页{title_text} 灵思生图失败：{summary}",
+                    completed,
+                    len(page_jobs),
+                    "error",
+                )
+                raise RuntimeError(f"第 {page_no} 页{title_text} 灵思生图失败：{summary}") from exc
+            pages[page_index] = page
+            images[page_index] = image
+            results[page_index] = row
+            completed += 1
+            update_progress_bar(progress_bar, completed, len(page_jobs))
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    pipe["pages"] = pages
+    pipe["lingsi"] = {
+        "baseUrl": base_url,
+        "model": model,
+        "aspectRatio": aspect_ratio,
+        "resolution": resolution,
+        "concurrency": effective_concurrency,
+        "rateLimitRetries": rate_limit_retries,
+        "rateLimitWaitSeconds": rate_limit_wait,
+        "maxRateLimitWaitSeconds": MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+        "completed": completed,
+        "failed": failed,
+        "results": results,
+    }
+    pipe["result_json"] = _json_dumps(pipe["lingsi"])
+    if pipe_contains_secret(pipe):
+        raise RuntimeError("PPT束中不应包含 API Key。")
+    emit_lingsi_ppt_status(
+        node_id,
+        "done",
+        f"灵思批量生图完成：{completed}/{len(page_jobs)} 页。",
+        completed,
+        len(page_jobs),
+        "success",
+    )
+    return normalize_image_batch(images), _json_dumps(pipe["lingsi"]), pipe
+
+
 class kkLingsiNativePromptImage:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "api_key": ("STRING", {"default": "", "multiline": False}),
-                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "model": (MODELS, {"default": "gpt-image-2"}),
                 "aspect_ratio": (ASPECT_RATIOS, {"default": "auto"}),
                 "resolution": (RESOLUTIONS, {"default": "1K"}),
                 "count": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "base_url": ("STRING", {
+                    "default": DEFAULT_BASE_URL,
+                    "multiline": False,
+                    "placeholder": "https://www.mindapi.cc 或第三方兼容 API 根地址",
+                }),
+                "并发数": ("INT", {
+                    "default": DEFAULT_LINGSI_PPT_CONCURRENCY,
+                    "min": 1,
+                    "max": 20,
+                    "step": 1,
+                    "tooltip": "接入 PPT束 时，同时生成多少页。普通 prompt 模式会忽略此参数。",
+                }),
+                "重试次数": ("INT", {
+                    "default": DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES,
+                    "min": 0,
+                    "max": 20,
+                    "step": 1,
+                    "tooltip": "PPT束批量生图遇到 429 限流时，每页最多自动重试多少次。",
+                }),
+                "限流等待秒": ("INT", {
+                    "default": DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+                    "min": 1,
+                    "max": MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+                    "step": 1,
+                    "tooltip": "429 限流后的基础等待时间，会自动翻倍退避；单次最大等待 500 秒。",
+                }),
             },
             "optional": {
+                "prompt": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "普通生图必填；连接 PPT束 批量生图时会忽略此输入。",
+                }),
                 "image": ("IMAGE",),
+                "PPT束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接 PPT 页面拼装输出后会一次生成所有页面。"}),
             },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "raw_json")
+    RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE)
+    RETURN_NAMES = ("image", "raw_json", "PPT束")
     FUNCTION = "generate"
     CATEGORY = "🌟kktools/AI生图"
 
@@ -811,13 +1305,55 @@ class kkLingsiNativePromptImage:
     def IS_CHANGED(cls, **kwargs):
         return time.time()
 
-    def generate(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None):
+    def generate(
+        self,
+        api_key,
+        model="gpt-image-2",
+        aspect_ratio="auto",
+        resolution="1K",
+        count=1,
+        base_url=DEFAULT_BASE_URL,
+        并发数=DEFAULT_LINGSI_PPT_CONCURRENCY,
+        重试次数=DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES,
+        限流等待秒=DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+        prompt="",
+        image=None,
+        PPT束=None,
+        unique_id=None,
+    ):
+        if PPT束:
+            return generate_lingsi_ppt_batch(
+                api_key=api_key,
+                ppt_pipe=PPT束,
+                model=model,
+                resolution=resolution,
+                base_url=base_url,
+                concurrency=并发数,
+                retry_count=重试次数,
+                retry_wait_seconds=限流等待秒,
+                node_id=unique_id,
+            )
+        image_batch, raw_json = self._generate_single(
+            api_key=api_key,
+            prompt=prompt,
+            model=model,
+            aspect_ratio=aspect_ratio,
+            resolution=resolution,
+            count=count,
+            image=image,
+            base_url=base_url,
+        )
+        return image_batch, raw_json, {}
+
+    def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL):
         api_key = str(api_key or "").strip()
         prompt = str(prompt or "").strip()
         model = str(model or "").strip()
         aspect_ratio = str(aspect_ratio or "auto").strip()
         resolution = str(resolution or "1K").strip().upper()
         count = max(1, min(12, int(count or 1)))
+        base_url = normalize_api_base_url(base_url)
+        api_endpoints = resolve_api_endpoints(base_url)
 
         if not api_key:
             raise RuntimeError("api_key is required")
@@ -834,7 +1370,7 @@ class kkLingsiNativePromptImage:
         is_gpt_image = is_gpt_image_model(model)
         is_banana = is_banana_model(model)
         effective_resolution = effective_resolution_for_model(model, resolution)
-        endpoint = CHAT_ENDPOINT
+        endpoint = api_endpoints["chat"]
         route = "/chat/completions"
         request_body = None
         request_summary = None
@@ -864,7 +1400,7 @@ class kkLingsiNativePromptImage:
                 upstream_size = requested_size
 
             if has_input_image:
-                endpoint = IMAGE_EDITS_ENDPOINT
+                endpoint = api_endpoints["image_edits"]
                 route = "/images/edits"
                 image_png = tensor_to_png_bytes(image)
                 reference_image_bytes = image_png
@@ -889,7 +1425,7 @@ class kkLingsiNativePromptImage:
                     },
                 }
             else:
-                endpoint = IMAGE_GENERATIONS_ENDPOINT
+                endpoint = api_endpoints["image_generations"]
                 route = "/images/generations"
                 request_body = {
                     "model": model,
@@ -903,7 +1439,7 @@ class kkLingsiNativePromptImage:
                     "body": _sanitize_debug_value(request_body),
                 }
         elif is_banana:
-            endpoint = BANANA_GENERATE_ENDPOINT
+            endpoint = api_endpoints["banana_generate"]
             route = "/pt/v1/api/generate"
             reference_image_base64 = tensor_to_base64_png(image) if has_input_image else None
             reference_data_url = (
@@ -1202,6 +1738,19 @@ class kkLingsiNativePromptImage:
 
 class kkimage2_灵思API(kkLingsiNativePromptImage):
     pass
+
+
+def generate_lingsi_image(api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL):
+    return kkLingsiNativePromptImage()._generate_single(
+        api_key=api_key,
+        prompt=prompt,
+        model=model,
+        aspect_ratio=aspect_ratio,
+        resolution=resolution,
+        count=count,
+        image=image,
+        base_url=base_url,
+    )
 
 
 NODE_CLASS_MAPPINGS = {
