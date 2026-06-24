@@ -391,6 +391,33 @@ workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
 
 ---
 
+## Imagen Studio PPT 节点
+
+kktools 还集成了一组独立的 PPT 节点，节点之间统一通过 `IMAGEN_PPT_PIPE` 传递页面计划和 prompt：
+
+- `Imagen Studio PPT 大纲草拟`
+- `Imagen Studio PPT 大纲规划`
+- `Imagen Studio PPT 设计规范`
+- `Imagen Studio PPT 页面拼装`
+- `Imagen Studio PPT RunningHub 批量生图`
+- `Imagen Studio PPT 导出`
+
+它们复用现有的 Imagen Studio 模板库、配置文件和 RunningHub 接口，不依赖原项目的 PPT 工作台页面或 deck 历史。
+
+`Imagen Studio PPT RunningHub 批量生图` 默认每页等待 30 分钟，并提供 `单页超时分钟`、`轮询间隔秒` 参数；PPT 页面排队或生成较慢时可直接调大。
+
+推荐导出连线：`PPT RunningHub 批量生图.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面 URL 下载图片生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
+
+PPTX 默认保存到 ComfyUI 输出目录下的 `output/imagen-ppt/`，节点右侧 `PPT文件路径` 会返回完整文件路径。
+
+示例工作流：
+
+```text
+workflows/kktools_imagen_studio_ppt_pipe.workflow.json
+```
+
+---
+
 ## 🎞️ 分镜模块
 
 源码位置：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
