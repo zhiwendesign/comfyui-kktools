@@ -1,0 +1,249 @@
+{
+  "last_node_id": 10,
+  "last_link_id": 11,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "ImagenStudioTemplateSelector",
+      "pos": [80, 120],
+      "size": [480, 460],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [1] },
+        { "name": "模板JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "英文风格提示词", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "中文风格提示词", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "负面提示词", "type": "STRING", "slot_index": 4, "links": null },
+        { "name": "模板名称", "type": "STRING", "slot_index": 5, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioTemplateSelector" },
+      "widgets_values": ["", 180, 20]
+    },
+    {
+      "id": 2,
+      "type": "ImagenStudioPPTOutlinePlan",
+      "pos": [620, 110],
+      "size": [500, 360],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "大纲Markdown", "type": "STRING", "link": null },
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "link": 1 }
+      ],
+      "outputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [2] },
+        { "name": "页面计划JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "PPT标题", "type": "STRING", "slot_index": 2, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTOutlinePlan" },
+      "widgets_values": [
+        "# AI 产品发布会封面\n\n- 主标题：让创意生产进入实时协作时代\n- 副标题：Imagen Studio × kktools\n- 关键词：模板复用、节点束、自动生成、PPT 输出",
+        "生成一页科技感产品发布会封面。",
+        "16:9",
+        "中文",
+        "generic-comfyui"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "ImagenStudioPPTDesignBrief",
+      "pos": [1180, 120],
+      "size": [390, 240],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 2 }
+      ],
+      "outputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [3] },
+        { "name": "设计规范JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "参考图分析JSON", "type": "STRING", "slot_index": 2, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTDesignBrief" },
+      "widgets_values": ["", 2400]
+    },
+    {
+      "id": 4,
+      "type": "ImagenStudioPPTPageComposer",
+      "pos": [1620, 110],
+      "size": [420, 260],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 3 }
+      ],
+      "outputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [4] },
+        { "name": "Prompt列表JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "页面JSON", "type": "STRING", "slot_index": 2, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTPageComposer" },
+      "widgets_values": ["", 180, 20]
+    },
+    {
+      "id": 5,
+      "type": "ImagenStudioPPTPipeUnpack",
+      "pos": [2100, 80],
+      "size": [380, 300],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 4 }
+      ],
+      "outputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [8] },
+        { "name": "正向提示词", "type": "STRING", "slot_index": 1, "links": [5] },
+        { "name": "负面提示词", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "页面标题", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "页面JSON", "type": "STRING", "slot_index": 4, "links": null },
+        { "name": "页数", "type": "INT", "slot_index": 5, "links": null },
+        { "name": "当前页码", "type": "INT", "slot_index": 6, "links": [9] }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTPipeUnpack" },
+      "widgets_values": [1, "当前页"]
+    },
+    {
+      "id": 6,
+      "type": "kkimage2_灵思API",
+      "pos": [2540, 60],
+      "size": [450, 360],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        { "name": "api_key", "type": "STRING", "link": null },
+        { "name": "prompt", "type": "STRING", "link": 5 },
+        { "name": "model", "type": "COMBO", "link": null },
+        { "name": "aspect_ratio", "type": "COMBO", "link": null },
+        { "name": "resolution", "type": "COMBO", "link": null },
+        { "name": "count", "type": "INT", "link": null },
+        { "name": "base_url", "type": "STRING", "link": null },
+        { "name": "image", "type": "IMAGE", "link": null }
+      ],
+      "outputs": [
+        { "name": "image", "type": "IMAGE", "slot_index": 0, "links": [6, 7] },
+        { "name": "raw_json", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 2, "links": null }
+      ],
+      "properties": { "Node name for S&R": "kkimage2_灵思API" },
+      "widgets_values": ["", "", "gpt-image-2", "16:9", "1K", 1, "https://www.mindapi.cc", 3, 6, 15]
+    },
+    {
+      "id": 7,
+      "type": "SaveImage",
+      "pos": [3060, 60],
+      "size": [320, 260],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": 6 }
+      ],
+      "outputs": [],
+      "properties": { "Node name for S&R": "SaveImage" },
+      "widgets_values": ["ImagenStudioPPT_Lingsi"]
+    },
+    {
+      "id": 8,
+      "type": "ImagenStudioPPTImageWriteback",
+      "pos": [3060, 380],
+      "size": [390, 220],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 8 },
+        { "name": "图像", "type": "IMAGE", "link": 7 },
+        { "name": "页码", "type": "INT", "link": 9 }
+      ],
+      "outputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [10] },
+        { "name": "写回JSON", "type": "STRING", "slot_index": 1, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTImageWriteback" },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "ImagenStudioPPTExport",
+      "pos": [3520, 380],
+      "size": [390, 180],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        { "name": "PPT束", "type": "IMAGEN_STUDIO_PIPE", "link": 10 }
+      ],
+      "outputs": [
+        { "name": "PPT文件路径", "type": "STRING", "slot_index": 0, "links": null },
+        { "name": "导出JSON", "type": "STRING", "slot_index": 1, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioPPTExport" },
+      "widgets_values": ["imagen-studio-ppt-lingsi"]
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [2100, 430],
+      "size": [830, 210],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "灵思转接说明",
+      "properties": { "text": "" },
+      "widgets_values": [
+        "这个示例演示：PPT 页面拼装.PPT束 -> PPT 束拆包 -> kkimage2_灵思API -> PPT 图像写回 -> PPT 导出。\n\n关键连线：\n1. PPT 束拆包.正向提示词 -> kkimage2_灵思API.prompt\n2. kkimage2_灵思API.image -> PPT 图像写回.图像\n3. PPT 束拆包.PPT束 -> PPT 图像写回.PPT束\n4. PPT 束拆包.当前页码 -> PPT 图像写回.页码\n\n默认生成第 1 页。要生成其它页，只改 PPT 束拆包 的 页码。"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 1, "IMAGEN_STUDIO_PIPE"],
+    [2, 2, 0, 3, 0, "IMAGEN_STUDIO_PIPE"],
+    [3, 3, 0, 4, 0, "IMAGEN_STUDIO_PIPE"],
+    [4, 4, 0, 5, 0, "IMAGEN_STUDIO_PIPE"],
+    [5, 5, 1, 6, 1, "STRING"],
+    [6, 6, 0, 7, 0, "IMAGE"],
+    [7, 6, 0, 8, 1, "IMAGE"],
+    [8, 5, 0, 8, 0, "IMAGEN_STUDIO_PIPE"],
+    [9, 5, 6, 8, 2, "INT"],
+    [10, 8, 0, 9, 0, "IMAGEN_STUDIO_PIPE"]
+  ],
+  "groups": [
+    {
+      "title": "Imagen Studio PPT 灵思转接示例",
+      "bounding": [50, 40, 3410, 620],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "title": "PPT 图像写回与导出",
+      "bounding": [3020, 330, 910, 320],
+      "color": "#6a8f4e",
+      "font_size": 20,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.82,
+      "offset": [150, 70]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "imagen-studio-ppt-lingsi-bridge"
+    }
+  },
+  "version": 0.4
+}

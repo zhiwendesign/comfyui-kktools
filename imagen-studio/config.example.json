@@ -1,0 +1,8 @@
+{
+  "apiKey": "YOUR_API_KEY",
+  "baseUrl": "https://api.example.com/v1",
+  "visionModel": "your-vlm-model",
+  "textModel": "your-llm-model",
+  "runninghubApiKey": "YOUR_RUNNINGHUB_API_KEY",
+  "runninghubBaseUrl": "https://www.runninghub.cn/openapi/v2"
+}

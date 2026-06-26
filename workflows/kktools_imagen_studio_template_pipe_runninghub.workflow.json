@@ -1,0 +1,170 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [80, 150],
+      "size": [300, 320],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "slot_index": 0, "links": [1, 3] },
+        { "name": "MASK", "type": "MASK", "slot_index": 1, "links": null }
+      ],
+      "properties": { "Node name for S&R": "LoadImage" },
+      "widgets_values": ["example-reference.png", "image"]
+    },
+    {
+      "id": 2,
+      "type": "ImagenStudioTemplateDistiller",
+      "pos": [430, 80],
+      "size": [430, 420],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "参考图像", "type": "IMAGE", "link": 1 }
+      ],
+      "outputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [2] },
+        { "name": "模板JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "英文风格提示词", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "中文风格提示词", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "负面提示词", "type": "STRING", "slot_index": 4, "links": null },
+        { "name": "视觉特征JSON", "type": "STRING", "slot_index": 5, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioTemplateDistiller" },
+      "widgets_values": ["海报", "束化示例模板", "提取可复用的整体视觉风格。", "", 2400]
+    },
+    {
+      "id": 3,
+      "type": "ImagenStudioTemplateIngest",
+      "pos": [910, 110],
+      "size": [360, 240],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "link": 2 },
+        { "name": "缩略图", "type": "IMAGE", "link": 3 }
+      ],
+      "outputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": null },
+        { "name": "模板ID", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "模板名称", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "保存路径", "type": "STRING", "slot_index": 3, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioTemplateIngest" },
+      "widgets_values": [true]
+    },
+    {
+      "id": 4,
+      "type": "ImagenStudioTemplateSelector",
+      "pos": [80, 570],
+      "size": [480, 460],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [4] },
+        { "name": "模板JSON", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "英文风格提示词", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "中文风格提示词", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "负面提示词", "type": "STRING", "slot_index": 4, "links": null },
+        { "name": "模板名称", "type": "STRING", "slot_index": 5, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioTemplateSelector" },
+      "widgets_values": [""]
+    },
+    {
+      "id": 5,
+      "type": "ImagenStudioTemplateComposer",
+      "pos": [620, 590],
+      "size": [470, 420],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "link": 4 },
+        { "name": "参考图像", "type": "IMAGE", "link": null }
+      ],
+      "outputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 0, "links": [5] },
+        { "name": "正向提示词", "type": "STRING", "slot_index": 1, "links": null },
+        { "name": "负面提示词", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "拼装说明", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "拼装JSON", "type": "STRING", "slot_index": 4, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioTemplateComposer" },
+      "widgets_values": ["生成一张未来感咖啡馆宣传海报，招牌文字为 CyberBrew。", "16:9", "中文", "", 2400]
+    },
+    {
+      "id": 6,
+      "type": "ImagenStudioRunningHubRHArtG2",
+      "pos": [1160, 620],
+      "size": [420, 320],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "link": 5 },
+        { "name": "参考图像", "type": "IMAGE", "link": 7 }
+      ],
+      "outputs": [
+        { "name": "图像", "type": "IMAGE", "slot_index": 0, "links": [6] },
+        { "name": "模板束", "type": "IMAGEN_STUDIO_PIPE", "slot_index": 1, "links": null },
+        { "name": "结果URL", "type": "STRING", "slot_index": 2, "links": null },
+        { "name": "任务ID", "type": "STRING", "slot_index": 3, "links": null },
+        { "name": "结果JSON", "type": "STRING", "slot_index": 4, "links": null }
+      ],
+      "properties": { "Node name for S&R": "ImagenStudioRunningHubRHArtG2" },
+      "widgets_values": ["第三方低价渠道", "16:9", "1k", "medium", "", ""]
+    },
+    {
+      "id": 7,
+      "type": "SaveImage",
+      "pos": [1640, 640],
+      "size": [360, 320],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": 6 }
+      ],
+      "outputs": [],
+      "properties": { "Node name for S&R": "SaveImage" },
+      "widgets_values": ["ImagenStudio"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"],
+    [2, 2, 0, 3, 0, "IMAGEN_STUDIO_PIPE"],
+    [3, 1, 0, 3, 1, "IMAGE"],
+    [4, 4, 0, 5, 0, "IMAGEN_STUDIO_PIPE"],
+    [5, 5, 0, 6, 0, "IMAGEN_STUDIO_PIPE"],
+    [6, 6, 0, 7, 0, "IMAGE"],
+    [7, 1, 0, 6, 1, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "蒸馏并入库",
+      "bounding": [50, 40, 1240, 500],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "选择模板并生图",
+      "bounding": [50, 540, 1950, 520],
+      "color": "#6a5acd",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

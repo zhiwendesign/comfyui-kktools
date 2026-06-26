@@ -1,0 +1,412 @@
+/* kktools Settings Panel - Purple Theme
+   Matches Imagen Studio aesthetic: #7737AA, rgba(18,18,24), rgba(119,55,170)
+*/
+
+:root {
+  --kktools-accent: #7737AA;
+  --kktools-accent-light: #9B59c9;
+  --kktools-accent-dark: #5a2878;
+  --kktools-bg: rgba(18, 18, 24, 0.97);
+  --kktools-bg-card: rgba(22, 22, 30, 0.98);
+  --kktools-border: rgba(119, 55, 170, 0.45);
+  --kktools-border-hover: rgba(119, 55, 170, 0.7);
+  --kktools-text: #e0e0e0;
+  --kktools-text-muted: #8888aa;
+  --kktools-text-label: #c0b0d8;
+  --kktools-success: #50fa7b;
+  --kktools-error: #ff5555;
+  --kktools-warning: #f1fa8c;
+  --kktools-input-bg: rgba(30, 30, 40, 0.95);
+  --kktools-input-border: rgba(80, 80, 120, 0.5);
+  --kktools-btn-bg: #7737AA;
+  --kktools-btn-hover: #9B59c9;
+  --kktools-btn-disabled: rgba(119, 55, 170, 0.35);
+  --kktools-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --kktools-radius: 8px;
+}
+
+/* ComfyUI's current settings dialog wraps custom settings in a flex form row. */
+[data-setting-id="kktools.SettingsPanel"] {
+  width: 100%;
+}
+
+[data-setting-id="kktools.SettingsPanel"] .form-label {
+  display: none;
+}
+
+[data-setting-id="kktools.SettingsPanel"] .form-input {
+  flex: 1 1 auto;
+  justify-content: stretch;
+  min-width: 0;
+  width: 100%;
+}
+
+[data-setting-id="kktools.SettingsPanel"] .form-input > div,
+.kktools-settings-host {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Settings Panel Container */
+.kktools-settings-panel {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  color: var(--kktools-text);
+}
+
+/* Panel Title */
+.kktools-settings-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--kktools-border);
+}
+
+.kktools-settings-title .icon {
+  font-size: 22px;
+}
+
+.kktools-sync-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 16px;
+  padding: 8px 10px;
+  background: rgba(119, 55, 170, 0.08);
+  border: 1px solid rgba(119, 55, 170, 0.25);
+  border-radius: 6px;
+  color: var(--kktools-text-muted);
+  font-size: 12px;
+}
+
+.kktools-sync-label {
+  flex: 0 0 auto;
+  color: var(--kktools-text-label);
+}
+
+.kktools-sync-info code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--kktools-text);
+  font-family: Consolas, "Courier New", monospace;
+}
+
+/* Section Card */
+.kktools-section {
+  background: var(--kktools-bg-card);
+  border: 1px solid var(--kktools-border);
+  border-radius: var(--kktools-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--kktools-shadow);
+}
+
+.kktools-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--kktools-accent-light);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kktools-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--kktools-accent);
+  border-radius: 2px;
+}
+
+/* Form Rows */
+.kktools-form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kktools-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.kktools-label {
+  flex: 0 0 120px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--kktools-text-label);
+  padding-top: 8px;
+  line-height: 1.4;
+}
+
+.kktools-input-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.kktools-input-wrap.full {
+  flex: 1;
+}
+
+/* Text / Password / URL inputs */
+.kktools-input {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--kktools-input-bg);
+  border: 1px solid var(--kktools-input-border);
+  border-radius: 5px;
+  color: var(--kktools-text);
+  font-size: 12px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.kktools-input:focus {
+  outline: none;
+  border-color: var(--kktools-accent);
+  box-shadow: 0 0 0 2px rgba(119, 55, 170, 0.25);
+}
+
+.kktools-input::placeholder {
+  color: var(--kktools-text-muted);
+  opacity: 0.7;
+}
+
+.kktools-input.has-toggle {
+  padding-right: 36px;
+}
+
+/* Password visibility toggle */
+.kktools-pw-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--kktools-text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.kktools-pw-toggle:hover {
+  color: var(--kktools-accent-light);
+}
+
+/* Select dropdown */
+.kktools-select {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--kktools-input-bg);
+  border: 1px solid var(--kktools-input-border);
+  border-radius: 5px;
+  color: var(--kktools-text);
+  font-size: 12px;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.kktools-select:focus {
+  outline: none;
+  border-color: var(--kktools-accent);
+  box-shadow: 0 0 0 2px rgba(119, 55, 170, 0.25);
+}
+
+/* Buttons */
+.kktools-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--kktools-btn-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.kktools-btn:hover:not(:disabled) {
+  background: var(--kktools-btn-hover);
+  transform: translateY(-1px);
+}
+
+.kktools-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.kktools-btn:disabled {
+  background: var(--kktools-btn-disabled);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.kktools-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--kktools-border);
+  color: var(--kktools-text-label);
+}
+
+.kktools-btn-secondary:hover:not(:disabled) {
+  background: rgba(119, 55, 170, 0.15);
+  border-color: var(--kktools-border-hover);
+  color: var(--kktools-text);
+}
+
+.kktools-btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* Status Messages */
+.kktools-status {
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  margin-top: 10px;
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.kktools-status.visible {
+  display: flex;
+}
+
+.kktools-status-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  padding-top: 1px;
+}
+
+.kktools-status.success {
+  background: rgba(80, 250, 123, 0.1);
+  border: 1px solid rgba(80, 250, 123, 0.3);
+  color: var(--kktools-success);
+}
+
+.kktools-status.error {
+  background: rgba(255, 85, 85, 0.1);
+  border: 1px solid rgba(255, 85, 85, 0.3);
+  color: var(--kktools-error);
+}
+
+.kktools-status.warning {
+  background: rgba(241, 250, 140, 0.1);
+  border: 1px solid rgba(241, 250, 140, 0.3);
+  color: var(--kktools-warning);
+}
+
+.kktools-status.loading {
+  background: rgba(119, 55, 170, 0.1);
+  border: 1px solid var(--kktools-border);
+  color: var(--kktools-text-muted);
+}
+
+/* Model List */
+.kktools-model-list {
+  margin-top: 10px;
+  max-height: 120px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--kktools-input-border);
+  border-radius: 5px;
+  padding: 8px;
+  display: none;
+}
+
+.kktools-model-list.visible {
+  display: block;
+}
+
+.kktools-model-list-label {
+  font-size: 11px;
+  color: var(--kktools-text-muted);
+  margin-bottom: 6px;
+}
+
+.kktools-model-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.kktools-model-tag {
+  padding: 2px 8px;
+  background: rgba(119, 55, 170, 0.2);
+  border: 1px solid rgba(119, 55, 170, 0.35);
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--kktools-text-label);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.kktools-model-tag:hover {
+  background: rgba(119, 55, 170, 0.4);
+  color: #fff;
+}
+
+/* Saved indicator */
+.kktools-saved-badge {
+  display: none;
+  font-size: 11px;
+  color: var(--kktools-success);
+  padding-top: 6px;
+}
+
+.kktools-saved-badge.visible {
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .kktools-settings-panel {
+    padding: 12px;
+  }
+
+  .kktools-form-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .kktools-label {
+    flex: none;
+    text-align: left;
+    padding-top: 0;
+    font-size: 11px;
+  }
+}
