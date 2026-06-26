@@ -1,0 +1,288 @@
+{
+  "last_node_id": 13,
+  "last_link_id": 15,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "OpenMAIC_图片目录转路径列表",
+      "pos": [80, 260],
+      "size": [360, 120],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "图片路径列表", "type": "LIST", "links": [1], "shape": 3},
+        {"name": "图片目录", "type": "STRING", "links": [2], "shape": 3}
+      ],
+      "widgets_values": ["E:\\COMFYUI\\ComfyUI-aki-v1.5\\input\\openmaic_slides"],
+      "properties": {}
+    },
+    {
+      "id": 2,
+      "type": "OpenMAIC_从图片加载课件",
+      "pos": [520, 190],
+      "size": [340, 130],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "图片路径列表", "type": "LIST", "link": 1}
+      ],
+      "outputs": [
+        {"name": "课件数据", "type": "DICT", "links": [3], "shape": 3}
+      ],
+      "widgets_values": ["OpenMAIC 课件"],
+      "properties": {}
+    },
+    {
+      "id": 3,
+      "type": "OpenMAIC_导入课件",
+      "pos": [940, 170],
+      "size": [440, 230],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "课件数据", "type": "DICT", "link": 3}
+      ],
+      "outputs": [
+        {"name": "课件数据", "type": "DICT", "links": [], "shape": 3},
+        {"name": "匹配结果", "type": "LIST", "links": [], "shape": 3},
+        {"name": "动作列表", "type": "LIST", "links": [4, 9], "shape": 3}
+      ],
+      "widgets_values": ["", {}, ""],
+      "properties": {}
+    },
+    {
+      "id": 4,
+      "type": "OpenMAIC_从动作提取字幕",
+      "pos": [1460, 190],
+      "size": [320, 90],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "动作列表", "type": "LIST", "link": 4}
+      ],
+      "outputs": [
+        {"name": "字幕时间点", "type": "LIST", "links": [5], "shape": 3}
+      ],
+      "widgets_values": [],
+      "properties": {}
+    },
+    {
+      "id": 5,
+      "type": "OpenMAIC_字幕生成",
+      "pos": [1840, 70],
+      "size": [380, 170],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "语音片段", "type": "LIST", "link": 5}
+      ],
+      "outputs": [
+        {"name": "字幕文件", "type": "STRING", "links": [], "shape": 3}
+      ],
+      "widgets_values": [
+        [],
+        {
+          "font_family": "Microsoft YaHei",
+          "font_size_px": 48,
+          "font_weight": "bold",
+          "text_color": "#ffffff",
+          "outline_color": "#000000",
+          "outline_width_px": 4,
+          "shadow_enabled": true,
+          "shadow_blur_px": 8,
+          "position": "bottom-safe",
+          "background_mode": "none"
+        }
+      ],
+      "properties": {}
+    },
+    {
+      "id": 6,
+      "type": "OpenMAIC_TTS设置",
+      "pos": [520, 450],
+      "size": [340, 170],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "outputs": [
+        {"name": "TTS配置", "type": "DICT", "links": [12], "shape": 3}
+      ],
+      "widgets_values": ["qwen-tts", "", 1.0, "", ""],
+      "properties": {}
+    },
+    {
+      "id": 7,
+      "type": "OpenMAIC_文本转语音",
+      "pos": [940, 450],
+      "size": [380, 200],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "语音片段", "type": "LIST", "link": 9},
+        {"name": "TTS配置", "type": "DICT", "link": 12}
+      ],
+      "outputs": [
+        {"name": "音频文件", "type": "STRING", "links": [13], "shape": 3},
+        {"name": "音频片段", "type": "LIST", "links": [], "shape": 3}
+      ],
+      "widgets_values": [[], {}],
+      "properties": {}
+    },
+    {
+      "id": 8,
+      "type": "OpenMAIC_音频混音",
+      "pos": [1460, 460],
+      "size": [380, 190],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "讲解音频", "type": "STRING", "link": 13}
+      ],
+      "outputs": [
+        {"name": "混音音频", "type": "STRING", "links": [14], "shape": 3},
+        {"name": "时长", "type": "FLOAT", "links": [], "shape": 3}
+      ],
+      "widgets_values": ["", "", 0, -18, true],
+      "properties": {}
+    },
+    {
+      "id": 9,
+      "type": "OpenMAIC_导出设置",
+      "pos": [1460, 710],
+      "size": [380, 220],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "outputs": [
+        {"name": "设置", "type": "DICT", "links": [15], "shape": 3}
+      ],
+      "widgets_values": ["1080p", 30, "nvenc", true, false, 0, -18],
+      "properties": {}
+    },
+    {
+      "id": 10,
+      "type": "VHS_LoadImagesPath",
+      "pos": [520, 500],
+      "size": [360, 190],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "directory", "type": "STRING", "link": 2}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [10], "shape": 3},
+        {"name": "MASK", "type": "MASK", "links": [], "shape": 3},
+        {"name": "frame_count", "type": "INT", "links": [], "shape": 3}
+      ],
+      "widgets_values": [
+        "E:\\COMFYUI\\ComfyUI-aki-v1.5\\input\\openmaic_slides",
+        0,
+        0,
+        1
+      ],
+      "properties": {}
+    },
+    {
+      "id": 11,
+      "type": "VHS_VideoCombine",
+      "pos": [940, 500],
+      "size": [430, 300],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 10}
+      ],
+      "outputs": [
+        {"name": "Filenames", "type": "VHS_FILENAMES", "links": [11], "shape": 3}
+      ],
+      "widgets_values": [
+        30,
+        0,
+        "openmaic/video_frames",
+        "video/h264-mp4",
+        false,
+        true
+      ],
+      "properties": {}
+    },
+    {
+      "id": 12,
+      "type": "VHS_SelectFilename",
+      "pos": [1460, 980],
+      "size": [300, 90],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "filenames", "type": "VHS_FILENAMES", "link": 11}
+      ],
+      "outputs": [
+        {"name": "Filename", "type": "STRING", "links": [16], "shape": 3}
+      ],
+      "widgets_values": [-1],
+      "properties": {}
+    },
+    {
+      "id": 13,
+      "type": "OpenMAIC_视频导出",
+      "pos": [2280, 410],
+      "size": [470, 300],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {"name": "视频画面", "type": "STRING", "link": 16},
+        {"name": "讲解音频", "type": "STRING", "link": 14},
+        {"name": "导出设置", "type": "DICT", "link": 15},
+        {"name": "背景音乐", "type": "STRING", "link": null},
+        {"name": "字幕时间点", "type": "LIST", "link": null}
+      ],
+      "outputs": [
+        {"name": "视频输出", "type": "STRING", "links": [], "shape": 3},
+        {"name": "音频输出", "type": "STRING", "links": [], "shape": 3}
+      ],
+      "widgets_values": ["", "", {}, "", []],
+      "properties": {}
+    }
+  ],
+  "links": [
+    {"id": 1, "origin_id": 1, "origin_slot": 0, "target_id": 2, "target_slot": 0, "type": "LIST"},
+    {"id": 2, "origin_id": 1, "origin_slot": 1, "target_id": 10, "target_slot": 0, "type": "STRING"},
+    {"id": 3, "origin_id": 2, "origin_slot": 0, "target_id": 3, "target_slot": 0, "type": "DICT"},
+    {"id": 4, "origin_id": 3, "origin_slot": 2, "target_id": 4, "target_slot": 0, "type": "LIST"},
+    {"id": 5, "origin_id": 4, "origin_slot": 0, "target_id": 5, "target_slot": 0, "type": "LIST"},
+    {"id": 9, "origin_id": 3, "origin_slot": 2, "target_id": 7, "target_slot": 0, "type": "LIST"},
+    {"id": 10, "origin_id": 10, "origin_slot": 0, "target_id": 11, "target_slot": 0, "type": "IMAGE"},
+    {"id": 11, "origin_id": 11, "origin_slot": 0, "target_id": 12, "target_slot": 0, "type": "VHS_FILENAMES"},
+    {"id": 12, "origin_id": 6, "origin_slot": 0, "target_id": 7, "target_slot": 1, "type": "DICT"},
+    {"id": 13, "origin_id": 7, "origin_slot": 0, "target_id": 8, "target_slot": 0, "type": "STRING"},
+    {"id": 14, "origin_id": 8, "origin_slot": 0, "target_id": 13, "target_slot": 1, "type": "STRING"},
+    {"id": 15, "origin_id": 9, "origin_slot": 0, "target_id": 13, "target_slot": 2, "type": "DICT"},
+    {"id": 16, "origin_id": 12, "origin_slot": 0, "target_id": 13, "target_slot": 0, "type": "STRING"}
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [80, 80]
+    }
+  },
+  "version": 1,
+  "state": {
+    "lastGroupId": 0,
+    "lastNodeId": 13,
+    "lastLinkId": 16,
+    "lastRerouteId": 0
+  },
+  "reroutes": []
+}

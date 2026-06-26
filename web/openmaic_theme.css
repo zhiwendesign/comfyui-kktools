@@ -1,0 +1,41 @@
+.openmaic-node-note {
+  --openmaic-accent: #82b1ff;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--openmaic-accent), transparent 62%);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--openmaic-accent), transparent 86%), rgba(255, 255, 255, 0.03)),
+    rgba(8, 12, 18, 0.68);
+  color: rgba(245, 248, 252, 0.92);
+  font: 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.openmaic-node-note__badge {
+  flex: 0 0 auto;
+  min-width: 28px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--openmaic-accent);
+  color: #071015;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.openmaic-node-note__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

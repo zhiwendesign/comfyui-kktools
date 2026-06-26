@@ -5,10 +5,10 @@
 
 ## 📋 概述
 
-kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，包含 9 个模块、28 个节点，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接和分镜生成等常见工作流场景。
+kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接、分镜生成，以及 OpenMAIC 独立课件视频流程等常见工作流场景。
 
 当前版本的几个统一规则：
-- 节点显示名统一为 `英文名（中文名）`
+- 节点显示名默认使用 `英文名（中文名）`
 - 节点分类统一在 `🌟kktools/...`
 - 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
 - `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
@@ -39,6 +39,9 @@ pip install torchaudio
 - 可选依赖：`torchaudio`
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
+- 图像 API 节点：
+  - `kkimage2_灵思API`：在节点内填写 API Key 和可选 `base_url`，默认使用 MindAPI，也可接入兼容第三方站点。
+  - `kkimage2_Zuco`：在节点内填写 Zuco API Key，也可设置环境变量 `ZUCO_API_KEY`。
 - 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
 ## 🧭 快速上手
@@ -46,6 +49,7 @@ pip install torchaudio
 - 在节点面板中搜索 `🌟kktools`、英文类名，或中文名。
 - 推荐先打开总览工作流 [workflows/kktools_workflow_node_demo_gallery.json](workflows/kktools_workflow_node_demo_gallery.json)。
 - 分模块示例可查看 [workflows/README.md](workflows/README.md)。
+- OpenMAIC 独立版课件到视频流程可直接加载 [workflows/OpenMAIC独立版-从课件到视频.workflow.json](workflows/OpenMAIC独立版-从课件到视频.workflow.json)。
 - 图像、视频、音频类节点建议先接入你自己的 `IMAGE`、`VIDEO`、`AUDIO` 输入再运行。
 - 如果你手里有旧工作流，请留意：
   - 当前全部节点都已切换为 `kk...` 前缀命名
@@ -56,6 +60,7 @@ pip install torchaudio
 
 - [__init__.py](__init__.py)：自动发现与注册节点，统一节点显示名，并导出版本号与前端目录
 - [nodes](nodes)：全部节点源码
+- [nodes/openmaic](nodes/openmaic)：OpenMAIC 独立版课件导入、讲稿、TTS、字幕和视频导出节点
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
 - [workflows](workflows)：总览与分模块示例工作流
 - [fonts](fonts)：可选字体资源
@@ -63,7 +68,7 @@ pip install torchaudio
 
 ## 🧩 源码入口
 
-- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)
+- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_zuco.py](nodes/kkimage2_zuco.py)
 - 数学模块：[nodes/Math.py](nodes/Math.py)
 - 提示词模块：[nodes/prompts.py](nodes/prompts.py)
 - 尺寸模块：[nodes/size.py](nodes/size.py)
@@ -72,10 +77,11 @@ pip install torchaudio
 - 视频模块：[nodes/video.py](nodes/video.py)
 - 音频模块：[nodes/audio.py](nodes/audio.py)
 - 分镜模块：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
+- OpenMAIC 模块：[nodes/openmaic_nodes.py](nodes/openmaic_nodes.py)、[nodes/openmaic](nodes/openmaic)
 
 ## 🧾 节点清单
 
-- 图像模块：`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageSplit`
+- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_灵思API`、`kkimage2_Zuco`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
 - 提示词模块：`kkBatchPrompt`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
@@ -84,12 +90,22 @@ pip install torchaudio
 - 视频模块：`kkVideoFirstLastFrames`、`kkVideoFramesAdvanced`、`kkMergeVideos`
 - 音频模块：`kkAudioMerge4`
 - 分镜模块：`kkStoryboardScript`、`kkStoryboardScriptLLM`、`kkStoryboardShotOutput`
+- OpenMAIC 独立版：`OpenMAICStandaloneImportCourseware`、`OpenMAICStandaloneGenerateScript`、`OpenMAICStandaloneTTSAdapter`、`OpenMAICStandaloneCollectTTSAudio`、`OpenMAICStandaloneExportVideo`
 
 ---
 
 ## 🖼️ 图像模块
 
-源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/kkimage2_lingsi.py](nodes/kkimage2_lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+
+### kkImageOverlay（图像叠加）
+
+- 将 `image2` 叠加到 `image1` 上，输出尺寸保持为 `image1` 的尺寸。
+- 支持位置：`左上`、`左中`、`左下`、`居中`、`上中`、`下中`、`右上`、`右中`、`右下`。
+- 支持 `margin_x`、`margin_y` 设置水平和垂直边距；居中位置下作为偏移量使用。
+- 支持 `image2` 自带 alpha 透明通道，也可接入透明 PNG 的 `mask` 作为叠加透明通道。
+- 输入批次数不一致时，会复用较短输入的最后一张图。
+- 输出：`IMAGE`
 
 ### kkPadImageToCanvas（图像填充到画布）
 
@@ -130,15 +146,48 @@ pip install torchaudio
 - 将一张图切成 2x2 四块，支持分块重叠和输出顺序控制。
 - 常用参数：`overlap_pixels`、`output_order`
 - 适合大图分块生成、局部细化、拼图处理。
+- 遇到奇数尺寸或 batch 内分块尺寸不一致时，会自动 padding 到统一尺寸，避免张量拼接错误。
 - 输出：左上、右上、左下、右下四张图
+
+### kkImageGridMerge（图像宫格合并）
+
+- 将多张输入图像按 `2x2`、`3x3`、`4x4` 合并为宫格，是 `kkImageSplit` / `kkImageTileSplit2x2` 的反向拼接工具。
+- 输入顺序：按行优先排列，`image1` 从左上开始，依次向右、再换到下一行。
+- `2x2` 使用前 4 张图，`3x3` 使用前 9 张图，`4x4` 使用前 16 张图；未接入的可选格子会用背景色填充。
+- 常用参数：`grid_size`、`cell_size_mode`、`background_color`
+- `cell_size_mode` 支持 `match_image1`、`max`、`min`，用于在多张图尺寸不一致时统一单元格尺寸。
+- 输出 batch 前会再次统一画布尺寸，可兼容上游切图产生的 313/315 这类边缘尺寸差异。
+- 输出：`IMAGE`
 
 ### kkImageSplit（图像切割）
 
 - 按网格切割一张图，支持 `2x2`、`3x3`、`4x4`、横竖切分和自定义网格。
 - 支持 `row-major`、`column-major`、`diagonal` 三种输出顺序，并可设置分块重叠。
+- 遇到奇数尺寸或分块尺寸不一致时，会自动 padding 到统一尺寸，方便继续接入宫格合并或批处理节点。
 - 输出 `merged_tiles` 以及最多 16 个 `tile_xx` 子图，适合大图切块工作流。
 
----
+### kkimage2_灵思API
+
+- 基于灵思 MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 支持 `gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率和生成数量。
+- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`count`、`base_url`
+- `base_url` 默认是 `https://www.mindapi.cc`；填第三方兼容站点时，节点仍会自动使用当前固定路由。
+- 可选输入：`image`
+- 不接 `image` 时为文生图；接入 `image` 时为参考图图生图。
+- `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
+- 输出：`IMAGE`、`raw_json`
+
+### kkimage2_Zuco
+
+- 合并 Zuco Image2 Text to Image 和 Image to Image 的单节点，固定使用 `gpt-image-2`。
+- 不接 `image` 时为文生图；接入 `image` 时自动切换为图生图。
+- 支持 `mask` 局部重绘；`mask` 只能和单张 `image` 一起使用。
+- `size` 内置 `auto`、`1024x1024`、`1024x1536`、`1536x1024`、`2048x2048`、`2048x1152`、`1152x2048`、`3840x2160`、`2160x3840` 和 `Custom`。
+- `resolution` 支持 `1K`、`2K`、`4K`；非 `Custom` 尺寸会按所选 `size` 的比例和分辨率自动换算。
+- 选择 `Custom` 时使用 `custom_width` 和 `custom_height`，宽高必须为 16 的倍数。
+- 常用参数：`api_key`、`prompt`、`size`、`resolution`、`custom_width`、`custom_height`、`output_format`
+- 可选输入：`image`、`mask`、`timeout_seconds`
+- 输出：`IMAGE`、`status`
 
 ## 🔢 数学模块
 
@@ -193,10 +242,10 @@ pip install torchaudio
 
 ### kkSizeNode（尺寸生成）
 
-- 生成指定尺寸的 latent，同时输出最终宽高。
+- 生成指定尺寸的 latent，同时输出最终宽高和比例。
 - 支持 `preset` 和 `custom` 两种模式，预设尺寸针对 SDXL 做了优化。
 - 所有尺寸会自动校正为 8 的倍数。
-- 输出：`LATENT`、`width`、`height`
+- 输出：`LATENT`、`width`、`height`、`ratio`
 
 ---
 
@@ -301,6 +350,100 @@ pip install torchaudio
 
 ---
 
+## Imagen Studio 模板工具
+
+kktools 已集成 Imagen Studio 模板工作流节点，节点名称保持原 Imagen Studio class key，方便旧工作流继续识别：
+
+- `Imagen Studio 模板蒸馏`：参考图像 -> 模板束。
+- `Imagen Studio 模板入库`：模板束 -> 本地模板库。
+- `Imagen Studio 模板选择器`：从模板库卡片选择模板，支持搜索、缩略图、改名、删除。
+- `Imagen Studio 模板拼装`：模板束 + 用户需求 -> 正向提示词。
+- `Imagen Studio RunningHub 生图`：模板束 -> RunningHub RHArt G2 图片。
+
+### 配置位置
+
+Imagen Studio 在 kktools 内使用独立运行目录：
+
+```text
+ComfyUI/custom_nodes/comfyui-kktools/imagen-studio/config.json
+ComfyUI/custom_nodes/comfyui-kktools/imagen-studio/templates/
+```
+
+可从 `imagen-studio/config.example.json` 复制出 `config.json`，填写：
+
+- `apiKey / baseUrl / visionModel / textModel`
+- `runninghubApiKey / runninghubBaseUrl`
+
+真实 `config.json` 和 `templates/` 已加入 `.gitignore`，不会提交到仓库。
+
+### RunningHub
+
+`Imagen Studio RunningHub 生图` 支持：
+
+- 渠道：`第三方低价渠道 / 官方渠道`
+- 文生图：不连接 `参考图像`
+- 图生图：连接 `参考图像`
+- 质量：`low / medium / high`
+
+RunningHub 提交会始终发送 `quality` 字段，避免接口返回 `field 'quality' is required`。
+
+示例工作流：
+
+```text
+workflows/kktools_imagen_studio_template_pipe_runninghub.workflow.json
+workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
+```
+
+---
+
+## Imagen Studio PPT 节点
+
+kktools 还集成了一组独立的 PPT 节点，和模板节点一样使用统一的 `IMAGEN_STUDIO_PIPE` 节点束；同一根线可以继续传递模板信息、PPT 页面计划、prompt、RunningHub 结果和导出路径：
+
+- `Imagen Studio PPT 大纲草拟`
+- `Imagen Studio PPT 大纲规划`
+- `Imagen Studio PPT 设计规范`
+- `Imagen Studio PPT 页面拼装`
+- `Imagen Studio PPT RunningHub 批量生图`
+- `Imagen Studio PPT 束拆包`
+- `Imagen Studio PPT 图像写回`
+- `Imagen Studio PPT 导出`
+
+它们复用现有的 Imagen Studio 模板库、配置文件和 RunningHub 接口，不依赖原项目的 PPT 工作台页面或 deck 历史。
+
+这种束化方式参考 EasyUse 的统一 pipe 思路：能连线代表类型兼容，节点运行时仍会检查自己需要的字段；比如 PPT 设计节点需要先有页面计划，缺字段时会给中文错误提示。
+
+`Imagen Studio PPT 页面拼装` 支持并发调用 LLM 拼装每页 prompt，`并发数` 默认 20、最大 50，输出仍按 PPT 页序排列。
+
+`kkimage2_灵思API` 可以直接连接 `PPT束`，一次性并发生成所有页面并把图片路径写回束内；`并发数` 默认 3、最大 20。遇到 429 限流会自动重试，默认重试 6 次，基础等待 15 秒并指数退避，单次等待最多 500 秒。生成后把 `kkimage2_灵思API.PPT束` 接到 `PPT 导出.PPT束` 即可导出 PPTX。
+
+`Imagen Studio PPT RunningHub 批量生图` 仍可作为 RunningHub 渠道使用，支持并发提交页面任务，`并发数` 默认 50、最大 100；同时保留 `单页超时分钟`、`轮询间隔秒` 参数。
+
+`Imagen Studio PPT 页面拼装`、`kkimage2_灵思API` 的 PPT 批量模式和 `Imagen Studio PPT RunningHub 批量生图` 会在节点内部显示运行状态条，包括当前页、阶段、完成数和失败提示；更详细的排队、轮询、兜底信息会同步打印到 ComfyUI 控制台。页面拼装还提供 `单页超时秒`，默认 180 秒。
+
+单页调试时，也可以使用 `Imagen Studio PPT 束拆包` 把指定页的 `正向提示词` 拆成普通 `STRING`，再连接到 `kkimage2_灵思API.prompt`。拆包节点会额外输出 `当前页码`，可直接连接到 `Imagen Studio PPT 图像写回.页码`，这样拆第几页就会自动写回第几页。
+
+```text
+PPT 页面拼装.PPT束 -> PPT 束拆包.PPT束
+PPT 束拆包.正向提示词 -> kkimage2_灵思API.prompt
+kkimage2_灵思API.image -> PPT 图像写回.图像
+PPT 束拆包.PPT束 -> PPT 图像写回.PPT束
+PPT 束拆包.当前页码 -> PPT 图像写回.页码
+PPT 图像写回.PPT束 -> PPT 导出.PPT束
+```
+
+推荐导出连线：`kkimage2_灵思API.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面图片路径或 URL 生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
+
+PPTX 默认保存到 ComfyUI 输出目录下的 `output/imagen-ppt/`，节点右侧 `PPT文件路径` 会返回完整文件路径。
+
+示例工作流：
+
+```text
+workflows/kktools_imagen_studio_ppt_pipe.workflow.json
+```
+
+---
+
 ## 🎞️ 分镜模块
 
 源码位置：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
@@ -378,8 +521,10 @@ pip install torchaudio
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
 - 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
 - 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
+- 图像 API：`kkimage2_灵思API` 和 `kkimage2_Zuco` 需要有效接口 Key；接口异常时会在 `raw_json` 或 `status` 中提供排查信息。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
 - 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
+- 图像切分与合并：`kkImageTileSplit2x2`、`kkImageSplit`、`kkImageGridMerge` 会在输出 batch 前统一尺寸，减少奇数分辨率导致的 `Sizes of tensors must match` 错误。
 - 节点未显示：重启 ComfyUI，并检查日志里是否出现 “🌟kktools Nodes 加载完成” 以及节点注册数量。
 
 ## 📄 版本与版权

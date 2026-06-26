@@ -1,0 +1,795 @@
+{
+  "last_node_id": 7,
+  "last_link_id": 11,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "OpenMAICStandaloneImportCourseware",
+      "pos": [
+        80,
+        220
+      ],
+      "size": [
+        560,
+        320
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "title": "1. 导入课件",
+      "color": "#1f6970",
+      "bgcolor": "#10292d",
+      "outputs": [
+        {
+          "name": "课件数据",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        },
+        {
+          "name": "页面图片JSON",
+          "type": "STRING",
+          "links": [
+            3,
+            6
+          ],
+          "shape": 3
+        },
+        {
+          "name": "页面图片目录",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        },
+        {
+          "name": "页面文本JSON",
+          "type": "STRING",
+          "links": [
+            1
+          ],
+          "shape": 3
+        },
+        {
+          "name": "页数",
+          "type": "INT",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "",
+        "E:/2026/OpenMAIC/outputs/comfyui-standalone/pages",
+        "",
+        true
+      ],
+      "properties": {
+        "Node name for S&R": "OpenMAICStandaloneImportCourseware"
+      }
+    },
+    {
+      "id": 2,
+      "type": "OpenMAICStandaloneGenerateScript",
+      "pos": [
+        700,
+        190
+      ],
+      "size": [
+        560,
+        455
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "title": "2. 生成讲稿",
+      "color": "#264d82",
+      "bgcolor": "#111f38",
+      "inputs": [
+        {
+          "name": "页面文本JSON",
+          "type": "STRING",
+          "link": 1
+        },
+        {
+          "name": "页面图片JSON",
+          "type": "STRING",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "分段讲稿JSON",
+          "type": "STRING",
+          "links": [
+            2
+          ],
+          "shape": 3
+        },
+        {
+          "name": "完整讲稿",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        },
+        {
+          "name": "段数",
+          "type": "INT",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "",
+        "轻度口语化",
+        "",
+        "",
+        "开启",
+        "https://api.openai.com/v1",
+        "gpt-4o-mini",
+        "",
+        "",
+        120,
+        4
+      ],
+      "properties": {
+        "Node name for S&R": "OpenMAICStandaloneGenerateScript"
+      }
+    },
+    {
+      "id": 3,
+      "type": "OpenMAICStandaloneTTSAdapter",
+      "pos": [
+        1320,
+        210
+      ],
+      "size": [
+        480,
+        220
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "title": "3. TTS文本转接器",
+      "color": "#315f75",
+      "bgcolor": "#102734",
+      "inputs": [
+        {
+          "name": "分段讲稿JSON",
+          "type": "STRING",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "TTS文本",
+          "type": "STRING",
+          "links": [
+            8
+          ],
+          "shape": 3
+        },
+        {
+          "name": "TTS任务JSON",
+          "type": "STRING",
+          "links": [
+            9
+          ],
+          "shape": 3
+        },
+        {
+          "name": "任务数量",
+          "type": "INT",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "按页合并"
+      ],
+      "properties": {
+        "Node name for S&R": "OpenMAICStandaloneTTSAdapter"
+      }
+    },
+    {
+      "id": 5,
+      "type": "LoadAudio",
+      "pos": [
+        1320,
+        55
+      ],
+      "size": [
+        360,
+        120
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "title": "音色参考音频：Load Audio",
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            10
+          ],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "",
+        null,
+        null
+      ],
+      "properties": {
+        "Node name for S&R": "LoadAudio"
+      },
+      "inputs": [
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "audioUI",
+          "name": "audioUI",
+          "type": "AUDIO_UI",
+          "widget": {
+            "name": "audioUI"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "choose file to upload",
+          "name": "upload",
+          "type": "AUDIOUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "IndexTTS2Advanced",
+      "pos": [
+        1860,
+        90
+      ],
+      "size": [
+        620,
+        520
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "title": "4. IndexTTS2 高级语音合成",
+      "color": "#3b5f84",
+      "bgcolor": "#121f30",
+      "inputs": [
+        {
+          "localized_name": "audio",
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 10
+        },
+        {
+          "localized_name": "emotion_audio",
+          "name": "emotion_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "localized_name": "emotion_vector",
+          "name": "emotion_vector",
+          "shape": 7,
+          "type": "EMOTION_VECTOR",
+          "link": null
+        },
+        {
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 8
+        },
+        {
+          "localized_name": "emotion_control_weight",
+          "name": "emotion_control_weight",
+          "type": "FLOAT",
+          "widget": {
+            "name": "emotion_control_weight"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "use_random_style",
+          "name": "use_random_style",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_random_style"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "interval_silence_ms",
+          "name": "interval_silence_ms",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "interval_silence_ms"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_text_tokens_per_segment",
+          "name": "max_text_tokens_per_segment",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "max_text_tokens_per_segment"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "seed",
+          "name": "seed",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "do_sample",
+          "name": "do_sample",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "do_sample"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "temperature",
+          "name": "temperature",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_p",
+          "name": "top_p",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "top_p"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "top_k",
+          "name": "top_k",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "top_k"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "repetition_penalty",
+          "name": "repetition_penalty",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "repetition_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "length_penalty",
+          "name": "length_penalty",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "length_penalty"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "num_beams",
+          "name": "num_beams",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "num_beams"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "max_mel_tokens",
+          "name": "max_mel_tokens",
+          "shape": 7,
+          "type": "INT",
+          "widget": {
+            "name": "max_mel_tokens"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "typical_sampling",
+          "name": "typical_sampling",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "typical_sampling"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "typical_mass",
+          "name": "typical_mass",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "typical_mass"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "speech_speed",
+          "name": "speech_speed",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "speech_speed"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "use_fp16",
+          "name": "use_fp16",
+          "shape": 7,
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "use_fp16"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "output_gain",
+          "name": "output_gain",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "output_gain"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            11
+          ],
+          "shape": 3
+        },
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "",
+        1.0,
+        false,
+        200,
+        120,
+        -1,
+        true,
+        0.8,
+        0.8,
+        30,
+        10.0,
+        0.0,
+        3,
+        1500,
+        false,
+        0.9,
+        1.2,
+        false,
+        1.0
+      ],
+      "properties": {
+        "Node name for S&R": "IndexTTS2Advanced"
+      }
+    },
+    {
+      "id": 7,
+      "type": "OpenMAICStandaloneCollectTTSAudio",
+      "pos": [
+        2540,
+        205
+      ],
+      "size": [
+        540,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "title": "5. 收集TTS音频",
+      "color": "#2f644c",
+      "bgcolor": "#10271d",
+      "inputs": [
+        {
+          "name": "TTS音频",
+          "type": "AUDIO",
+          "link": 11
+        },
+        {
+          "name": "TTS任务JSON",
+          "type": "STRING",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "音频清单JSON",
+          "type": "STRING",
+          "links": [
+            4
+          ],
+          "shape": 3
+        },
+        {
+          "name": "合并讲解音频",
+          "type": "STRING",
+          "links": [
+            7
+          ],
+          "shape": 3
+        },
+        {
+          "name": "音频片段JSON",
+          "type": "STRING",
+          "links": [
+            5
+          ],
+          "shape": 3
+        },
+        {
+          "name": "音频数量",
+          "type": "INT",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "E:/2026/OpenMAIC/outputs/comfyui-standalone/audio",
+        true
+      ],
+      "properties": {
+        "Node name for S&R": "OpenMAICStandaloneCollectTTSAudio"
+      }
+    },
+    {
+      "id": 4,
+      "type": "OpenMAICStandaloneExportVideo",
+      "pos": [
+        3180,
+        160
+      ],
+      "size": [
+        620,
+        535
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "title": "6. 导出视频",
+      "color": "#7a5a23",
+      "bgcolor": "#251b0d",
+      "inputs": [
+        {
+          "name": "页面图片JSON",
+          "type": "STRING",
+          "link": 3
+        },
+        {
+          "name": "音频清单JSON",
+          "type": "STRING",
+          "link": 4
+        },
+        {
+          "name": "音频片段JSON",
+          "type": "STRING",
+          "link": 5
+        },
+        {
+          "name": "合并讲解音频",
+          "type": "STRING",
+          "link": 7
+        },
+        {
+          "name": "背景音乐",
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "视频路径",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        },
+        {
+          "name": "视频清单JSON",
+          "type": "STRING",
+          "links": [],
+          "shape": 3
+        }
+      ],
+      "widgets_values": [
+        "",
+        "",
+        "",
+        "",
+        "E:/2026/OpenMAIC/outputs/comfyui-standalone/video",
+        "OpenMAIC独立版课件视频.mp4",
+        "2K 1920x1080",
+        "开启",
+        "FunASR真实对齐",
+        "前端默认",
+        "",
+        "cpu",
+        30,
+        true,
+        true,
+        2
+      ],
+      "properties": {
+        "Node name for S&R": "OpenMAICStandaloneExportVideo"
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": 1,
+      "origin_id": 1,
+      "origin_slot": 3,
+      "target_id": 2,
+      "target_slot": 0,
+      "type": "STRING"
+    },
+    {
+      "id": 2,
+      "origin_id": 2,
+      "origin_slot": 0,
+      "target_id": 3,
+      "target_slot": 0,
+      "type": "STRING"
+    },
+    {
+      "id": 3,
+      "origin_id": 1,
+      "origin_slot": 1,
+      "target_id": 4,
+      "target_slot": 0,
+      "type": "STRING"
+    },
+    {
+      "id": 4,
+      "origin_id": 7,
+      "origin_slot": 0,
+      "target_id": 4,
+      "target_slot": 1,
+      "type": "STRING"
+    },
+    {
+      "id": 5,
+      "origin_id": 7,
+      "origin_slot": 2,
+      "target_id": 4,
+      "target_slot": 2,
+      "type": "STRING"
+    },
+    {
+      "id": 6,
+      "origin_id": 1,
+      "origin_slot": 1,
+      "target_id": 2,
+      "target_slot": 1,
+      "type": "STRING"
+    },
+    {
+      "id": 7,
+      "origin_id": 7,
+      "origin_slot": 1,
+      "target_id": 4,
+      "target_slot": 3,
+      "type": "STRING"
+    },
+    {
+      "id": 8,
+      "origin_id": 3,
+      "origin_slot": 0,
+      "target_id": 6,
+      "target_slot": 3,
+      "type": "STRING"
+    },
+    {
+      "id": 9,
+      "origin_id": 3,
+      "origin_slot": 1,
+      "target_id": 7,
+      "target_slot": 1,
+      "type": "STRING"
+    },
+    {
+      "id": 10,
+      "origin_id": 5,
+      "origin_slot": 0,
+      "target_id": 6,
+      "target_slot": 0,
+      "type": "AUDIO"
+    },
+    {
+      "id": 11,
+      "origin_id": 6,
+      "origin_slot": 0,
+      "target_id": 7,
+      "target_slot": 0,
+      "type": "AUDIO"
+    }
+  ],
+  "groups": [
+    {
+      "title": "OpenMAIC 独立版：课件到视频（ComfyUI IndexTTS2）",
+      "bounding": [
+        40,
+        35,
+        3820,
+        680
+      ],
+      "color": "#2f596b",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        20,
+        120
+      ]
+    }
+  },
+  "version": 1,
+  "state": {
+    "lastGroupId": 1,
+    "lastNodeId": 7,
+    "lastLinkId": 11,
+    "lastRerouteId": 0
+  },
+  "reroutes": []
+}

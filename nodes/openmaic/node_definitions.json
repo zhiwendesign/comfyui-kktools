@@ -1,0 +1,369 @@
+{
+  "OpenMAIC_FunASR字幕对齐": {
+    "category": "OpenMAIC/音频",
+    "display_name": "FunASR字幕对齐",
+    "description": "使用 FunASR 语音识别对齐字幕时间点",
+    "input_types": {
+      "required": {
+        "音频路径": {
+          "type": "STRING"
+        },
+        "语音事件": {
+          "type": "LIST"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "字幕时间点",
+        "type": "LIST"
+      }
+    ]
+  },
+  "OpenMAIC_简单字幕对齐": {
+    "category": "OpenMAIC/音频",
+    "display_name": "简单字幕对齐",
+    "description": "简单字幕对齐",
+    "input_types": {
+      "required": {
+        "语音事件": {
+          "type": "LIST"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "字幕时间点",
+        "type": "LIST"
+      }
+    ]
+  },
+  "OpenMAIC_音频混音": {
+    "category": "OpenMAIC/音频",
+    "display_name": "音频混音",
+    "description": "混音：讲解音频 + 背景音乐",
+    "input_types": {
+      "required": {
+        "讲解音频": {
+          "type": "STRING"
+        }
+      },
+      "optional": {
+        "背景音乐": {
+          "type": "STRING",
+          "default": ""
+        },
+        "讲解音量": {
+          "type": "INT",
+          "default": 0
+        },
+        "BGM音量": {
+          "type": "INT",
+          "default": -18
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "混音音频",
+        "type": "STRING"
+      }
+    ]
+  },
+  "OpenMAIC_字幕生成": {
+    "category": "OpenMAIC/音频",
+    "display_name": "字幕生成",
+    "description": "生成 ASS 格式字幕文件",
+    "input_types": {
+      "required": {
+        "语音片段": {
+          "type": "LIST"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "字幕文件",
+        "type": "STRING"
+      }
+    ]
+  },
+  "OpenMAIC_视频导出": {
+    "category": "OpenMAIC/导出",
+    "display_name": "视频导出",
+    "description": "视频导出：合并画面、音频、字幕、BGM",
+    "input_types": {
+      "required": {
+        "视频画面": {
+          "type": "STRING"
+        },
+        "讲解音频": {
+          "type": "STRING"
+        },
+        "导出设置": {
+          "type": "DICT"
+        }
+      },
+      "optional": {
+        "背景音乐": {
+          "type": "STRING"
+        },
+        "字幕时间点": {
+          "type": "LIST"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "视频输出",
+        "type": "STRING"
+      }
+    ]
+  },
+  "OpenMAIC_导出设置": {
+    "category": "OpenMAIC/导出",
+    "display_name": "导出设置",
+    "description": "创建视频导出配置",
+    "input_types": {
+      "required": {
+        "分辨率": {
+          "type": "STRING",
+          "default": "1080p"
+        },
+        "帧率": {
+          "type": "INT",
+          "default": 30
+        },
+        "编码器": {
+          "type": "STRING",
+          "default": "nvenc"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "设置",
+        "type": "DICT"
+      }
+    ]
+  },
+  "OpenMAIC_导入课件独立版": {
+    "category": "OpenMAIC/导入",
+    "display_name": "PPTX导入（独立版）",
+    "description": "完全本地化：PPTX转课件+讲稿匹配+动作生成",
+    "input_types": {
+      "required": {
+        "PPTX路径": {
+          "type": "STRING"
+        }
+      },
+      "optional": {
+        "讲稿": {
+          "type": "STRING",
+          "default": ""
+        },
+        "课件标题": {
+          "type": "STRING",
+          "default": ""
+        },
+        "输出模式": {
+          "type": "STRING",
+          "default": "full"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "课件数据",
+        "type": "DICT"
+      },
+      {
+        "name": "匹配结果",
+        "type": "LIST"
+      },
+      {
+        "name": "动作列表",
+        "type": "LIST"
+      },
+      {
+        "name": "页面数量",
+        "type": "INT"
+      }
+    ]
+  },
+  "OpenMAIC_PPTX导入独立版": {
+    "category": "OpenMAIC/导入",
+    "display_name": "PPTX导入（独立版）",
+    "description": "完全本地化：PPTX转课件+讲稿匹配+动作生成",
+    "input_types": {
+      "required": {
+        "PPTX路径": {
+          "type": "STRING"
+        }
+      },
+      "optional": {
+        "讲稿": {
+          "type": "STRING",
+          "default": ""
+        },
+        "课件标题": {
+          "type": "STRING",
+          "default": ""
+        },
+        "输出模式": {
+          "type": "STRING",
+          "default": "full"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "课件数据",
+        "type": "DICT"
+      },
+      {
+        "name": "匹配结果",
+        "type": "LIST"
+      },
+      {
+        "name": "动作列表",
+        "type": "LIST"
+      },
+      {
+        "name": "页面数量",
+        "type": "INT"
+      }
+    ]
+  },
+  "OpenMAIC_图片导入独立版": {
+    "category": "OpenMAIC/导入",
+    "display_name": "图片导入（独立版）",
+    "description": "将图片目录转为课件，本地生成讲解动作",
+    "input_types": {
+      "required": {
+        "图片目录": {
+          "type": "STRING"
+        }
+      },
+      "optional": {
+        "讲稿": {
+          "type": "STRING",
+          "default": ""
+        },
+        "课件标题": {
+          "type": "STRING",
+          "default": "导入的课件"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "课件数据",
+        "type": "DICT"
+      },
+      {
+        "name": "匹配结果",
+        "type": "LIST"
+      },
+      {
+        "name": "动作列表",
+        "type": "LIST"
+      },
+      {
+        "name": "页面数量",
+        "type": "INT"
+      }
+    ]
+  },
+  "OpenMAIC_TTS设置": {
+    "category": "OpenMAIC/TTS",
+    "display_name": "TTS设置",
+    "description": "配置 TTS 语音合成",
+    "input_types": {
+      "required": {
+        "提供商": {
+          "type": "STRING",
+          "default": "qwen-tts"
+        }
+      },
+      "optional": {
+        "语速": {
+          "type": "FLOAT",
+          "default": 1.0
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "TTS配置",
+        "type": "DICT"
+      }
+    ]
+  },
+  "OpenMAIC_文本转语音": {
+    "category": "OpenMAIC/TTS",
+    "display_name": "文本转语音",
+    "description": "将文本转换为语音",
+    "input_types": {
+      "required": {
+        "语音片段": {
+          "type": "LIST"
+        }
+      },
+      "optional": {
+        "TTS配置": {
+          "type": "DICT",
+          "default": {}
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "音频文件",
+        "type": "STRING"
+      }
+    ]
+  },
+  "OpenMAIC_拆分讲解列表": {
+    "category": "OpenMAIC/工具",
+    "display_name": "拆分讲解列表",
+    "description": "拆分讲解列表用于逐条处理",
+    "input_types": {
+      "required": {
+        "讲解列表": {
+          "type": "LIST"
+        }
+      },
+      "optional": {
+        "索引": {
+          "type": "INT",
+          "default": 0
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "单条讲解",
+        "type": "DICT"
+      }
+    ]
+  },
+  "OpenMAIC_从动作提取字幕": {
+    "category": "OpenMAIC/工具",
+    "display_name": "从动作提取字幕",
+    "description": "从动作列表中提取字幕时间点",
+    "input_types": {
+      "required": {
+        "动作列表": {
+          "type": "LIST"
+        }
+      }
+    },
+    "output_types": [
+      {
+        "name": "字幕时间点",
+        "type": "LIST"
+      }
+    ]
+  }
+}
