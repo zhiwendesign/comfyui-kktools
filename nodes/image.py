@@ -5,6 +5,116 @@ import os
 import glob
 import random
 
+class kkImageOverlay:
+    """将 image2 按指定位置叠加到 image1 上。"""
+
+    POSITIONS = ["左上", "左中", "左下", "居中", "上中", "下中", "右上", "右中", "右下"]
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "position": (cls.POSITIONS, {"default": "居中"}),
+                "margin_x": ("INT", {"default": 0, "min": -8192, "max": 8192, "step": 1}),
+                "margin_y": ("INT", {"default": 0, "min": -8192, "max": 8192, "step": 1}),
+            },
+            "optional": {
+                "mask": ("MASK",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "overlay_image"
+    CATEGORY = "🌟kktools/图像"
+
+    def tensor_to_pil(self, image_batch):
+        images = []
+        batch_size, height, width, channels = image_batch.shape
+        for index in range(batch_size):
+            array = (image_batch[index].detach().cpu().numpy() * 255.0).clip(0, 255).astype(np.uint8)
+            if channels == 1:
+                array = array.reshape(height, width)
+            else:
+                array = array.reshape(height, width, channels)
+            images.append(Image.fromarray(array))
+        return images
+
+    def pil_to_tensor(self, images):
+        tensors = []
+        for image in images:
+            array = np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
+            tensors.append(torch.from_numpy(array)[None,])
+        return torch.cat(tensors, dim=0)
+
+    def get_position(self, position, base_size, overlay_size, margin_x, margin_y):
+        base_w, base_h = base_size
+        overlay_w, overlay_h = overlay_size
+
+        x_left = margin_x
+        x_center = (base_w - overlay_w) // 2 + margin_x
+        x_right = base_w - overlay_w - margin_x
+        y_top = margin_y
+        y_center = (base_h - overlay_h) // 2 + margin_y
+        y_bottom = base_h - overlay_h - margin_y
+
+        position_map = {
+            "左上": (x_left, y_top),
+            "左中": (x_left, y_center),
+            "左下": (x_left, y_bottom),
+            "居中": (x_center, y_center),
+            "上中": (x_center, y_top),
+            "下中": (x_center, y_bottom),
+            "右上": (x_right, y_top),
+            "右中": (x_right, y_center),
+            "右下": (x_right, y_bottom),
+        }
+        return position_map.get(position, (x_center, y_center))
+
+    def apply_mask_to_overlay(self, overlay, mask_batch, index):
+        if mask_batch is None:
+            return overlay
+
+        if hasattr(mask_batch, "dim") and mask_batch.dim() == 3:
+            mask = mask_batch[min(index, mask_batch.shape[0] - 1)]
+        else:
+            mask = mask_batch
+
+        mask_array = (1.0 - mask.detach().cpu().numpy()).clip(0, 1)
+        mask_image = Image.fromarray((mask_array * 255.0).astype(np.uint8)).resize(overlay.size, Image.Resampling.LANCZOS)
+
+        overlay_rgba = overlay.convert("RGBA")
+        alpha = overlay_rgba.getchannel("A")
+        combined_alpha = Image.fromarray(
+            ((np.asarray(alpha, dtype=np.float32) * np.asarray(mask_image, dtype=np.float32)) / 255.0)
+            .clip(0, 255)
+            .astype(np.uint8)
+        )
+        overlay_rgba.putalpha(combined_alpha)
+        return overlay_rgba
+
+    def overlay_image(self, image1, image2, position, margin_x, margin_y, mask=None):
+        base_images = self.tensor_to_pil(image1)
+        overlay_images = self.tensor_to_pil(image2)
+        batch_size = max(len(base_images), len(overlay_images))
+        results = []
+
+        for index in range(batch_size):
+            base = base_images[min(index, len(base_images) - 1)].convert("RGBA")
+            overlay = overlay_images[min(index, len(overlay_images) - 1)].convert("RGBA")
+            overlay = self.apply_mask_to_overlay(overlay, mask, index)
+            x, y = self.get_position(position, base.size, overlay.size, margin_x, margin_y)
+
+            layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+            layer.paste(overlay, (x, y), overlay)
+            composed = Image.alpha_composite(base, layer)
+            results.append(composed)
+
+        return (self.pil_to_tensor(results),)
+
+
 class kkPadImageToCanvas:
     """
     一个 ComfyUI 节点，用于将输入图像放置到指定尺寸和颜色的新画布上。
@@ -1097,11 +1207,17 @@ class kkImageTileSplit2x2:
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         if not pil_images:
             return torch.zeros((1, 256, 256, 3))
-            
+
+        max_width = max(img.size[0] for img in pil_images)
+        max_height = max(img.size[1] for img in pil_images)
         tensors = []
         for img in pil_images:
             # 确保图像为 RGB 模式
             img_rgb = img.convert("RGB")
+            if img_rgb.size != (max_width, max_height):
+                padded = Image.new("RGB", (max_width, max_height), (0, 0, 0))
+                padded.paste(img_rgb, (0, 0))
+                img_rgb = padded
             img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)
@@ -1241,24 +1357,794 @@ class kkImageTileSplit2x2:
         return ([tl_tensor], [tr_tensor], [bl_tensor], [br_tensor])
 
 
+class kkImageGridMerge:
+    """
+    将多张图按 2x2、3x3、4x4 宫格合并，作为 kkImageSplit 的反向拼接工具。
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "grid_size": (["2x2", "3x3", "4x4"], {"default": "2x2"}),
+                "cell_size_mode": (["match_image1", "max", "min"], {"default": "match_image1"}),
+                "background_color": ("STRING", {"default": "#000000"}),
+            },
+            "optional": {
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+                "image8": ("IMAGE",),
+                "image9": ("IMAGE",),
+                "image10": ("IMAGE",),
+                "image11": ("IMAGE",),
+                "image12": ("IMAGE",),
+                "image13": ("IMAGE",),
+                "image14": ("IMAGE",),
+                "image15": ("IMAGE",),
+                "image16": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("image",)
+    FUNCTION = "merge_grid"
+    CATEGORY = "🌟kktools/图像"
+
+    def tensor_to_pil(self, img_tensor):
+        """将 ComfyUI 图像张量转换为 PIL 图像列表。"""
+        if img_tensor is None:
+            return []
+
+        if len(img_tensor.shape) == 4:
+            batch_size, height, width, channels = img_tensor.shape
+            images = []
+            for i in range(batch_size):
+                img_np = 255.0 * img_tensor[i].cpu().numpy()
+                img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+                if channels == 1:
+                    img_np = img_np.reshape(height, width)
+                elif channels == 3:
+                    img_np = img_np.reshape(height, width, 3)
+                elif channels == 4:
+                    img_np = img_np.reshape(height, width, 4)
+                images.append(Image.fromarray(img_np))
+            return images
+
+        img_np = 255.0 * img_tensor.cpu().numpy()
+        img_np = np.clip(img_np, 0, 255).astype(np.uint8)
+        return [Image.fromarray(img_np)]
+
+    def pil_to_tensor(self, pil_images, background_color=(0, 0, 0)):
+        """将 PIL 图像列表转换回 ComfyUI IMAGE 张量。"""
+        if not pil_images:
+            return torch.zeros((1, 256, 256, 3))
+
+        max_width = max(img.size[0] for img in pil_images)
+        max_height = max(img.size[1] for img in pil_images)
+        tensors = []
+        for img in pil_images:
+            img_rgb = img.convert("RGB")
+            if img_rgb.size != (max_width, max_height):
+                padded = Image.new("RGB", (max_width, max_height), background_color)
+                padded.paste(img_rgb, (0, 0))
+                img_rgb = padded
+            img_np = np.array(img_rgb).astype(np.float32) / 255.0
+            tensors.append(torch.from_numpy(img_np)[None,])
+        return torch.cat(tensors, dim=0)
+
+    def resolve_batch_cell_size(self, image_batches, batch_size, cell_size_mode):
+        if cell_size_mode == "match_image1":
+            return image_batches[0][0].size
+
+        sizes = []
+        for batch in image_batches:
+            for batch_index in range(batch_size):
+                sizes.append(batch[batch_index].size)
+
+        if cell_size_mode == "min":
+            return min(width for width, _height in sizes), min(height for _width, height in sizes)
+        return max(width for width, _height in sizes), max(height for _width, height in sizes)
+
+    def parse_grid_size(self, grid_size):
+        try:
+            columns, rows = map(int, str(grid_size).lower().split("x", 1))
+        except ValueError as exc:
+            raise ValueError(f"Unsupported grid_size: {grid_size}") from exc
+        if columns != rows or columns not in (2, 3, 4):
+            raise ValueError(f"Unsupported grid_size: {grid_size}")
+        return columns, rows
+
+    def merge_grid(
+        self,
+        image1,
+        image2,
+        image3,
+        image4,
+        grid_size,
+        cell_size_mode,
+        background_color,
+        image5=None,
+        image6=None,
+        image7=None,
+        image8=None,
+        image9=None,
+        image10=None,
+        image11=None,
+        image12=None,
+        image13=None,
+        image14=None,
+        image15=None,
+        image16=None,
+    ):
+        columns, rows = self.parse_grid_size(grid_size)
+        cell_count = columns * rows
+        images = [
+            image1, image2, image3, image4,
+            image5, image6, image7, image8,
+            image9, image10, image11, image12,
+            image13, image14, image15, image16,
+        ][:cell_count]
+        image_batches = [self.tensor_to_pil(image) for image in images]
+        connected_batches = [batch for batch in image_batches if batch]
+
+        batch_size = min(len(batch) for batch in connected_batches)
+        if batch_size <= 0:
+            return (torch.zeros((1, 256, 256, 3)),)
+
+        try:
+            bg_color = ImageColor.getcolor(background_color, "RGB")
+        except ValueError:
+            bg_color = (0, 0, 0)
+
+        resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+        merged_images = []
+        cell_width, cell_height = self.resolve_batch_cell_size(image_batches, batch_size, cell_size_mode)
+
+        for batch_index in range(batch_size):
+            cells = [
+                batch[batch_index].convert("RGB") if batch else Image.new("RGB", (cell_width, cell_height), bg_color)
+                for batch in image_batches
+            ]
+            resized_cells = [
+                cell if cell.size == (cell_width, cell_height) else cell.resize((cell_width, cell_height), resampling)
+                for cell in cells
+            ]
+
+            canvas = Image.new("RGB", (cell_width * columns, cell_height * rows), bg_color)
+            for index, cell in enumerate(resized_cells):
+                x = (index % columns) * cell_width
+                y = (index // columns) * cell_height
+                canvas.paste(cell, (x, y))
+            merged_images.append(canvas)
+
+        return (self.pil_to_tensor(merged_images, bg_color),)
+
+
+import base64
+import io
+import json
+import math
+import re
+import time
+import urllib.error
+import urllib.request
+
+
+ENDPOINT = "https://www.mindapi.cc/v1/chat/completions"
+REQUEST_TIMEOUT_SECONDS = 300
+REQUEST_RETRY_DELAYS_SECONDS = [2, 5, 10]
+MAX_PIXELS = 8_294_400
+
+MODELS = [
+    "gpt-image-2",
+    "gemini-3-pro-image-preview-2k",
+    "gemini-3-pro-image-preview-4k",
+]
+
+ASPECT_RATIOS = [
+    "auto",
+    "1:1",
+    "3:2",
+    "2:3",
+    "5:4",
+    "4:5",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16",
+    "21:9",
+    "9:21",
+    "2:1",
+    "1:2",
+    "3:1",
+    "1:3",
+]
+
+RESOLUTIONS = ["1K", "2K", "4K"]
+EDGE_FROM_RESOLUTION = {"1K": 1024, "2K": 2048, "4K": 3840}
+GEMINI_EFFECTIVE_RESOLUTION = {
+    "gemini-3-pro-image-preview-2k": "2K",
+    "gemini-3-pro-image-preview-4k": "4K",
+}
+
+
+class MindAPIHttpError(RuntimeError):
+    def __init__(self, status, body, service_name="MindAPI"):
+        super().__init__(f"{service_name} HTTP {status}: {str(body)[:500]}")
+        self.status = status
+        self.body = body
+
+
+class MindAPINetworkError(RuntimeError):
+    def __init__(self, message, attempts):
+        super().__init__(message)
+        self.attempts = attempts
+
+
+def _json_dumps(value):
+    return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+def _snap_16(value):
+    return int(round(max(64, min(3840, value)) / 16) * 16)
+
+
+def is_gpt_image_model(model):
+    return re.match(r"^gpt-image-2(?:$|[-_])", str(model or ""), re.I) is not None
+
+
+def size_from_aspect(aspect_ratio, max_edge):
+    match = re.match(r"^(\d+)\s*[:x]\s*(\d+)$", str(aspect_ratio or "").strip(), re.I)
+    if not match:
+        return None
+
+    aspect_w = max(1, int(match.group(1)))
+    aspect_h = max(1, int(match.group(2)))
+    edge = max(64, min(3840, int(max_edge or 1024)))
+    long_edge = max(aspect_w, aspect_h)
+    scale = edge / long_edge
+
+    width = _snap_16(aspect_w * scale)
+    height = _snap_16(aspect_h * scale)
+
+    if width * height > MAX_PIXELS:
+        shrink = math.sqrt(MAX_PIXELS / (width * height))
+        width = _snap_16(width * shrink)
+        height = _snap_16(height * shrink)
+
+    while width * height > MAX_PIXELS and width >= 80 and height >= 80:
+        if width >= height:
+            width -= 16
+        else:
+            height -= 16
+
+    return f"{width}x{height}"
+
+
+def _data_url_summary(value):
+    text = str(value or "")
+    match = re.match(r"^(data:image/[^;]+;base64,)", text, re.I)
+    prefix = match.group(1) if match else ""
+    return {
+        "type": "data_url",
+        "mime": prefix.replace("data:", "").replace(";base64,", "") or "image",
+        "length": len(text),
+        "preview": f"{prefix}<base64:{max(0, len(text) - len(prefix))} chars>",
+    }
+
+
+def _sanitize_debug_value(value):
+    if isinstance(value, dict):
+        return {key: _sanitize_debug_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_debug_value(item) for item in value]
+    if isinstance(value, str) and value.startswith("data:image/"):
+        return _data_url_summary(value)
+    return value
+
+
+def _build_text_prompt(prompt, aspect_ratio):
+    text = str(prompt or "").strip()
+    if aspect_ratio and aspect_ratio != "auto":
+        text += f"\n\n(Aspect ratio: {aspect_ratio}; output the image in this ratio.)"
+    return text
+
+
+def _build_user_content(prompt, aspect_ratio, reference_data_url):
+    text = _build_text_prompt(prompt, aspect_ratio)
+    if reference_data_url:
+        return [
+            {"type": "text", "text": text},
+            {"type": "image_url", "image_url": {"url": reference_data_url}},
+        ]
+    return text
+
+
+def effective_resolution_for_model(model, resolution):
+    if model in GEMINI_EFFECTIVE_RESOLUTION:
+        return GEMINI_EFFECTIVE_RESOLUTION[model]
+    return resolution
+
+
+def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_url=None):
+    effective_resolution = effective_resolution_for_model(model, resolution)
+    content = _build_user_content(prompt, aspect_ratio, reference_data_url)
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": content}],
+    }
+
+    size = None
+    if is_gpt_image_model(model):
+        body.update({
+            "stream": True,
+            "temperature": 0.7,
+            "group": "default",
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0,
+        })
+        if aspect_ratio != "auto":
+            size = size_from_aspect(aspect_ratio, EDGE_FROM_RESOLUTION[effective_resolution])
+            if size:
+                body["size"] = size
+    else:
+        body["temperature"] = 0.7
+        image_config = {"image_size": effective_resolution}
+        if aspect_ratio != "auto":
+            image_config["aspect_ratio"] = aspect_ratio
+        body["extra_body"] = {"google": {"image_config": image_config}}
+
+    return body, effective_resolution, size
+
+
+def _normalize_base_url(base_url):
+    text = str(base_url or "").strip() or "https://api.zuco.ai/v1"
+    return text.rstrip("/")
+
+
+def _join_api_url(base_url, path):
+    endpoint_path = str(path or "").strip()
+    if endpoint_path.startswith("http://") or endpoint_path.startswith("https://"):
+        return endpoint_path
+    if not endpoint_path.startswith("/"):
+        endpoint_path = "/" + endpoint_path
+    return _normalize_base_url(base_url) + endpoint_path
+
+
+def _http_post_json_to_endpoint(api_key, body, stream, endpoint, user_agent, service_name="MindAPI"):
+    data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream" if stream else "application/json",
+        "User-Agent": user_agent,
+        "Connection": "close",
+    }
+    attempts = []
+
+    for attempt_index in range(len(REQUEST_RETRY_DELAYS_SECONDS) + 1):
+        request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                content_type = response.headers.get("Content-Type", "")
+                status = getattr(response, "status", None) or response.getcode()
+                response_headers = dict(response.headers.items())
+                if stream and "json" not in content_type.lower():
+                    return _read_sse_response(response, status, response_headers)
+                return _read_json_response(response, status, response_headers)
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", "replace")
+            raise MindAPIHttpError(exc.code, raw, service_name=service_name) from exc
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
+            attempts.append({
+                "attempt": attempt_index + 1,
+                "error": str(exc),
+            })
+            if attempt_index >= len(REQUEST_RETRY_DELAYS_SECONDS):
+                message = (
+                    f"{service_name} request failed after "
+                    f"{len(attempts)} attempts: {exc}. "
+                    "This is a network/TLS connection reset before a valid API response."
+                )
+                raise MindAPINetworkError(message, attempts) from exc
+            time.sleep(REQUEST_RETRY_DELAYS_SECONDS[attempt_index])
+
+
+def _http_post_json(api_key, body, stream):
+    return _http_post_json_to_endpoint(
+        api_key=api_key,
+        body=body,
+        stream=stream,
+        endpoint=ENDPOINT,
+        user_agent="ComfyUI-kktools-kkimage2-LingsiAPI/1.0",
+        service_name="MindAPI",
+    )
+
+
+def _read_json_response(response, status, headers):
+    raw_text = response.read().decode("utf-8", "replace")
+    try:
+        data = json.loads(raw_text)
+    except json.JSONDecodeError:
+        data = None
+    return {
+        "mode": "json",
+        "status": status,
+        "headers": headers,
+        "raw_text": raw_text,
+        "json": data,
+        "content_text": _extract_chat_text(data) if data is not None else raw_text,
+    }
+
+
+def _read_sse_response(response, status, headers):
+    events = []
+    parsed_events = []
+    content_parts = []
+
+    for raw_line in response:
+        line = raw_line.decode("utf-8", "replace").strip()
+        if not line or line.startswith(":") or not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if not payload or payload == "[DONE]":
+            continue
+        events.append(payload)
+        try:
+            parsed = json.loads(payload)
+            parsed_events.append(parsed)
+            piece = _extract_stream_piece(parsed)
+            if piece:
+                content_parts.append(piece)
+        except json.JSONDecodeError:
+            content_parts.append(payload)
+
+    return {
+        "mode": "stream",
+        "status": status,
+        "headers": headers,
+        "stream_events": events,
+        "stream_json": parsed_events,
+        "content_text": "".join(content_parts),
+    }
+
+
+def _normalize_chat_content(content):
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(filter(None, (_normalize_chat_content(item) for item in content)))
+    if isinstance(content, dict):
+        if isinstance(content.get("text"), str):
+            return content["text"]
+        if isinstance(content.get("content"), (str, list, dict)):
+            return _normalize_chat_content(content["content"])
+        image_url = content.get("image_url")
+        if isinstance(image_url, dict) and image_url.get("url"):
+            return str(image_url["url"])
+        if isinstance(image_url, str):
+            return image_url
+        for key in ("url", "output_url"):
+            if content.get(key):
+                return str(content[key])
+        inline_data = content.get("inline_data") or content.get("inlineData")
+        if isinstance(inline_data, dict) and inline_data.get("data"):
+            mime = inline_data.get("mime_type") or inline_data.get("mimeType") or "image/png"
+            return f"data:{mime};base64,{inline_data['data']}"
+    try:
+        return json.dumps(content, ensure_ascii=False)
+    except TypeError:
+        return str(content)
+
+
+def _extract_chat_text(data):
+    if not isinstance(data, dict):
+        return ""
+    chunks = []
+    choices = data.get("choices")
+    if isinstance(choices, list):
+        for choice in choices:
+            if not isinstance(choice, dict):
+                continue
+            message = choice.get("message") or {}
+            chunks.append(_normalize_chat_content(message.get("content")))
+            if isinstance(message.get("images"), list):
+                chunks.append(_normalize_chat_content(message["images"]))
+            chunks.append(_normalize_chat_content(choice.get("text")))
+    chunks.append(_normalize_chat_content(data.get("content")))
+    chunks.append(_normalize_chat_content(data.get("text")))
+    return "\n".join(filter(None, chunks))
+
+
+def _extract_stream_piece(data):
+    if not isinstance(data, dict):
+        return ""
+    choice = (data.get("choices") or [{}])[0]
+    if not isinstance(choice, dict):
+        choice = {}
+    delta = choice.get("delta") or {}
+    message = choice.get("message") or {}
+    for source in (delta, message, choice, data):
+        if not isinstance(source, dict):
+            continue
+        for key in ("content", "text", "image_url", "url", "inline_data", "inlineData"):
+            if key in source:
+                text = _normalize_chat_content(source.get(key))
+                if text:
+                    return text
+    return ""
+
+
+def _push_candidate(candidates, seen, value, source):
+    if not value:
+        return
+    text = str(value).strip()
+    if not text or text in seen:
+        return
+    if not (text.startswith("data:image/") or text.startswith("http://") or text.startswith("https://")):
+        return
+    seen.add(text)
+    candidates.append({
+        "kind": "data_url" if text.startswith("data:image/") else "url",
+        "source": source,
+        "value": text,
+    })
+
+
+def _extract_from_text(text, candidates, seen, source):
+    value = str(text or "")
+    for match in re.finditer(r"data:image/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=_-]+", value, re.I):
+        _push_candidate(candidates, seen, match.group(0), source)
+
+    for match in re.finditer(r"!\[[^\]]*\]\(([^)\s]+)\)", value, re.I):
+        _push_candidate(candidates, seen, match.group(1), source)
+
+    urls = []
+    for match in re.finditer(r"https?://[^\s)<>'\"]+", value, re.I):
+        url = match.group(0).rstrip(".,;:!?)]")
+        urls.append(url)
+        if re.search(r"\.(png|jpe?g|webp|gif|bmp)(\?|$)", url, re.I):
+            _push_candidate(candidates, seen, url, source)
+
+    if not candidates and urls:
+        _push_candidate(candidates, seen, urls[-1], source)
+
+
+def _maybe_data_url_from_base64(value, mime="image/png"):
+    text = re.sub(r"\s+", "", str(value or ""))
+    if len(text) < 128:
+        return None
+    if not re.match(r"^[A-Za-z0-9+/=_-]+$", text):
+        return None
+    return f"data:{mime};base64,{text}"
+
+
+def _walk_for_images(value, candidates, seen, source="response"):
+    if isinstance(value, str):
+        _extract_from_text(value, candidates, seen, source)
+        return
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            _walk_for_images(item, candidates, seen, f"{source}[{index}]")
+        return
+    if not isinstance(value, dict):
+        return
+
+    image_url = value.get("image_url")
+    if isinstance(image_url, dict):
+        _push_candidate(candidates, seen, image_url.get("url"), f"{source}.image_url.url")
+    elif isinstance(image_url, str):
+        _push_candidate(candidates, seen, image_url, f"{source}.image_url")
+
+    for key in ("url", "output_url"):
+        if isinstance(value.get(key), str):
+            _push_candidate(candidates, seen, value[key], f"{source}.{key}")
+
+    for key in ("b64_json", "base64", "image_base64"):
+        if isinstance(value.get(key), str):
+            data_url = value[key] if value[key].startswith("data:image/") else _maybe_data_url_from_base64(value[key])
+            _push_candidate(candidates, seen, data_url, f"{source}.{key}")
+
+    inline_data = value.get("inline_data") or value.get("inlineData")
+    if isinstance(inline_data, dict) and inline_data.get("data"):
+        mime = inline_data.get("mime_type") or inline_data.get("mimeType") or "image/png"
+        data_url = _maybe_data_url_from_base64(inline_data.get("data"), mime)
+        _push_candidate(candidates, seen, data_url, f"{source}.inline_data")
+
+    for key, item in value.items():
+        _walk_for_images(item, candidates, seen, f"{source}.{key}")
+
+
+def extract_image_candidates(response_payload):
+    candidates = []
+    seen = set()
+    _walk_for_images(response_payload, candidates, seen)
+    content_text = response_payload.get("content_text") if isinstance(response_payload, dict) else ""
+    if content_text:
+        _extract_from_text(content_text, candidates, seen, "content_text")
+    return candidates
+
+
+def _image_bytes_from_data_url(data_url):
+    match = re.match(r"^data:image/[^;]+;base64,(.+)$", str(data_url or ""), re.I | re.S)
+    if not match:
+        raise ValueError("Invalid image data URL")
+    encoded = re.sub(r"\s+", "", match.group(1))
+    padding = "=" * (-len(encoded) % 4)
+    if "-" in encoded or "_" in encoded:
+        return base64.urlsafe_b64decode(encoded + padding)
+    return base64.b64decode(encoded + padding)
+
+
+def _image_bytes_from_url(url, api_key):
+    headers = {
+        "User-Agent": "ComfyUI-kktools-kkimage2-LingsiAPI/1.0",
+        "Accept": "image/*,*/*;q=0.8",
+    }
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (401, 403):
+            raise
+        headers["Authorization"] = f"Bearer {api_key}"
+        request = urllib.request.Request(url, headers=headers, method="GET")
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.read()
+
+
+def image_bytes_from_candidate(candidate, api_key):
+    value = candidate["value"]
+    if candidate["kind"] == "data_url":
+        return _image_bytes_from_data_url(value)
+    return _image_bytes_from_url(value, api_key)
+
+
+def tensor_to_data_url(image):
+    import numpy as np
+    from PIL import Image
+
+    frame = image
+    if hasattr(frame, "detach"):
+        frame = frame.detach().cpu().numpy()
+    if getattr(frame, "ndim", 0) == 4:
+        frame = frame[0]
+    if getattr(frame, "ndim", 0) != 3:
+        raise ValueError("Reference image must be a ComfyUI IMAGE tensor")
+
+    array = np.clip(frame, 0.0, 1.0)
+    array = (array * 255.0).round().astype(np.uint8)
+    if array.shape[-1] == 1:
+        array = np.repeat(array, 3, axis=-1)
+    if array.shape[-1] == 4:
+        mode = "RGBA"
+    else:
+        array = array[:, :, :3]
+        mode = "RGB"
+
+    pil_image = Image.fromarray(array, mode=mode)
+    buffer = io.BytesIO()
+    pil_image.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
+def image_bytes_to_tensor(image_bytes):
+    tensor, _original_size, _final_size, _resized = image_bytes_to_tensor_info(image_bytes)
+    return tensor
+
+
+def image_bytes_to_tensor_info(image_bytes, target_size=None):
+    import numpy as np
+    import torch
+    from PIL import Image, ImageOps
+
+    resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+
+    with Image.open(io.BytesIO(image_bytes)) as pil_image:
+        pil_image = ImageOps.exif_transpose(pil_image).convert("RGB")
+        original_size = pil_image.size
+        resized = False
+        if target_size and pil_image.size != target_size:
+            pil_image = pil_image.resize(target_size, resampling)
+            resized = True
+        final_size = pil_image.size
+        array = np.asarray(pil_image).astype(np.float32) / 255.0
+    return torch.from_numpy(array)[None,], original_size, final_size, resized
+
+
+def concat_image_tensors(tensors):
+    import torch
+
+    return torch.cat(tensors, dim=0)
+
+
+def _candidate_debug(candidate):
+    value = candidate.get("value", "")
+    if isinstance(value, str) and value.startswith("data:image/"):
+        value = _data_url_summary(value)
+    return {
+        "kind": candidate.get("kind"),
+        "source": candidate.get("source"),
+        "value": value,
+    }
+
+
+def _debug_package(
+    ok,
+    model,
+    requested_resolution,
+    effective_resolution,
+    aspect_ratio,
+    has_input_image,
+    request_body,
+    requested_count=1,
+    generated_count=0,
+    response_payload=None,
+    parsed_images=None,
+    selected_image=None,
+    responses=None,
+    error=None,
+    endpoint=ENDPOINT,
+):
+    package = {
+        "ok": ok,
+        "endpoint": endpoint,
+        "request": {
+            "headers": {
+                "Authorization": "Bearer ***",
+                "Content-Type": "application/json",
+            },
+            "body": _sanitize_debug_value(request_body),
+        },
+        "model": model,
+        "effective_model": model,
+        "requested_resolution": requested_resolution,
+        "effective_resolution": effective_resolution,
+        "aspect_ratio": aspect_ratio,
+        "has_input_image": bool(has_input_image),
+        "requested_count": requested_count,
+        "generated_count": generated_count,
+        "parsed_images": [_candidate_debug(item) for item in (parsed_images or [])],
+        "selected_image": _candidate_debug(selected_image) if selected_image else None,
+        "responses": responses or [],
+        "error": error,
+    }
+    if response_payload is not None:
+        package["raw_response"] = response_payload
+    return package
+
+
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
+    "kkImageOverlay": kkImageOverlay,
     "kkPadImageToCanvas": kkPadImageToCanvas,
     "kkImageFrame": kkImageFrame,
     "kkResize": kkResize,
     "kkGetImage": kkGetImage,
     "kkBatchImageLoader": kkBatchImageLoader,
-    "kkImageTileSplit2x2": kkImageTileSplit2x2,  # 新增节点
+    "kkImageTileSplit2x2": kkImageTileSplit2x2,
+    "kkImageGridMerge": kkImageGridMerge,
 }
 
-# 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "kkImageOverlay": "kkImageOverlay（图像叠加）",
     "kkPadImageToCanvas": "kkPadImageToCanvas（图像填充到画布）",
     "kkImageFrame": "kkImageFrame（图像边框）",
     "kkResize": "kkResize（图像蒙版同步调整）",
     "kkGetImage": "kkGetImage（获取图像尺寸）",
     "kkBatchImageLoader": "kkBatchImageLoader（批量图像加载）",
     "kkImageTileSplit2x2": "kkImageTileSplit2x2（图像2x2分块）",
+    "kkImageGridMerge": "kkImageGridMerge（图像宫格合并）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']

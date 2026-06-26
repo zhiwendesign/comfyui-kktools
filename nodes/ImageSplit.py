@@ -81,11 +81,17 @@ class kkImageSplit:
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
         if not pil_images:
             return torch.zeros((1, 256, 256, 3))
-            
+
+        max_width = max(img.size[0] for img in pil_images)
+        max_height = max(img.size[1] for img in pil_images)
         tensors = []
         for img in pil_images:
             # 确保图像为 RGB 模式
             img_rgb = img.convert("RGB")
+            if img_rgb.size != (max_width, max_height):
+                padded = Image.new("RGB", (max_width, max_height), (0, 0, 0))
+                padded.paste(img_rgb, (0, 0))
+                img_rgb = padded
             img_np = np.array(img_rgb).astype(np.float32) / 255.0
             tensor = torch.from_numpy(img_np)[None,]
             tensors.append(tensor)

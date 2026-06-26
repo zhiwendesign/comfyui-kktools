@@ -1,0 +1,797 @@
+{
+  "id": "e60bf2c8-9848-4cad-bf3f-0c8153576b0b",
+  "revision": 0,
+  "last_node_id": 19,
+  "last_link_id": 17,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        -424.70281158447267,
+        173.51850997924788
+      ],
+      "size": [
+        424.74785217285205,
+        294.5517376708983
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "🔢 数学运算模块 (Math.py)",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "本文件收录该模块下所有节点的最小演示。\n说明卡内容按根目录 readme.md 的写法整理，打开后可直接对照参数和输出查看。\n合作交流：kkcomfy"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "Note",
+      "pos": [
+        87.45217041015627,
+        207.97316619873047
+      ],
+      "size": [
+        344.7190667775052,
+        245.27294316567668
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（数学表达式）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n执行复杂数学运算，支持变量、函数和常量。\n\n输入变量\n- 支持 a, b, c, d\n- 支持控制输出小数位数\n\n最小演示\n- expression：(a + b) * c\n- a=2, b=3, c=4\n\n输出格式\n- float_result\n- int_result\n- string_result"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 3,
+      "type": "kkMathExpressionNode",
+      "pos": [
+        406.67056817173034,
+        566.6720818713484
+      ],
+      "size": [
+        400,
+        248
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "a",
+          "type": "FLOAT",
+          "widget": {
+            "name": "a"
+          },
+          "link": 1
+        },
+        {
+          "name": "b",
+          "type": "FLOAT",
+          "widget": {
+            "name": "b"
+          },
+          "link": 2
+        },
+        {
+          "name": "c",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "c"
+          },
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "float_result",
+          "type": "FLOAT",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "int_result",
+          "type": "INT",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "string_result",
+          "type": "STRING",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkMathExpressionNode"
+      },
+      "widgets_values": [
+        "(a + b) * c",
+        2,
+        3,
+        4,
+        0,
+        0
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        1237.3216864935305,
+        205.4808040615844
+      ],
+      "size": [
+        415.7307373046874,
+        232.45705871582027
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（正则表达式）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n使用正则表达式进行文本匹配和替换操作。\n\n操作模式\n- match\n- search\n- findall\n- replace\n\n最小演示\n- 从 shot_001.png 中 search 数字\n- pattern：\\d+\n\n输出\n- result"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 5,
+      "type": "kkRegexNode",
+      "pos": [
+        1676.9069985362553,
+        506.91885920880156
+      ],
+      "size": [
+        320,
+        110
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 9
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": 10
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkRegexNode"
+      },
+      "widgets_values": [
+        "search",
+        ""
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        1253.4135618819362,
+        894.3450999378274
+      ],
+      "size": [
+        360,
+        170
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "运算（正则表达式高级）",
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "功能描述\n带匹配详情和 flags 支持的正则节点。\n\n增强功能\n- IGNORECASE\n- MULTILINE\n- DOTALL\n\n最小演示\n- findall 匹配 A1 / B2 / C3\n- flags：MULTILINE\n\n输出\n- result\n- match_count\n- matched_text\n- info"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 7,
+      "type": "kkRegexNodeAdvanced",
+      "pos": [
+        1647.527537976066,
+        899.0499295434948
+      ],
+      "size": [
+        350,
+        170
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 17
+        },
+        {
+          "name": "pattern",
+          "type": "STRING",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "match_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "matched_text",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "kkRegexNodeAdvanced"
+      },
+      "widgets_values": [
+        "findall",
+        "",
+        "MULTILINE"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 8,
+      "type": "PrimitiveFloat",
+      "pos": [
+        101.95858517551656,
+        548.352192655055
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        12
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 9,
+      "type": "PrimitiveFloat",
+      "pos": [
+        97.71482589413732,
+        656.178034637557
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        32
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 10,
+      "type": "PrimitiveFloat",
+      "pos": [
+        95.83701121503096,
+        769.2271492746952
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveFloat"
+      },
+      "widgets_values": [
+        42
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 12,
+      "type": "PreviewAny",
+      "pos": [
+        835.2120445069346,
+        565.7042169541087
+      ],
+      "size": [
+        291.3026123046875,
+        112
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [
+        null,
+        null,
+        false
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 13,
+      "type": "PreviewAny",
+      "pos": [
+        839.3637012331094,
+        726.896538479241
+      ],
+      "size": [
+        291.3026123046875,
+        112
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [
+        null,
+        null,
+        null
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 14,
+      "type": "PreviewAny",
+      "pos": [
+        838.5250781862344,
+        887.8671195339285
+      ],
+      "size": [
+        291.3026123046875,
+        112
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [
+        null,
+        null,
+        null
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 16,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        1249.059605648038,
+        608.1723205816172
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            9,
+            17
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "widgets_values": [
+        "作为AI绘画新手，我曾对着ComfyUI的界面望而却步——密密麻麻的节点、晦涩的参数设置、动辄报错的工作流，试了几次都半途而废，甚至想过放弃。直到偶然认识卡卡，那个把ComfyUI玩得炉火纯青的博主，我的AI创作之路才终于有了方向。\n第一次找卡卡请教时，我支支吾吾说不出自己的问题，只含糊地说“节点连不上，渲染不出图”。卡卡没有不耐烦，反而让我截图发给他，一点点指着界面讲解：“你看，这个加载模型的节点要和采样器节点对应，参数没调好，再怎么连都没用。”他一边说，一边远程演示，把复杂的工作流拆成一个个简单的步骤，像搭积木一样，从加载模型、设置提示词，到调整采样步数、分辨率，每一步都讲得细致入微。\n刚开始练习时，我还是频频出错：要么忘记连接vae节点，导致渲染出的图片模糊失真；要么调错采样器参数，让生成时间变得漫长，还出不了满意的效果。每次遇到问题，我都第一时间找卡卡，他从不直接给答案，而是引导我自己排查：“你看看节点之间的连线有没有断？提示词是不是太简单了？”跟着他的思路，我慢慢学会了自主排查错误，也渐渐摸清了各个节点的功能。\n卡卡不仅教我基础操作，还会分享很多实用技巧。他告诉我，提示词的精准度决定了图片的质感，要学会拆分关键词，突出主体和细节；他还把自己整理的常用工作流分享给我，让我可以在此基础上修改，节省了大量时间。有一次，我想生成一组古风人物图，试了很多次都达不到预期，卡卡看了我的作品后，帮我调整了提示词的权重，还优化了采样参数，果然，生成的图片眉眼精致、氛围感拉满，那一刻，我真切感受到了ComfyUI的魅力。\n日子一天天过去，在卡卡的指导下，我从连节点都要反复确认，到能熟练搭建专属工作流；从只会生成简单图片，到能根据需求调整细节、优化效果，甚至能帮身边的朋友解决ComfyUI的小问题。记得有一次，我成功用ComfyUI生成了一组短剧场景图，发给卡卡看时，他笑着说：“你看，只要肯用心，没有学不会的东西。”\n如今，我已经能熟练运用ComfyUI进行创作，那些曾经让我头疼的节点和参数，如今都成了我表达创意的工具。回望这段学习经历，我不仅学会了一项新技能，更被卡卡的耐心和真诚打动。跟着卡卡学ComfyUI，学到的不只是操作方法，更是那种认真对待热爱、乐于分享的态度。往后，我也会带着这份收获，在AI创作的道路上继续前行，去解锁更多可能。"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 17,
+      "type": "PrimitiveString",
+      "pos": [
+        1243.2179770247678,
+        500.6908992698062
+      ],
+      "size": [
+        398.2518976384945,
+        59.8555519797585
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            10,
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PrimitiveString"
+      },
+      "widgets_values": [
+        "^.{1,10}"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 18,
+      "type": "PreviewAny",
+      "pos": [
+        2028.6514574990692,
+        500.96447382147403
+      ],
+      "size": [
+        291.3026123046875,
+        112
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [
+        null,
+        null,
+        null
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 19,
+      "type": "PreviewAny",
+      "pos": [
+        2058.837390421431,
+        892.6567022150286
+      ],
+      "size": [
+        291.3026123046875,
+        112
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 16
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "widgets_values": [
+        null,
+        null,
+        null
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      1,
+      8,
+      0,
+      3,
+      0,
+      "FLOAT"
+    ],
+    [
+      2,
+      9,
+      0,
+      3,
+      1,
+      "FLOAT"
+    ],
+    [
+      3,
+      10,
+      0,
+      3,
+      2,
+      "FLOAT"
+    ],
+    [
+      6,
+      3,
+      0,
+      12,
+      0,
+      "FLOAT"
+    ],
+    [
+      7,
+      3,
+      1,
+      13,
+      0,
+      "INT"
+    ],
+    [
+      8,
+      3,
+      2,
+      14,
+      0,
+      "STRING"
+    ],
+    [
+      9,
+      16,
+      0,
+      5,
+      0,
+      "STRING"
+    ],
+    [
+      10,
+      17,
+      0,
+      5,
+      1,
+      "STRING"
+    ],
+    [
+      14,
+      17,
+      0,
+      7,
+      1,
+      "STRING"
+    ],
+    [
+      15,
+      5,
+      0,
+      18,
+      0,
+      "STRING"
+    ],
+    [
+      16,
+      7,
+      0,
+      19,
+      0,
+      "STRING"
+    ],
+    [
+      17,
+      16,
+      0,
+      7,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "🔢 运算（数学表达式）",
+      "bounding": [
+        40,
+        110,
+        1129.1168411865235,
+        1010.2817899780275
+      ],
+      "color": "#9a6b2f",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "🔢 kkRegexNode（正则表达式）",
+      "bounding": [
+        1199.154254474798,
+        115.60575312893123,
+        1217.871139015503,
+        1005.1800100303345
+      ],
+      "color": "#b58b2a",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6209213230591557,
+      "offset": [
+        630.2132021674457,
+        499.5099480952749
+      ]
+    },
+    "node_versions": {
+      "Comfyui-kktools": "module-demo"
+    },
+    "frontendVersion": "1.43.18"
+  },
+  "version": 0.4
+}
