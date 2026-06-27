@@ -1783,12 +1783,19 @@ def gradio_row_result(row: Any) -> str:
 def gradio_row_is_done(row: Any) -> bool:
     status = gradio_row_status(row).lower()
     progress = gradio_row_progress(row).lower()
-    return status in {"done", "success", "succeeded", "completed", "finished"} or progress in {"100%", "100"}
+    return status in {"done", "success", "succeeded", "completed", "finished"} or (
+        progress in {"100%", "100"} and gradio_row_has_audio_result(row)
+    )
 
 
 def gradio_row_is_failed(row: Any) -> bool:
-    text = json.dumps(row, ensure_ascii=False).lower()
-    return bool(re.search(r"failed|error|失败|错误", text))
+    # Only status/result columns indicate task failure. The input text may
+    # legitimately contain words like "失败" or "error".
+    status = gradio_row_status(row).lower()
+    result = gradio_row_result(row).lower()
+    return bool(re.search(r"failed|fail|error|exception|失败|错误", status)) or bool(
+        re.search(r"failed|error|exception|失败|错误", result)
+    )
 
 
 def gradio_row_has_audio_result(row: Any) -> bool:
