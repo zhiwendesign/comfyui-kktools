@@ -1226,6 +1226,17 @@ def safe_filename(value: str, fallback: str = "ppt") -> str:
     return clean[:80] or fallback
 
 
+def unique_output_path(directory: Path, stem: str, suffix: str) -> Path:
+    safe_stem = safe_filename(stem)
+    timestamp = int(time.time() * 1000)
+    for index in range(100):
+        extra = "" if index == 0 else f"-{index:02d}"
+        path = directory / f"{safe_stem}-{timestamp}{extra}{suffix}"
+        if not path.exists():
+            return path
+    return directory / f"{safe_stem}-{time.time_ns()}{suffix}"
+
+
 def output_page_image_dir() -> Path:
     root = output_export_dir() / "pages"
     root.mkdir(parents=True, exist_ok=True)
@@ -1530,7 +1541,7 @@ def run_ppt_export(ppt_pipe: Any, images: Any, filename: str) -> dict[str, str]:
     if not image_bytes:
         raise TemplateDistillError("请连接图片批次，或先运行 PPT RunningHub 批量生图。")
     title = str(filename or pipe.get("title") or "ppt").strip()
-    output_path = output_export_dir() / f"{safe_filename(title)}-{int(time.time())}.pptx"
+    output_path = unique_output_path(output_export_dir(), title, ".pptx")
     output_path.write_bytes(build_image_deck_pptx(title, pipe.get("aspect_ratio") or "16:9", pages, image_bytes))
     export = {
         "path": str(output_path),
