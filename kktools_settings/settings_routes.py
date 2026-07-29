@@ -56,9 +56,19 @@ def _http_post_json(
         return None
 
 
+def _models_url(base_url: str) -> str:
+    """Build an OpenAI-compatible models endpoint without duplicating /v1."""
+    url = str(base_url or "").strip().rstrip("/")
+    if url.lower().endswith("/models"):
+        return url
+    if url.lower().endswith("/v1"):
+        return f"{url}/models"
+    return f"{url}/v1/models"
+
+
 def _fetch_models_from_url(base_url: str, api_key: str) -> tuple[bool, list[str], str]:
     """Fetch model list from a /v1/models endpoint. Returns (ok, models, error_message)."""
-    url = f"{base_url.rstrip('/')}/v1/models"
+    url = _models_url(base_url)
     headers = _bearer_headers(api_key)
     data = _http_get_json(url, headers)
     if data is None:
