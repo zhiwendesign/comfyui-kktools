@@ -37,7 +37,7 @@ IMAGEN_PIPE_TYPE = getattr(studio, "IMAGEN_PIPE_TYPE", studio.IMAGEN_STUDIO_PIPE
 IMAGEN_PPT_PIPE_TYPE = IMAGEN_PIPE_TYPE
 LEGACY_IMAGEN_PPT_PIPE_TYPE = "IMAGEN_PPT_PIPE"
 IMAGEN_PPT_PIPE_VERSION = 1
-NODE_CATEGORY_CN = "Imagen Studio/PPT工具"
+NODE_CATEGORY_CN = "🌟kktools/PPT工具"
 PPT_ASPECT_OPTIONS_CN = ("自动", "16:9", "4:3", "1:1", "9:16")
 PPT_ROLE_OPTIONS = ("cover", "toc", "section", "content", "data", "quote", "image-focus", "closing", "thanks")
 PPT_DEFAULT_ROLES = ["cover", "section", "content", "data", "closing"]
@@ -1759,7 +1759,7 @@ class ImagenStudioPPTImageWriteback:
         return {
             "required": {
                 "PPT束": (IMAGEN_PPT_PIPE_TYPE, {"tooltip": "连接 PPT 束拆包输出的 PPT束。"}),
-                "图像": ("IMAGE", {"tooltip": "连接 kkimage2_灵思API.image 或其他单页生图结果。"}),
+                "图像": ("IMAGE", {"tooltip": "连接 kkimage2_API.image 或其他单页生图结果。"}),
                 "页码": ("INT", {"default": 1, "min": 1, "max": 999, "step": 1}),
             },
         }
@@ -1820,14 +1820,14 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImagenStudioPPTOutlineDraft": "Imagen Studio PPT 大纲草拟",
-    "ImagenStudioPPTOutlinePlan": "Imagen Studio PPT 大纲规划",
-    "ImagenStudioPPTDesignBrief": "Imagen Studio PPT 设计规范",
-    "ImagenStudioPPTPageComposer": "Imagen Studio PPT 页面拼装",
-    "ImagenStudioPPTRunningHubBatch": "Imagen Studio PPT RunningHub 批量生图",
-    "ImagenStudioPPTPipeUnpack": "Imagen Studio PPT 束拆包",
-    "ImagenStudioPPTImageWriteback": "Imagen Studio PPT 图像写回",
-    "ImagenStudioPPTExport": "Imagen Studio PPT 导出",
+    "ImagenStudioPPTOutlineDraft": "PPT 大纲草拟",
+    "ImagenStudioPPTOutlinePlan": "PPT 大纲规划",
+    "ImagenStudioPPTDesignBrief": "PPT 设计规范",
+    "ImagenStudioPPTPageComposer": "PPT 页面拼装",
+    "ImagenStudioPPTRunningHubBatch": "PPT RunningHub 批量生图",
+    "ImagenStudioPPTPipeUnpack": "PPT 束拆包",
+    "ImagenStudioPPTImageWriteback": "PPT 图像写回",
+    "ImagenStudioPPTExport": "PPT 导出",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "IMAGEN_PPT_PIPE_TYPE"]

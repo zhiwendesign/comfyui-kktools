@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
-DEFAULT_BASE_URL = "https://www.mindapi.cc"
+DEFAULT_BASE_URL = "https://mindapi.cc"
 IMAGEN_STUDIO_PIPE_TYPE = "IMAGEN_STUDIO_PIPE"
 CHAT_ROUTE = "/v1/chat/completions"
 IMAGE_GENERATIONS_ROUTE = "/v1/images/generations"
@@ -27,6 +27,7 @@ BANANA_GENERATE_ROUTE = "/pt/v1/api/generate"
 def normalize_api_base_url(base_url=None):
     text = str(base_url or DEFAULT_BASE_URL).strip() or DEFAULT_BASE_URL
     text = text.rstrip("/")
+    text = re.sub(r"^(https?://)www\.mindapi\.cc(?=/|$)", r"\1mindapi.cc", text, flags=re.I)
     if re.search(r"/v1$", text, re.I):
         text = text[:-3].rstrip("/")
     return text or DEFAULT_BASE_URL
@@ -57,6 +58,7 @@ DEFAULT_LINGSI_PPT_CONCURRENCY = 3
 DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
 DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 15
 MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 500
+MAX_REFERENCE_IMAGES = 9
 
 MODELS = [
     "gpt-image-2",
@@ -263,9 +265,14 @@ def _build_text_prompt(prompt, aspect_ratio):
 def _build_user_content(prompt, aspect_ratio, reference_data_url):
     text = _build_text_prompt(prompt, aspect_ratio)
     if reference_data_url:
+        urls = reference_data_url if isinstance(reference_data_url, (list, tuple)) else [reference_data_url]
         return [
             {"type": "text", "text": text},
-            {"type": "image_url", "image_url": {"url": reference_data_url}},
+            *[
+                {"type": "image_url", "image_url": {"url": url}}
+                for url in urls
+                if url
+            ],
         ]
     return text
 
@@ -310,9 +317,10 @@ def build_request_body(model, prompt, aspect_ratio, resolution, reference_data_u
 
 
 def build_banana_request_body(model, prompt, aspect_ratio, resolution, image_base64=None):
-    images = []
-    if image_base64:
-        images.append(image_base64)
+    if isinstance(image_base64, (list, tuple)):
+        images = [value for value in image_base64 if value]
+    else:
+        images = [image_base64] if image_base64 else []
     return {
         "model": model,
         "prompt": str(prompt or ""),
@@ -730,6 +738,23 @@ def tensor_to_png_bytes(image):
     return buffer.getvalue()
 
 
+def normalize_reference_images(images, limit=MAX_REFERENCE_IMAGES):
+    references = []
+    for image in images if images is not None else []:
+        if image is None:
+            continue
+        shape = getattr(image, "shape", None)
+        if shape is not None and len(shape) == 4:
+            if int(shape[0]) <= 0:
+                continue
+            references.append(image[:1])
+        else:
+            references.append(image)
+        if len(references) >= limit:
+            return references
+    return references
+
+
 def image_bytes_to_tensor(image_bytes):
     tensor, _original_size, _final_size, _resized = image_bytes_to_tensor_info(image_bytes)
     return tensor
@@ -751,8 +776,24 @@ def image_bytes_to_tensor_info(image_bytes):
 
 def concat_image_tensors(tensors):
     import torch
+    import torch.nn.functional as F
 
-    return torch.cat(tensors, dim=0)
+    if not tensors:
+        raise ValueError("At least one image tensor is required")
+    target = tensors[0]
+    target_height, target_width = target.shape[-3], target.shape[-2]
+    normalized = [target]
+    for tensor in tensors[1:]:
+        if tensor.shape[-3] != target_height or tensor.shape[-2] != target_width:
+            tensor = F.interpolate(
+                tensor.permute(0, 3, 1, 2),
+                size=(target_height, target_width),
+                mode="bilinear",
+                align_corners=False,
+            ).permute(0, 2, 3, 1)
+        normalized.append(tensor)
+
+    return torch.cat(normalized, dim=0)
 
 
 def _candidate_debug(candidate):
@@ -774,6 +815,7 @@ def _debug_package(
     aspect_ratio,
     has_input_image,
     request_body,
+    input_image_count=0,
     endpoint=CHAT_ENDPOINT,
     route=None,
     request_summary=None,
@@ -802,6 +844,7 @@ def _debug_package(
         "effective_resolution": effective_resolution,
         "aspect_ratio": aspect_ratio,
         "has_input_image": bool(has_input_image),
+        "input_image_count": int(input_image_count or 0),
         "requested_size": requested_size,
         "upstream_size": upstream_size,
         "output_target_size": output_target_size,
@@ -830,7 +873,7 @@ def safe_status_text(value, limit=180):
 def emit_lingsi_ppt_status(node_id=None, stage="", message="", current=0, total=1, level="info"):
     payload = {
         "node_id": "" if node_id is None else str(node_id),
-        "node_class": "kkimage2_灵思API",
+        "node_class": "kkimage2_API",
         "stage": str(stage or ""),
         "message": safe_status_text(message),
         "current": max(0, int(current or 0)),
@@ -1260,7 +1303,7 @@ class kkLingsiNativePromptImage:
                 "base_url": ("STRING", {
                     "default": DEFAULT_BASE_URL,
                     "multiline": False,
-                    "placeholder": "https://www.mindapi.cc 或第三方兼容 API 根地址",
+                    "placeholder": "https://mindapi.cc 或第三方兼容 API 根地址",
                 }),
                 "并发数": ("INT", {
                     "default": DEFAULT_LINGSI_PPT_CONCURRENCY,
@@ -1288,9 +1331,14 @@ class kkLingsiNativePromptImage:
                 "prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "普通生图必填；连接 PPT束 批量生图时会忽略此输入。",
+                    "tooltip": "普通生图必填；连接模板束或 PPT束 时会忽略此输入。",
                 }),
-                "image": ("IMAGE",),
+                "image": ("IMAGE", {"tooltip": "第一张参考图；连接后会自动显示下一个输入，最多 9 张。"}),
+                **{
+                    f"image_{index}": ("IMAGE", {"tooltip": f"第 {index + 1} 张参考图。"})
+                    for index in range(1, MAX_REFERENCE_IMAGES)
+                },
+                "模板束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接 Imagen Studio 模板拼装输出；默认读取束内正向提示词。"}),
                 "PPT束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接 PPT 页面拼装输出后会一次生成所有页面。"}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
@@ -1299,7 +1347,7 @@ class kkLingsiNativePromptImage:
     RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE)
     RETURN_NAMES = ("image", "raw_json", "PPT束")
     FUNCTION = "generate"
-    CATEGORY = "🌟kktools/AI生图"
+    CATEGORY = "🌟kktools/图像"
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -1318,8 +1366,10 @@ class kkLingsiNativePromptImage:
         限流等待秒=DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
         prompt="",
         image=None,
+        模板束=None,
         PPT束=None,
         unique_id=None,
+        **kwargs,
     ):
         if PPT束:
             return generate_lingsi_ppt_batch(
@@ -1333,19 +1383,23 @@ class kkLingsiNativePromptImage:
                 retry_wait_seconds=限流等待秒,
                 node_id=unique_id,
             )
+        extra_images = [kwargs.get(f"image_{index}") for index in range(1, MAX_REFERENCE_IMAGES)]
+        template_pipe = 模板束 if isinstance(模板束, dict) else {}
+        effective_prompt = str(template_pipe.get("prompt") or "").strip() or str(prompt or "").strip()
         image_batch, raw_json = self._generate_single(
             api_key=api_key,
-            prompt=prompt,
+            prompt=effective_prompt,
             model=model,
             aspect_ratio=aspect_ratio,
             resolution=resolution,
             count=count,
             image=image,
+            images=extra_images,
             base_url=base_url,
         )
-        return image_batch, raw_json, {}
+        return image_batch, raw_json, template_pipe
 
-    def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL):
+    def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL, images=None):
         api_key = str(api_key or "").strip()
         prompt = str(prompt or "").strip()
         model = str(model or "").strip()
@@ -1366,7 +1420,10 @@ class kkLingsiNativePromptImage:
         if resolution not in RESOLUTIONS:
             raise RuntimeError(f"Unsupported resolution: {resolution}")
 
-        has_input_image = image is not None
+        extra_images = images if isinstance(images, (list, tuple)) else [images]
+        reference_images = normalize_reference_images([image, *extra_images])
+        has_input_image = bool(reference_images)
+        input_image_count = len(reference_images)
         is_gpt_image = is_gpt_image_model(model)
         is_banana = is_banana_model(model)
         effective_resolution = effective_resolution_for_model(model, resolution)
@@ -1381,7 +1438,9 @@ class kkLingsiNativePromptImage:
         upstream_size = None
         output_target_size = None
         candidate_exclude_values = []
-        reference_image_bytes = None
+        reference_image_bytes = set()
+        multipart_image_field = None
+        multipart_image_summaries = []
         skipped_input_images = []
 
         if is_gpt_image:
@@ -1394,7 +1453,7 @@ class kkLingsiNativePromptImage:
                         f"resolution={effective_resolution}"
                     )
             elif has_input_image:
-                requested_size = size_from_image(image)
+                requested_size = size_from_image(reference_images[0])
 
             if requested_size:
                 upstream_size = requested_size
@@ -1402,8 +1461,9 @@ class kkLingsiNativePromptImage:
             if has_input_image:
                 endpoint = api_endpoints["image_edits"]
                 route = "/images/edits"
-                image_png = tensor_to_png_bytes(image)
-                reference_image_bytes = image_png
+                image_pngs = [tensor_to_png_bytes(value) for value in reference_images]
+                reference_image_bytes.update(image_pngs)
+                multipart_image_field = "image" if len(image_pngs) == 1 else "image[]"
                 multipart_fields = {
                     "model": model,
                     "prompt": prompt,
@@ -1411,17 +1471,28 @@ class kkLingsiNativePromptImage:
                 }
                 if upstream_size:
                     multipart_fields["size"] = upstream_size
-                multipart_files = [("image", "image_0.png", "image/png", image_png)]
+                multipart_files = [
+                    (multipart_image_field, f"image_{index}.png", "image/png", image_png)
+                    for index, image_png in enumerate(image_pngs)
+                ]
+                multipart_image_summaries = [
+                    {
+                        "filename": filename,
+                        "content_type": content_type,
+                        "bytes": len(data),
+                    }
+                    for _field, filename, content_type, data in multipart_files
+                ]
                 request_body = dict(multipart_fields)
                 request_summary = {
                     "headers": _masked_headers("multipart/form-data; boundary=<generated>"),
                     "form": {
                         **multipart_fields,
-                        "image": {
-                            "filename": "image_0.png",
-                            "content_type": "image/png",
-                            "bytes": len(image_png),
-                        },
+                        multipart_image_field: (
+                            multipart_image_summaries[0]
+                            if len(multipart_image_summaries) == 1
+                            else multipart_image_summaries
+                        ),
                     },
                 }
             else:
@@ -1441,17 +1512,17 @@ class kkLingsiNativePromptImage:
         elif is_banana:
             endpoint = api_endpoints["banana_generate"]
             route = "/pt/v1/api/generate"
-            reference_image_base64 = tensor_to_base64_png(image) if has_input_image else None
-            reference_data_url = (
-                f"data:image/png;base64,{reference_image_base64}"
-                if reference_image_base64
-                else None
+            reference_image_base64 = [tensor_to_base64_png(value) for value in reference_images]
+            reference_data_url = [
+                f"data:image/png;base64,{value}"
+                for value in reference_image_base64
+            ]
+            candidate_exclude_values.extend(reference_image_base64)
+            candidate_exclude_values.extend(reference_data_url)
+            reference_image_bytes.update(
+                _image_bytes_from_data_url(value)
+                for value in reference_data_url
             )
-            if reference_image_base64:
-                candidate_exclude_values.append(reference_image_base64)
-            if reference_data_url:
-                candidate_exclude_values.append(reference_data_url)
-                reference_image_bytes = _image_bytes_from_data_url(reference_data_url)
             request_body = build_banana_request_body(
                 model=model,
                 prompt=prompt,
@@ -1464,10 +1535,12 @@ class kkLingsiNativePromptImage:
                 "body": _sanitize_debug_value(request_body),
             }
         else:
-            reference_data_url = tensor_to_data_url(image) if has_input_image else None
-            if reference_data_url:
-                candidate_exclude_values.append(reference_data_url)
-                reference_image_bytes = _image_bytes_from_data_url(reference_data_url)
+            reference_data_url = [tensor_to_data_url(value) for value in reference_images]
+            candidate_exclude_values.extend(reference_data_url)
+            reference_image_bytes.update(
+                _image_bytes_from_data_url(value)
+                for value in reference_data_url
+            )
             request_body, effective_resolution, _size = build_request_body(
                 model=model,
                 prompt=prompt,
@@ -1498,7 +1571,7 @@ class kkLingsiNativePromptImage:
             f"resolution={resolution} eff_resolution={effective_resolution} "
             f"requested_size={requested_size} upstream_size={upstream_size} "
             f"output_target={output_target_size} count={count} "
-            f"has_image={has_input_image}"
+            f"input_images={input_image_count}"
         )
 
         try:
@@ -1510,12 +1583,43 @@ class kkLingsiNativePromptImage:
                     f"collected={len(output_tensors)}/{count}"
                 )
                 if is_gpt_image and has_input_image:
-                    response_payload = _http_post_multipart(
-                        api_key=api_key,
-                        endpoint=endpoint,
-                        fields=multipart_fields,
-                        files=multipart_files,
-                    )
+                    try:
+                        response_payload = _http_post_multipart(
+                            api_key=api_key,
+                            endpoint=endpoint,
+                            fields=multipart_fields,
+                            files=multipart_files,
+                        )
+                    except MindAPIHttpError as exc:
+                        if exc.status != 400 or "unsupported or unpriced parameters" not in exc.body.lower():
+                            raise
+                        multipart_fields = {"model": model, "prompt": prompt}
+                        upstream_size = None
+                        request_body = dict(multipart_fields)
+                        request_summary = {
+                            "headers": _masked_headers("multipart/form-data; boundary=<generated>"),
+                            "form": {
+                                **multipart_fields,
+                                multipart_image_field: (
+                                    multipart_image_summaries[0]
+                                    if len(multipart_image_summaries) == 1
+                                    else multipart_image_summaries
+                                ),
+                            },
+                        }
+                        try:
+                            response_payload = _http_post_multipart(
+                                api_key=api_key,
+                                endpoint=endpoint,
+                                fields=multipart_fields,
+                                files=multipart_files,
+                            )
+                        except MindAPIHttpError as fallback_exc:
+                            fallback_exc.attempts = [
+                                *exc.attempts,
+                                *[{**attempt, "attempt": len(exc.attempts) + offset} for offset, attempt in enumerate(fallback_exc.attempts, 1)],
+                            ]
+                            raise
                 else:
                     response_payload = _http_post_json(
                         api_key=api_key,
@@ -1535,7 +1639,7 @@ class kkLingsiNativePromptImage:
                     attempts = []
                     try:
                         image_bytes = image_bytes_from_candidate(candidate, api_key)
-                        if reference_image_bytes and image_bytes == reference_image_bytes:
+                        if image_bytes in reference_image_bytes:
                             skipped = _candidate_debug(candidate)
                             skipped["reason"] = "matches_input_image"
                             skipped_input_images.append(skipped)
@@ -1577,6 +1681,7 @@ class kkLingsiNativePromptImage:
                         aspect_ratio=aspect_ratio,
                         has_input_image=has_input_image,
                         request_body=request_body,
+                        input_image_count=input_image_count,
                         endpoint=endpoint,
                         route=route,
                         request_summary=request_summary,
@@ -1609,6 +1714,7 @@ class kkLingsiNativePromptImage:
                     aspect_ratio=aspect_ratio,
                     has_input_image=has_input_image,
                     request_body=request_body,
+                    input_image_count=input_image_count,
                     endpoint=endpoint,
                     route=route,
                     request_summary=request_summary,
@@ -1642,6 +1748,7 @@ class kkLingsiNativePromptImage:
                 aspect_ratio=aspect_ratio,
                 has_input_image=has_input_image,
                 request_body=request_body,
+                input_image_count=input_image_count,
                 endpoint=endpoint,
                 route=route,
                 request_summary=request_summary,
@@ -1665,6 +1772,7 @@ class kkLingsiNativePromptImage:
                 aspect_ratio=aspect_ratio,
                 has_input_image=has_input_image,
                 request_body=request_body,
+                input_image_count=input_image_count,
                 endpoint=endpoint,
                 route=route,
                 request_summary=request_summary,
@@ -1690,6 +1798,7 @@ class kkLingsiNativePromptImage:
                 aspect_ratio=aspect_ratio,
                 has_input_image=has_input_image,
                 request_body=request_body,
+                input_image_count=input_image_count,
                 endpoint=endpoint,
                 route=route,
                 request_summary=request_summary,
@@ -1717,6 +1826,7 @@ class kkLingsiNativePromptImage:
                 aspect_ratio=aspect_ratio,
                 has_input_image=has_input_image,
                 request_body=request_body,
+                input_image_count=input_image_count,
                 endpoint=endpoint,
                 route=route,
                 request_summary=request_summary,
@@ -1736,7 +1846,7 @@ class kkLingsiNativePromptImage:
             raise RuntimeError(_json_dumps(debug)) from exc
 
 
-class kkimage2_灵思API(kkLingsiNativePromptImage):
+class kkimage2_API(kkLingsiNativePromptImage):
     pass
 
 
@@ -1754,11 +1864,9 @@ def generate_lingsi_image(api_key, prompt, model, aspect_ratio, resolution, coun
 
 
 NODE_CLASS_MAPPINGS = {
-    "kkLingsiNativePromptImage": kkLingsiNativePromptImage,
-    "kkimage2_灵思API": kkimage2_灵思API,
+    "kkimage2_API": kkimage2_API,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "kkLingsiNativePromptImage": "kkLingsiNativePromptImage（灵思原生Prompt生图）",
-    "kkimage2_灵思API": "kkimage2_灵思API",
+    "kkimage2_API": "kkimage2_API",
 }

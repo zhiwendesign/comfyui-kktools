@@ -4,6 +4,14 @@
 
 ## 更新概览
 
+### 后续整理
+
+- 模板工具分类统一为 `🌟kktools/模板工具`。
+- PPT 工具分类统一为 `🌟kktools/PPT工具`。
+- 移除重复的 `kkLingsiNativePromptImage` 注册，公开节点统一为 `kkimage2_API`；旧的 `kkimage2_灵思API` 类型已彻底移除，旧工作流需手动替换节点。
+- `kkimage2_API` 归入 `🌟kktools/图像`，移除 `kkimage2_Zuco`；不再保留空的 `🌟kktools/AI生图` 分类。
+- 模板与 PPT 节点显示名称移除 “Imagen Studio” 前缀。
+
 本次版本主要完成了 kktools 节点体系的一次统一整理，重点包括：
 
 - 全部节点类名统一增加 `kk` 前缀

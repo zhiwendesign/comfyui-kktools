@@ -491,12 +491,7 @@ class kkImageAPI:
         )
 
 
-NODE_CLASS_MAPPINGS = {
-    "kkImageAPI": kkImageAPI,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "kkImageAPI": "kk-image api（图像API）",
-}
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

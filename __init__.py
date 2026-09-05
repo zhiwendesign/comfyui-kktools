@@ -16,14 +16,13 @@ if current_dir not in sys.path:
 # nodes 文件夹路径
 nodes_dir = os.path.join(current_dir, "nodes")
 WEB_DIRECTORY = "./web"
-DISABLED_NODE_CLASSES = {"kkimage2_GAPI"}
+DISABLED_NODE_CLASSES = {"kkimage2_GAPI", "kkLingsiNativePromptImage", "kkImageAPI"}
 
 NODE_CHINESE_NAME_MAPPINGS = {
     "kkAudioMerge4": "音频四合一",
     "kkBatchImageLoader": "批量图像加载",
     "kkBatchPrompt": "批量提示词",
     "kkGetImage": "获取图像尺寸",
-    "kkImageAPI": "图像API",
     "kkImageGridMerge": "图像宫格合并",
     "kkImageFrame": "图像边框",
     "kkImageOverlay": "图像叠加",
@@ -31,7 +30,6 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkImageTileSplit2x2": "图像2x2分块",
     "kkInputNode": "多类型输入",
     "kkLLM": "多厂商LLM",
-    "kkLingsiNativePromptImage": "灵思原生Prompt生图",
     "kkMathExpressionNode": "数学表达式",
     "kkMergeVideos": "视频合并",
     "kkPadImageToCanvas": "图像填充到画布",
@@ -54,7 +52,6 @@ NODE_CHINESE_NAME_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_OVERRIDES = {
-    "kkImageAPI": "kk-image api（图像API）",
 }
 
 
@@ -201,8 +198,7 @@ if not NODE_CLASS_MAPPINGS:
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
         ("kk_image_api.py", ["kkImageAPI"]),
-        ("kkimage2_zuco.py", ["kkimage2_Zuco"]),
-        ("lingsi.py", ["kkLingsiNativePromptImage", "kkimage2_灵思API"]),
+        ("lingsi.py", ["kkLingsiNativePromptImage", "kkimage2_API"]),
     ]
     
     for file_name, class_names in nodes_to_load:

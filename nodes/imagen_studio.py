@@ -29,7 +29,7 @@ CATEGORY_OPTIONS_CN = tuple(CATEGORY_LABEL_CN[value] for value in SUPPORTED_CATE
 CATEGORY_VALUE_BY_LABEL = {label: value for value, label in CATEGORY_LABEL_CN.items()}
 LANGUAGE_OPTIONS_CN = ("中文", "英文")
 LANGUAGE_VALUE_BY_LABEL = {"中文": "zh", "英文": "en", "zh": "zh", "en": "en"}
-NODE_CATEGORY_CN = "Imagen Studio/模板工具"
+NODE_CATEGORY_CN = "🌟kktools/模板工具"
 
 VISION_ANALYZER_PROMPT = """你是资深视觉设计师，擅长从一组参考图中抽象出可复用的「视觉风格语言」。
 请严格输出 JSON，字段如下（不要额外文字、不要 Markdown 代码块）：
@@ -463,6 +463,31 @@ def load_optional_config(config_path: str = "") -> dict[str, Any]:
         return {}
 
 
+def apply_api_overrides(config: dict[str, Any], base_url: str = "", api_key: str = "") -> dict[str, Any]:
+    base_url = str(base_url or "").strip()
+    api_key = str(api_key or "").strip()
+    if not base_url and not api_key:
+        return config
+    updated = dict(config)
+    if base_url:
+        updated["baseUrl"] = base_url
+    if api_key:
+        updated["apiKey"] = api_key
+    updated["providers"] = []
+    updated["providerModels"] = []
+    updated["modelAssignments"] = {}
+    return updated
+
+
+def apply_runninghub_api_overrides(config: dict[str, Any], base_url: str = "", api_key: str = "") -> dict[str, Any]:
+    updated = dict(config)
+    if str(base_url or "").strip():
+        updated["runninghubBaseUrl"] = str(base_url).strip()
+    if str(api_key or "").strip():
+        updated["runninghubApiKey"] = str(api_key).strip()
+    return updated
+
+
 def normalize_runninghub_base_url(base_url: str) -> str:
     value = str(base_url or "").strip().rstrip("/")
     if not value:
@@ -748,6 +773,8 @@ def run_runninghub_rhart_g2(
     poll_interval: float = RUNNINGHUB_POLL_INTERVAL_SECONDS,
     timeout_seconds: float = RUNNINGHUB_TIMEOUT_SECONDS,
     progress_callback: Any = None,
+    base_url: str = "",
+    api_key: str = "",
 ) -> dict[str, Any]:
     def emit_progress(stage: str, current: int, total: int, message: str, status: str = "") -> None:
         if not callable(progress_callback):
@@ -766,7 +793,7 @@ def run_runninghub_rhart_g2(
     res = resolution if resolution in RUNNINGHUB_RESOLUTIONS else "1k"
     normalized_quality = normalize_runninghub_quality_option(quality)
     image_urls = image_tensor_to_data_urls(reference_images, max_edge=2400) if reference_images is not None else []
-    config = resolve_runninghub_config(load_optional_config(config_path))
+    config = resolve_runninghub_config(apply_runninghub_api_overrides(load_optional_config(config_path), base_url, api_key))
 
     begin = time.time()
     status_history: list[dict[str, Any]] = []
@@ -1411,6 +1438,8 @@ def run_template_compose(
     negative_prompt: str = "",
     config_path: str = "",
     max_edge: int = 2400,
+    base_url: str = "",
+    api_key: str = "",
 ) -> dict[str, Any]:
     aspect = normalize_aspect_ratio_option(aspect_ratio, "auto")
     language = normalize_language_option(prompt_language)
@@ -1418,7 +1447,7 @@ def run_template_compose(
     template = normalize_template_for_composer(template_json, style_prompt_en, style_prompt_zh, negative_prompt)
     idea = str(user_idea or "").strip() or default_user_idea(template)
 
-    config = load_config(config_path)
+    config = apply_api_overrides(load_config(config_path), base_url, api_key)
     text_config = resolve_task_config(config, "llm")
     data_urls = image_tensor_to_data_urls(reference_images, max_edge=max_edge)[:4]
     reference_items: list[dict[str, Any]] = []
@@ -1488,13 +1517,13 @@ def build_template_json(name: str, category: str, requirements: str, normalized:
     }
 
 
-def run_template_distill(images: Any, category: str, name: str, requirements: str, config_path: str, max_edge: int) -> dict[str, Any]:
+def run_template_distill(images: Any, category: str, name: str, requirements: str, config_path: str, max_edge: int, base_url: str = "", api_key: str = "") -> dict[str, Any]:
     category = normalize_category_option(category)
     data_urls = image_tensor_to_data_urls(images, max_edge=max_edge)
     if not data_urls:
         raise TemplateDistillError("至少需要输入一张参考图像。")
 
-    config = load_config(config_path)
+    config = apply_api_overrides(load_config(config_path), base_url, api_key)
     vision_config = resolve_task_config(config, "vlm")
     text_config = resolve_task_config(config, "llm")
     category_label = CATEGORY_LABEL_CN.get(category, category)
@@ -1729,8 +1758,8 @@ def copy_pipe_extra_fields(target: dict[str, Any], source: dict[str, Any]) -> di
     return target
 
 
-def run_template_distill_pipe(images: Any, category: str, name: str, requirements: str, config_path: str, max_edge: int = 2400) -> dict[str, Any]:
-    distilled = run_template_distill(images, category, name, requirements, config_path, max_edge)
+def run_template_distill_pipe(images: Any, category: str, name: str, requirements: str, config_path: str = "", max_edge: int = 2400, base_url: str = "", api_key: str = "") -> dict[str, Any]:
+    distilled = run_template_distill(images, category, name, requirements, config_path, max_edge, base_url, api_key)
     pipe = make_imagen_studio_pipe(
         template_json=distilled["template_json"],
         style_prompt_en=distilled["style_prompt_en"],
@@ -1815,6 +1844,8 @@ def run_template_compose_pipe(
     prompt_language: str = "zh",
     config_path: str = "",
     max_edge: int = 2400,
+    base_url: str = "",
+    api_key: str = "",
 ) -> dict[str, Any]:
     base_pipe = resolve_template_pipe(template_pipe, "")
     template_json = str(base_pipe.get("template_json") or "").strip()
@@ -1833,6 +1864,8 @@ def run_template_compose_pipe(
         negative_prompt=str(base_pipe.get("negative_prompt") or "").strip(),
         config_path=config_path,
         max_edge=max_edge,
+        base_url=base_url,
+        api_key=api_key,
     )
     output_pipe = make_imagen_studio_pipe(
         template_json=template_json,
@@ -1876,6 +1909,8 @@ def run_runninghub_pipe(
     quality: str = RUNNINGHUB_DEFAULT_QUALITY,
     reference_images: Any = None,
     progress_callback: Any = None,
+    base_url: str = "",
+    api_key: str = "",
 ) -> dict[str, Any]:
     base_pipe = coerce_pipe_value(template_pipe) or {}
     prompt = str(prompt_override or base_pipe.get("prompt") or "").strip()
@@ -1891,6 +1926,8 @@ def run_runninghub_pipe(
         quality=quality,
         reference_images=reference_images,
         progress_callback=progress_callback,
+        base_url=base_url,
+        api_key=api_key,
     )
     runninghub_result = try_json(runninghub["result_json"]) or {}
     output_pipe = make_imagen_studio_pipe(
@@ -1942,7 +1979,8 @@ class ImagenStudioTemplateDistiller:
                 "模板类型": (CATEGORY_OPTIONS_CN, {"default": "海报", "tooltip": "选择模板的大类，内部会映射为原始英文类型。"}),
                 "模板名称": ("STRING", {"default": "", "multiline": False, "placeholder": "可选，例如：夏季果茶海报", "tooltip": "写入返回的模板JSON，留空会自动命名。"}),
                 "模板需求": ("STRING", {"default": "", "multiline": True, "placeholder": "可选，补充你希望保留或强调的模板风格要求。", "tooltip": "只作为风格蒸馏约束。"}),
-                "配置路径": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用节点目录 config.json", "tooltip": "可选，指向独立 config.json 或包含 config.json 的目录。"}),
+                "BaseURL": ("STRING", {"default": "https://api.zuco.ai/v1", "multiline": False, "placeholder": "兼容 OpenAI 的 API 地址", "tooltip": "留空时使用 config.json 中的 Base URL。"}),
+                "API Key": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用 config.json 中的密钥", "tooltip": "当前节点使用的 API Key；留空时读取本地配置。"}),
                 "最长边": ("INT", {"default": 2400, "min": 512, "max": 4096, "step": 64, "tooltip": "发送给视觉模型前压缩参考图的最长边。"}),
             }
         }
@@ -1967,8 +2005,10 @@ class ImagenStudioTemplateDistiller:
             read_input_value(kwargs, "模板类型", "海报"),
             read_input_value(kwargs, "模板名称", ""),
             read_input_value(kwargs, "模板需求", ""),
-            read_input_value(kwargs, "配置路径", ""),
+            "",
             int(read_input_value(kwargs, "最长边", 2400) or 2400),
+            read_input_value(kwargs, "BaseURL", ""),
+            read_input_value(kwargs, "API Key", ""),
         )
         return (
             result["pipe"],
@@ -2064,7 +2104,8 @@ class ImagenStudioTemplateComposer:
                 "用户需求": ("STRING", {"default": DEFAULT_USER_IDEA, "multiline": True, "placeholder": "描述这次要生成或还原的新主体、新画面和具体要求。", "tooltip": "最终画面的主体和创意需求来自这里。"}),
                 "画面比例": (ASPECT_RATIO_OPTIONS_CN, {"default": "自动", "tooltip": "写入最终提示词的画面比例意图。"}),
                 "提示词语言": (LANGUAGE_OPTIONS_CN, {"default": "中文", "tooltip": "控制最终正向提示词使用中文或英文。"}),
-                "配置路径": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用节点目录 config.json", "tooltip": "可选，指向独立 config.json 或包含 config.json 的目录。"}),
+                "BaseURL": ("STRING", {"default": "https://api.zuco.ai/v1", "multiline": False, "placeholder": "兼容 OpenAI 的 API 地址", "tooltip": "留空时使用 config.json 中的 Base URL。"}),
+                "API Key": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用 config.json 中的密钥", "tooltip": "当前节点使用的 API Key；留空时读取本地配置。"}),
                 "最长边": ("INT", {"default": 2400, "min": 512, "max": 4096, "step": 64, "tooltip": "发送参考图给视觉模型前压缩图像的最长边。"}),
             },
             "optional": {
@@ -2092,7 +2133,8 @@ class ImagenStudioTemplateComposer:
             reference_images=read_input_value(kwargs, "参考图像", None),
             aspect_ratio=read_input_value(kwargs, "画面比例", "自动"),
             prompt_language=read_input_value(kwargs, "提示词语言", "中文"),
-            config_path=read_input_value(kwargs, "配置路径", ""),
+            base_url=read_input_value(kwargs, "BaseURL", ""),
+            api_key=read_input_value(kwargs, "API Key", ""),
             max_edge=int(read_input_value(kwargs, "最长边", 2400) or 2400),
         )
         return (
@@ -2113,7 +2155,8 @@ class ImagenStudioRunningHubRHArtG2:
                 "画面比例": (ASPECT_RATIO_OPTIONS_CN, {"default": "1:1", "tooltip": "发送给 RunningHub 的 aspectRatio；自动会按 1:1 处理。"}),
                 "分辨率": (RUNNINGHUB_RESOLUTIONS, {"default": "1k", "tooltip": "发送给 RunningHub 的 resolution。"}),
                 "质量": (RUNNINGHUB_QUALITY_OPTIONS, {"default": RUNNINGHUB_DEFAULT_QUALITY, "tooltip": "发送给 RunningHub 的 quality，支持 low / medium / high。"}),
-                "配置路径": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用节点目录 config.json", "tooltip": "可选，指向包含 runninghubApiKey 的独立配置文件或目录。"}),
+                "BaseURL": ("STRING", {"default": RUNNINGHUB_DEFAULT_BASE_URL, "multiline": False, "placeholder": "RunningHub API 地址", "tooltip": "留空时使用 config.json 中的 RunningHub Base URL。"}),
+                "API Key": ("STRING", {"default": "", "multiline": False, "placeholder": "留空使用 config.json 中的 RunningHub 密钥", "tooltip": "RunningHub API Key；留空时读取本地配置。"}),
             },
             "optional": {
                 "模板束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接“模板拼装”的模板束输出；不连接时请填写正向提示词。"}),
@@ -2149,7 +2192,8 @@ class ImagenStudioRunningHubRHArtG2:
             aspect_ratio=read_input_value(kwargs, "画面比例", "1:1"),
             resolution=read_input_value(kwargs, "分辨率", "1k"),
             quality=read_input_value(kwargs, "质量", RUNNINGHUB_DEFAULT_QUALITY),
-            config_path=read_input_value(kwargs, "配置路径", ""),
+            base_url=read_input_value(kwargs, "BaseURL", ""),
+            api_key=read_input_value(kwargs, "API Key", ""),
             reference_images=read_input_value(kwargs, "参考图像", None),
             progress_callback=progress_callback,
         )
@@ -2171,9 +2215,9 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImagenStudioTemplateDistiller": "Imagen Studio 模板蒸馏",
-    "ImagenStudioTemplateIngest": "Imagen Studio 模板入库",
-    "ImagenStudioTemplateSelector": "Imagen Studio 模板选择器",
-    "ImagenStudioTemplateComposer": "Imagen Studio 模板拼装",
-    "ImagenStudioRunningHubRHArtG2": "Imagen Studio RunningHub 生图",
+    "ImagenStudioTemplateDistiller": "模板蒸馏",
+    "ImagenStudioTemplateIngest": "模板入库",
+    "ImagenStudioTemplateSelector": "模板选择器",
+    "ImagenStudioTemplateComposer": "模板拼装",
+    "ImagenStudioRunningHubRHArtG2": "RunningHub 生图",
 }
