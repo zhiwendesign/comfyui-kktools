@@ -956,6 +956,66 @@ try:
         except RuntimeError as exc:
             return web.json_response({"error": str(exc)}, status=500)
 
+    @PromptServer.instance.routes.post("/kktools/skills/import")
+    async def kktools_import_skills(request):
+        try:
+            reader = await request.multipart()
+            field = await reader.next()
+            if field is None or not field.filename or Path(field.filename).suffix.lower() != ".zip":
+                return web.json_response({"ok": False, "error": "请选择 .zip 模板包。"}, status=400)
+            data = bytearray()
+            while True:
+                chunk = await field.read_chunk()
+                if not chunk:
+                    break
+                data.extend(chunk)
+                if len(data) > MAX_MARKDOWN_ARCHIVE_BYTES:
+                    return web.json_response({"ok": False, "error": "模板包不能超过 50 MB。"}, status=400)
+            imported = 0
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                files = {Path(item.filename).as_posix(): item for item in archive.infolist() if not item.is_dir()}
+                for name, entry in files.items():
+                    if Path(name).suffix.lower() != ".md":
+                        continue
+                    content = archive.read(entry).decode("utf-8")
+                    stem = Path(name).stem
+                    cover_entry = next((item for path, item in files.items() if Path(path).stem == stem and Path(path).suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}), None)
+                    record = _save_skill({"filename": Path(name).name, "content": content})
+                    if cover_entry:
+                        image = Image.open(io.BytesIO(archive.read(cover_entry))).convert("RGB")
+                        image_array = np.asarray(image).astype(np.float32) / 255.0
+                        _save_skill_cover(record["id"], image_array)
+                        record["hasCover"] = True
+                        index = _read_skills_index()
+                        for item in index["skills"]:
+                            if item.get("id") == record["id"]:
+                                item["hasCover"] = True
+                        _write_skills_index(index)
+                    imported += 1
+            return web.json_response({"ok": True, "imported": imported})
+        except (zipfile.BadZipFile, UnicodeDecodeError, OSError, RuntimeError, ValueError) as exc:
+            return web.json_response({"ok": False, "error": f"模板包导入失败：{exc}"}, status=400)
+
+    @PromptServer.instance.routes.get("/kktools/skills/export")
+    async def kktools_export_skills(_request):
+        buffer = io.BytesIO()
+        manifest = {"format": "kktools-skills", "version": 1, "skills": []}
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            for item in _read_skills_index()["skills"]:
+                safe_name = re.sub(r"[\\/:*?\"<>|]", "_", item.get("name") or item["id"])
+                markdown_path = f"skills/{safe_name}.md"
+                archive.writestr(markdown_path, item.get("content") or "")
+                entry = {"name": item.get("name") or item["id"], "markdown": markdown_path}
+                cover = _skill_cover_path(item["id"])
+                if item.get("hasCover") and cover.is_file():
+                    cover_path = f"skills/{safe_name}.jpg"
+                    archive.writestr(cover_path, cover.read_bytes())
+                    entry["cover"] = cover_path
+                manifest["skills"].append(entry)
+            archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+        buffer.seek(0)
+        return web.Response(body=buffer.getvalue(), content_type="application/zip", headers={"Content-Disposition": "attachment; filename=kktools-skills-package.zip"})
+
     @PromptServer.instance.routes.get("/kktools/skills/cover")
     async def kktools_get_skill_cover(request):
         skill_id = str(request.rel_url.query.get("id") or "")
