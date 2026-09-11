@@ -8,7 +8,7 @@ function addStyles() {
   const style = document.createElement("style");
   style.id = "kk-skills-selector-style";
   style.textContent = `
-    .kk-skills-selector { display:flex; flex-direction:column; gap:8px; width:100%; height:300px; padding:8px; box-sizing:border-box; color:var(--fg-color); }
+    .kk-skills-selector { display:flex; flex-direction:column; gap:8px; width:100%; height:100%; min-height:300px; padding:8px; box-sizing:border-box; color:var(--fg-color); }
     .kk-skills-selector * { box-sizing:border-box; }
     .kk-skills-selector__bar { display:grid; grid-template-columns:minmax(100px,1fr) auto; gap:6px; }
     .kk-skills-selector input,.kk-skills-selector button { min-height:26px; border:1px solid var(--border-color); border-radius:6px; background:var(--comfy-input-bg); color:var(--input-text); }
@@ -206,7 +206,11 @@ function setup(node) {
     refresh();
     return result;
   };
-  if ((node.size?.[0] || 0) < 420 || (node.size?.[1] || 0) < 430) node.setSize?.([Math.max(node.size?.[0] || 0, 420), Math.max(node.size?.[1] || 0, 430)]);
+  // Set only a sensible initial size; after that both dimensions remain user-resizable.
+  const width = Math.max(node.size?.[0] || 0, 420);
+  const currentHeight = node.size?.[1] || 0;
+  const height = currentHeight > 700 ? 430 : Math.max(currentHeight, 430);
+  if (!node.size?.[0] || !node.size?.[1] || currentHeight > 700) node.setSize?.([width, height]);
   refresh();
 }
 
