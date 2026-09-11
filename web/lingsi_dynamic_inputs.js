@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 
-const NODE_NAME = "kkimage2_API";
+const NODE_NAME = "kkGPT-image_API";
 const MAX_IMAGES = 9;
 const IMAGE_NAMES = ["image", ...Array.from({ length: MAX_IMAGES - 1 }, (_, index) => `image_${index + 1}`)];
 const UPDATE_FRAME = Symbol("lingsiDynamicImageInputs");

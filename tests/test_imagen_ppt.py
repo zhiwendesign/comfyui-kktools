@@ -454,7 +454,7 @@ class ImagenPPTTests(unittest.TestCase):
         self.assertTrue(module.NODE_CLASS_MAPPINGS["ImagenStudioPPTExport"].OUTPUT_NODE)
         self.assertEqual(
             module.NODE_DISPLAY_NAME_MAPPINGS["ImagenStudioPPTOutlinePlan"],
-            "Imagen Studio PPT 大纲规划",
+            "PPT 大纲规划",
         )
 
 

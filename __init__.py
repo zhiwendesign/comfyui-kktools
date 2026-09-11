@@ -198,7 +198,7 @@ if not NODE_CLASS_MAPPINGS:
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
         ("kk_image_api.py", ["kkImageAPI"]),
-        ("lingsi.py", ["kkLingsiNativePromptImage", "kkimage2_API"]),
+        ("lingsi.py", ["kkLingsiNativePromptImage", "kkGPT_image_API"]),
     ]
     
     for file_name, class_names in nodes_to_load:

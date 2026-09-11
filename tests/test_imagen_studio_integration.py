@@ -131,7 +131,7 @@ class ImagenStudioIntegrationTests(unittest.TestCase):
         self.assertIn("default_connection_color_byType", text)
         self.assertIn("link_type_colors", text)
         self.assertIn("ImagenStudioPPT", text)
-        self.assertIn("kkimage2_灵思API", text)
+        self.assertIn("kkGPT-image_API", text)
 
     def test_kktools_loader_registers_imagen_studio_nodes(self):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -140,7 +140,7 @@ class ImagenStudioIntegrationTests(unittest.TestCase):
         self.assertIn("ImagenStudioRunningHubRHArtG2", module.NODE_CLASS_MAPPINGS)
         self.assertEqual(
             module.NODE_DISPLAY_NAME_MAPPINGS["ImagenStudioTemplateSelector"],
-            "Imagen Studio 模板选择器",
+            "模板选择器",
         )
 
 

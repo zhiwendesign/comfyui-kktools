@@ -4,12 +4,27 @@
 
 ## 更新概览
 
+### 2026-09-11 功能更新
+
+- 新增 `kk_API配置`，集中输出 Base URL 与 API Key；`kkGPT-image_API` 和 `kkLLM` 均可直接接入。
+- `kkGPT-image_API` 新增运行日志输出；内容审核失败时明确提示“生成图像为敏感内容，请修改提示词或上传参考图像”。
+- `kkGPT-image_API` 支持连接 `kkSizeNode.ratio`。
+- `kkLLM` 将 `original_prompt` 调整为第一个输出，后续依次为优化结果和状态信息。
+- 更新 `kkLLM` 多厂商模型列表，修复旧工作流中 `provider`、`model` 输入失效的问题。
+- `kkLLM` 新增 Markdown 输入；连接后以 Markdown 内容代替基础提示词。
+- 新增 `kkMarkdown上传`，支持单个 `.md`、ComfyUI 输入目录中的文件夹及 `.zip` 压缩包。
+- 新增 `kkSkills模板选择器`，支持本地入库、封面、搜索、自动刷新、悬浮改名和右上角删除。
+- `kkSkills模板选择器` 输出携带完整模板集合，可交给 `kkRandomSelector` 按 seed 随机选择 Skill。
+- `kkRandomSelector` 新增 `Markdown文件` 输入和输出，兼容 `kkMarkdown上传` 与 `kkSkills模板选择器`。
+- 移除 `kkimage2_Zuco` 和空的 `🌟kktools/AI生图` 分类。
+- 重新整理 README，补齐图像、模板、PPT、Skills、随机选择及兼容节点说明。
+
 ### 后续整理
 
 - 模板工具分类统一为 `🌟kktools/模板工具`。
 - PPT 工具分类统一为 `🌟kktools/PPT工具`。
-- 移除重复的 `kkLingsiNativePromptImage` 注册，公开节点统一为 `kkimage2_API`；旧的 `kkimage2_灵思API` 类型已彻底移除，旧工作流需手动替换节点。
-- `kkimage2_API` 归入 `🌟kktools/图像`，移除 `kkimage2_Zuco`；不再保留空的 `🌟kktools/AI生图` 分类。
+- 移除重复的 `kkLingsiNativePromptImage` 注册，灵思图像节点统一为 `kkGPT-image_API`。
+- `kkGPT-image_API` 归入 `🌟kktools/图像`，移除 `kkimage2_Zuco`；不再保留空的 `🌟kktools/AI生图` 分类。
 - 模板与 PPT 节点显示名称移除 “Imagen Studio” 前缀。
 
 本次版本主要完成了 kktools 节点体系的一次统一整理，重点包括：

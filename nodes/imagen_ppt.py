@@ -1759,7 +1759,7 @@ class ImagenStudioPPTImageWriteback:
         return {
             "required": {
                 "PPT束": (IMAGEN_PPT_PIPE_TYPE, {"tooltip": "连接 PPT 束拆包输出的 PPT束。"}),
-                "图像": ("IMAGE", {"tooltip": "连接 kkimage2_API.image 或其他单页生图结果。"}),
+                "图像": ("IMAGE", {"tooltip": "连接 kkGPT-image_API.image 或其他单页生图结果。"}),
                 "页码": ("INT", {"default": 1, "min": 1, "max": 999, "step": 1}),
             },
         }

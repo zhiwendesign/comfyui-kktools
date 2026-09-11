@@ -14,6 +14,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
+- 前端扩展 [web/skills_template_selector.js](web/skills_template_selector.js) 为 `kkSkills模板选择器` 提供 Skill 卡片管理
 - 示例工作流已经同步到当前节点名
 
 发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkGPT-image_API`。
@@ -66,6 +67,7 @@ pip install torchaudio
 - [nodes/openmaic](nodes/openmaic)：OpenMAIC 独立版课件导入、讲稿、TTS、字幕和视频导出节点
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
 - [web/kk_markdown_upload.js](web/kk_markdown_upload.js)：`kkMarkdown上传` 的文件选择和上传前端脚本
+- [web/skills_template_selector.js](web/skills_template_selector.js)：`kkSkills模板选择器` 的卡片选择、搜索、改名和删除界面
 - [workflows](workflows)：总览与分模块示例工作流
 - [fonts](fonts)：可选字体资源
 - [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：当前版本更新说明
@@ -85,16 +87,19 @@ pip install torchaudio
 
 ## 🧾 节点清单
 
-- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kk_API配置`、`kkGPT-image_API`
+- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kk_API配置`、`kkGPT-image_API`、`kkimage2_GAPI`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
-- 提示词模块：`kkBatchPrompt`、`kkMarkdown上传`、`kkLLM`
+- 提示词模块：`kkBatchPrompt`、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
 - 字符串模块：`kkStringNode`、`kkStringNodeAdvanced`、`kkStringMergeNode`、`kkInputNode`、`kkReplaceNode`、`kkSomethingToAny`、`kkStringToIntNode`
 - 随机模块：`kkRandomSelector`
 - 视频模块：`kkVideoFirstLastFrames`、`kkVideoFramesAdvanced`、`kkMergeVideos`
 - 音频模块：`kkAudioMerge4`
 - 分镜模块：`kkStoryboardScript`、`kkStoryboardScriptLLM`、`kkStoryboardShotOutput`
-- OpenMAIC 独立版：`OpenMAICStandaloneImportCourseware`、`OpenMAICStandaloneGenerateScript`、`OpenMAICStandaloneTTSAdapter`、`OpenMAICStandaloneCollectTTSAudio`、`OpenMAICStandaloneExportVideo`
+- 模板工具：`模板蒸馏`、`模板入库`、`模板选择器`、`模板拼装`、`RunningHub 生图`
+- PPT 工具：`PPT 大纲草拟`、`PPT 大纲规划`、`PPT 设计规范`、`PPT 页面拼装`、`PPT RunningHub 批量生图`、`PPT 束拆包`、`PPT 图像写回`、`PPT 导出`
+- OpenMAIC：课件导入、讲稿生成、TTS、字幕、音频混合及视频导出节点
+- 兼容节点：`ShowText|pysssss`、`CR Text`，仅用于缺少原扩展时加载旧工作流
 
 ---
 
@@ -191,6 +196,14 @@ pip install torchaudio
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
 - 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`。内容审核失败时，日志会提示修改提示词或上传参考图像。
 
+### kkimage2_GAPI
+
+- 调用 OpenAI Images 兼容接口，支持文生图和最多 5 组参考图编辑。
+- 可设置模型、画幅比例、分辨率、画质、风格、输出格式、内容审核、生成张数、超时与重试次数；`自定义模型` 会覆盖模型下拉框。
+- 无参考图时请求生成接口；连接参考图后请求编辑接口，并将参考图最长边限制在 `参考图上传长边`。
+- `代理` 可留空、填写代理 URL 或选择系统代理；API Key 也可由 `GAPI_API_KEY` 环境变量提供。
+- 输出：`图像`、`状态`。
+
 ## 🔢 数学模块
 
 源码位置：[nodes/Math.py](nodes/Math.py)
@@ -230,9 +243,20 @@ pip install torchaudio
 
 ### kkMarkdown上传
 
-- 点击节点上的按钮上传 `.md` 文件，文件必须采用 UTF-8 编码且不能超过 5 MB。
+- 支持三种来源：上传单个 `.md`、读取 ComfyUI 输入目录内的文件夹、上传 `.zip` 压缩包。
+- 文件夹和 ZIP 会递归收集最多 100 个 `.md`；单个 Markdown 最大 5 MB，ZIP 及其中 Markdown 的总大小最大 50 MB。
+- Markdown 必须采用 UTF-8 编码；ZIP 内容直接读取，不会解压到文件系统。
 - 文件保存在 ComfyUI 输入目录的 `kktools_markdown` 子目录；上传和读取阶段都会校验扩展名与目录边界。
-- 输出：单一 `Markdown文件` 束，用于连接 `kkLLM.Markdown文件`。
+- 输出：单一 `Markdown文件` 束；多文件连接 `kkSkills模板选择器` 后会逐个保存为 Skill，连接 `kkLLM` 时会合并为一份输入文本。
+
+### kkSkills模板选择器
+
+- 可选输入 `Markdown文件` 用于连接 `kkMarkdown上传`；每次执行都会把 Markdown 内容保存或更新到本地 Skills 模板库。
+- 可选输入 `封面图` 会保存为 Skill 卡片封面；图片自动缩放到最长边 512 像素并保存为 JPEG。
+- 不连接 Markdown 时，可从节点内的卡片选择已有 Skill 并输出。
+- 卡片界面支持搜索、刷新、重命名和删除；相同 Markdown 内容会更新原记录，不会重复入库。
+- 输出：`Markdown文件`、`Skill名称`、`状态`。Markdown 主内容是当前选中的 Skill，同时在 `items` 中携带整个模板库，可连接 `kkLLM`，也可交给 `kkRandomSelector` 随机抽取。
+- 模板库保存在插件目录的 `skills-templates`，该目录已加入 `.gitignore`。
 
 ### kkLLM（多厂商LLM）
 
@@ -315,7 +339,9 @@ pip install torchaudio
 
 - 从 JSON 配置的多组候选项中随机选择一个值。
 - 支持用 `target_groups` 限定候选组，用 `seed` 保证可复现。
-- 输出：选中的值、选中的组名、全部组名列表
+- 可选连接 `kkMarkdown上传` 的 `Markdown文件`；输入包含多个 Markdown 文件时，会按 `seed` 随机选择一个文件，且无需解析 JSON 候选项。
+- 连接 `kkSkills模板选择器` 时，以整个 Skills 模板库作为随机候选集合；改变 `seed` 可选择不同 Skill。
+- 输出：选中的值或 Markdown 内容、选中的组名、全部组名或文件名列表、选中的 `Markdown文件`
 
 ---
 
@@ -362,13 +388,34 @@ pip install torchaudio
 
 ## 模板工具（🌟kktools/模板工具）
 
-kktools 已集成 模板工作流节点，内部类型名保持不变，方便旧工作流继续识别：
+模板工具使用统一的 `IMAGEN_STUDIO_PIPE` 模板束传递模板内容、提示词和生成结果。
 
-- `模板蒸馏`：参考图像 -> 模板束。
-- `模板入库`：模板束 -> 本地模板库。
-- `模板选择器`：从模板库卡片选择模板，支持搜索、缩略图、改名、删除。
-- `模板拼装`：模板束 + 用户需求 -> 正向提示词。
-- `RunningHub 生图`：模板束 -> RunningHub RHArt G2 图片。
+### 模板蒸馏
+
+- 分析一张或多张参考图，提取可复用的视觉风格、负面提示词和结构化视觉特征。
+- 主要输入：`参考图像`、`模板类型`、`模板名称`、`模板需求`、`BaseURL`、`API Key`、`最长边`。
+- 输出：`模板束`、`模板JSON`、中英文风格提示词、负面提示词、视觉特征 JSON。
+
+### 模板入库
+
+- 把模板束保存到本地模板库，可选择是否覆盖同名模板，并可用 `缩略图` 配置卡片封面。
+- 输出：更新后的 `模板束`、`模板ID`、`模板名称`、`保存路径`。
+
+### 模板选择器
+
+- 通过卡片浏览本地模板库，支持搜索、缩略图、改名和删除。
+- 输出选中模板的 `模板束`、模板 JSON、中英文风格提示词、负面提示词和模板名称。
+
+### 模板拼装
+
+- 把模板束、用户需求、画面比例、提示词语言及可选参考图拼装为最终生图提示词。
+- 输出：写入拼装结果的 `模板束`、正向提示词、负面提示词、拼装说明和拼装 JSON。
+
+### RunningHub 生图
+
+- 读取模板束内提示词或手动提示词，调用 RunningHub RHArt G2；有参考图时自动进入图生图模式。
+- 支持渠道、比例、分辨率和 `low / medium / high` 质量设置。
+- 输出：`图像`、更新后的 `模板束`、结果 URL、任务 ID、结果 JSON。
 
 ### 配置位置
 
@@ -408,16 +455,47 @@ workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
 
 ## PPT 工具（🌟kktools/PPT工具）
 
-kktools 还集成了一组独立的 PPT 节点，和模板节点一样使用统一的 `IMAGEN_STUDIO_PIPE` 节点束；同一根线可以继续传递模板信息、PPT 页面计划、prompt、RunningHub 结果和导出路径：
+PPT 节点使用统一的 `IMAGEN_STUDIO_PIPE` 束传递模板信息、页面计划、提示词、生成结果和导出信息。
 
-- `PPT 大纲草拟`
-- `PPT 大纲规划`
-- `PPT 设计规范`
-- `PPT 页面拼装`
-- `PPT RunningHub 批量生图`
-- `PPT 束拆包`
-- `PPT 图像写回`
-- `PPT 导出`
+### PPT 大纲草拟
+
+- 根据用户想法、已有 Markdown 大纲和可选模板束生成或润色 PPT 大纲。
+- 输出：`大纲Markdown`、`草拟说明`。
+
+### PPT 大纲规划
+
+- 将 Markdown 大纲拆分成页面计划，并设置画面比例、提示词语言和目标模型。
+- 输出：`PPT束`、`页面计划JSON`、`PPT标题`。
+
+### PPT 设计规范
+
+- 根据 PPT 束和可选参考图建立整套演示文稿统一的视觉规范。
+- 输出：更新后的 `PPT束`、`设计规范JSON`、`参考图分析JSON`。
+
+### PPT 页面拼装
+
+- 并发为每一页生成生图提示词；支持单页超时和 1–50 并发。
+- 输出：更新后的 `PPT束`、`Prompt列表JSON`、`页面JSON`。
+
+### PPT RunningHub 批量生图
+
+- 并发调用 RunningHub 生成全部页面，可配置渠道、分辨率、质量、单页超时和轮询间隔。
+- 输出：页面 `图像` 批次、写入结果的 `PPT束`、`结果JSON`。
+
+### PPT 束拆包
+
+- 按页或合并全部页面，从 PPT 束中拆出普通字符串提示词，便于连接任意生图节点。
+- 输出：`PPT束`、正负提示词、页面标题、页面 JSON、总页数和当前页码。
+
+### PPT 图像写回
+
+- 将外部生图结果写回 PPT 束中的指定页。
+- 输出：更新后的 `PPT束`、`写回JSON`。
+
+### PPT 导出
+
+- 使用束内图片路径、URL 或可选图像批次导出图片型 PPTX。
+- 输出：`PPT文件路径`、`导出JSON`；默认保存到 ComfyUI 输出目录的 `imagen-ppt` 子目录。
 
 它们复用现有的 模板库、配置文件和 RunningHub 接口，不依赖原项目的 PPT 工作台页面或 deck 历史。
 
@@ -496,6 +574,47 @@ workflows/kktools_imagen_studio_ppt_pipe.workflow.json
 - 支持 `group_size`：分组输出，每 N 个分镜为一组同时输出
 - 可用于逐镜头推进工作流、逐条喂给后续图像或视频节点。
 - 输出：镜头文本、当前索引、总镜头数
+
+---
+
+## 🎓 OpenMAIC 课件视频模块
+
+源码位置：[nodes/openmaic](nodes/openmaic)、[nodes/openmaic_nodes.py](nodes/openmaic_nodes.py)。详细依赖与工作流说明见 [nodes/openmaic/README.md](nodes/openmaic/README.md)。
+
+### 课件导入
+
+- `PPTX导入（独立版）`：解析 PPTX 课件并输出课件数据、匹配结果、动作列表和页面数量；兼容类型 `OpenMAIC_导入课件独立版` 指向同一实现。
+- `图片导入（独立版）`：把图片目录作为课件页面导入，输出结构与 PPTX 导入一致。
+- `OpenMAIC 独立导入课件`：统一接收 PPTX、PDF 或图片目录，生成页面图片、页面文本和课件数据；输出课件数据、页面图片 JSON、图片目录、页面文本 JSON和页数。
+
+### 讲稿与 TTS
+
+- `OpenMAIC 独立生成讲稿`：根据课件数据生成逐页或分段讲稿，支持保留原文、口语化和教学化；输出分段讲稿 JSON、完整讲稿和段数。
+- `OpenMAIC 独立批量TTS`：批量将分段讲稿转为语音并合并；输出音频清单、合并音频、音频片段 JSON 和数量。
+- `OpenMAIC TTS文本转接器`：把分段讲稿拆成可连接外部 TTS 的文本任务；输出 TTS 文本、任务 JSON 和任务数量。
+- `OpenMAIC 收集TTS音频`：收集外部 TTS 返回的音频并恢复为课件音频清单；输出合并音频及片段信息。
+- `TTS 设置`：集中生成 TTS 厂商、接口、声音、语速等配置束。
+- `文本转语音`：读取文本和 TTS 配置生成音频文件；输出音频文件路径和音频片段信息。
+
+### 字幕、音频与导出
+
+- `拆分讲解列表`：按索引从讲解列表取出单条讲解，输出当前索引和总数。
+- `FunASR字幕对齐`：使用 ASR 时间戳对齐讲稿与音频；输出字幕时间点和对齐统计，需额外安装 FunASR。
+- `简单字幕对齐`：不依赖 ASR，按音频时长估算字幕时间点。
+- `字幕时间点提取`：从动作列表提取可供字幕生成节点使用的时间轴。
+- `字幕生成`：根据字幕时间点生成 ASS 字幕文件。
+- `音频混音`：混合讲解音频与背景音乐，输出混音文件和时长。
+- `导出设置`：生成分辨率、帧率、编码器、字幕、BGM 和音量配置束。
+- `视频导出`：合并视频画面、讲解音频、字幕与 BGM；输出视频和音频路径。
+- `OpenMAIC 独立导出课件视频`：直接将页图、逐页音频、字幕和 BGM 合成为最终课件视频，输出视频路径与视频清单 JSON。
+
+## 🔌 兼容文本节点
+
+源码位置：[nodes/compat_text.py](nodes/compat_text.py)
+
+- `ShowText|pysssss（兼容文本展示）`：在未安装原扩展时接收并展示字符串，帮助旧工作流正常加载。
+- `CR Text（兼容文本）`：提供旧工作流需要的基础字符串输入与透传。
+- 这两个节点是兼容入口，不建议在新工作流中主动使用；安装对应原扩展后应优先使用原节点。
 
 ---
 

@@ -2,8 +2,6 @@
 随机选择器 - 从多组数据中随机选择值
 """
 
-import torch
-import numpy as np
 import json
 import random
 
@@ -29,27 +27,46 @@ class kkRandomSelector:
                     "max": 0xffffffffffffffff,
                     "step": 1
                 })
-            }
+            },
+            "optional": {
+                "Markdown文件": ("KK_MARKDOWN_FILE", {
+                    "tooltip": "连接 kkMarkdown上传；包含多个文件时按 seed 随机选择一个"
+                }),
+            },
         }
     
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("selected_value", "selected_group", "all_groups")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "KK_MARKDOWN_FILE")
+    RETURN_NAMES = ("selected_value", "selected_group", "all_groups", "Markdown文件")
     FUNCTION = "random_select"
     CATEGORY = "🌟kktools/随机"
     
-    def random_select(self, json_config, target_groups="", seed=0):
+    def random_select(self, json_config, target_groups="", seed=0, Markdown文件=None):
         """从JSON配置中随机选择一个值"""
+        empty_markdown = {"filename": "", "content": "", "items": []}
         try:
-            # 设置随机种子
-            random.seed(seed)
-            np.random.seed(seed)
+            rng = random.Random(seed)
+
+            if Markdown文件:
+                items = Markdown文件.get("items") or [Markdown文件]
+                items = [item for item in items if isinstance(item, dict) and "content" in item]
+                if not items:
+                    return ("Markdown 输入中没有可选文件", "", "", empty_markdown)
+
+                selected = items[rng.randrange(len(items))]
+                selected_markdown = {
+                    "filename": str(selected.get("filename", "Markdown文件")),
+                    "content": str(selected["content"]),
+                    "items": [selected],
+                }
+                filenames = ",".join(str(item.get("filename", "Markdown文件")) for item in items)
+                return (selected_markdown["content"], "Markdown", filenames, selected_markdown)
             
             # 解析JSON配置
             config = json.loads(json_config)
             
             # 验证配置格式
             if not isinstance(config, list):
-                return ("配置错误: 必须是JSON数组", "", "")
+                return ("配置错误: 必须是JSON数组", "", "", empty_markdown)
             
             # 收集所有可用的组名
             all_groups = []
@@ -80,7 +97,7 @@ class kkRandomSelector:
             # 如果没有有效的组
             if not valid_groups:
                 print(f"⚠️ kkRandomSelector: 没有找到有效的组")
-                return ("", "", all_groups_str)
+                return ("", "", all_groups_str, empty_markdown)
             
             # 收集所有符合条件的选项
             all_items = []
@@ -96,10 +113,10 @@ class kkRandomSelector:
             # 如果没有可选的项
             if not all_items:
                 print(f"⚠️ kkRandomSelector: 没有可选的项")
-                return ("", "", all_groups_str)
+                return ("", "", all_groups_str, empty_markdown)
             
             # 随机选择一个项
-            selected_index = random.randint(0, len(all_items)-1)
+            selected_index = rng.randrange(len(all_items))
             selected_value = all_items[selected_index]
             selected_group = group_mapping[selected_index]
             
@@ -110,16 +127,16 @@ class kkRandomSelector:
             print(f"   总组数: {len(all_groups)}")
             print(f"   总选项数: {len(all_items)}")
             
-            return (selected_value, selected_group, all_groups_str)
+            return (selected_value, selected_group, all_groups_str, empty_markdown)
             
         except json.JSONDecodeError as e:
             error_msg = f"JSON解析错误: {str(e)}"
             print(f"❌ kkRandomSelector: {error_msg}")
-            return (error_msg, "", "")
+            return (error_msg, "", "", empty_markdown)
         except Exception as e:
             error_msg = f"错误: {str(e)}"
             print(f"❌ kkRandomSelector: {error_msg}")
-            return (error_msg, "", "")
+            return (error_msg, "", "", empty_markdown)
 
 
 # ComfyUI 节点注册

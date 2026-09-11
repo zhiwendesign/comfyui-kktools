@@ -69,7 +69,7 @@ function themeForNode(node) {
   if (klass.startsWith("ImagenStudio")) {
     return THEME.template;
   }
-  if (klass === "kkimage2_灵思API" || klass === "kkLingsiNativePromptImage") {
+  if (klass === "kkGPT-image_API") {
     return THEME.lingsi;
   }
   return null;

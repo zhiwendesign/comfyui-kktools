@@ -36,10 +36,10 @@ class LingsiBaseUrlTests(unittest.TestCase):
     def test_default_endpoints_match_mindapi(self):
         module = load_lingsi()
         endpoints = module.resolve_api_endpoints("")
-        self.assertEqual(endpoints["chat"], "https://www.mindapi.cc/v1/chat/completions")
-        self.assertEqual(endpoints["image_generations"], "https://www.mindapi.cc/v1/images/generations")
-        self.assertEqual(endpoints["image_edits"], "https://www.mindapi.cc/v1/images/edits")
-        self.assertEqual(endpoints["banana_generate"], "https://www.mindapi.cc/pt/v1/api/generate")
+        self.assertEqual(endpoints["chat"], "https://mindapi.cc/v1/chat/completions")
+        self.assertEqual(endpoints["image_generations"], "https://mindapi.cc/v1/images/generations")
+        self.assertEqual(endpoints["image_edits"], "https://mindapi.cc/v1/images/edits")
+        self.assertEqual(endpoints["banana_generate"], "https://mindapi.cc/pt/v1/api/generate")
 
     def test_custom_base_url_keeps_routes(self):
         module = load_lingsi()
@@ -59,27 +59,29 @@ class LingsiBaseUrlTests(unittest.TestCase):
 
     def test_input_types_expose_base_url_after_existing_widgets(self):
         module = load_lingsi()
-        input_types = module.kkimage2_灵思API.INPUT_TYPES()
+        input_types = module.kkGPT_image_API.INPUT_TYPES()
         required = input_types["required"]
         optional = input_types["optional"]
         self.assertEqual(
             list(required.keys())[:7],
-            ["api_key", "model", "aspect_ratio", "resolution", "count", "base_url", "并发数"],
+            ["api_key", "model", "aspect_ratio", "resolution", "quality", "count", "base_url"],
         )
         self.assertNotIn("prompt", required)
         self.assertIn("prompt", optional)
-        self.assertEqual(required["base_url"][1]["default"], "https://www.mindapi.cc")
+        self.assertEqual(required["base_url"][1]["default"], "https://mindapi.cc")
         self.assertEqual(required["并发数"][1]["default"], 3)
         self.assertEqual(required["并发数"][1]["max"], 20)
         self.assertEqual(required["重试次数"][1]["default"], 6)
         self.assertEqual(required["限流等待秒"][1]["default"], 15)
         self.assertEqual(required["限流等待秒"][1]["max"], 500)
         self.assertEqual(optional["PPT束"][0], "IMAGEN_STUDIO_PIPE")
-        self.assertEqual(module.kkimage2_灵思API.RETURN_NAMES, ("image", "raw_json", "PPT束"))
+        self.assertEqual(optional["ratio"][0], "STRING")
+        self.assertEqual(optional["API配置"][0], "KK_IMAGE_API_CONFIG")
+        self.assertEqual(module.kkGPT_image_API.RETURN_NAMES, ("image", "raw_json", "PPT束", "日志"))
 
     def test_lingsi_prompt_optional_for_ppt_pipe_but_required_for_single_mode(self):
         module = load_lingsi()
-        node = module.kkimage2_灵思API()
+        node = module.kkGPT_image_API()
         old_batch = module.generate_lingsi_ppt_batch
         calls = []
 
@@ -94,7 +96,7 @@ class LingsiBaseUrlTests(unittest.TestCase):
                 "pipe_type": "IMAGEN_STUDIO_PIPE",
                 "pages": [{"pageNo": 1, "title": "A", "prompt": "prompt 1"}],
             }
-            image, _raw_json, out_pipe = node.generate(
+            image, _raw_json, out_pipe, _log = node.generate(
                 api_key="sk-secret-value",
                 model="gpt-image-2",
                 aspect_ratio="16:9",
