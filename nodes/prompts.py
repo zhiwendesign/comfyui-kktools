@@ -13,7 +13,7 @@ import re
 import time
 import uuid
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import numpy as np
 from PIL import Image
@@ -23,7 +23,20 @@ KK_MARKDOWN_FILE_TYPE = "KK_MARKDOWN_FILE"
 MAX_MARKDOWN_FILE_BYTES = 5 * 1024 * 1024
 MAX_MARKDOWN_FILES = 100
 MAX_MARKDOWN_ARCHIVE_BYTES = 50 * 1024 * 1024
-SKILLS_LIBRARY_DIR = Path(__file__).resolve().parent.parent / "skills-templates"
+
+
+def _skills_library_dir():
+    configured = str(os.environ.get("KKTOOLS_SKILLS_DIR") or "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    try:
+        import folder_paths
+    except ImportError:
+        return Path(__file__).resolve().parent.parent / "skills-templates"
+    return Path(folder_paths.get_user_directory()).resolve() / "kktools" / "skills-templates"
+
+
+SKILLS_LIBRARY_DIR = _skills_library_dir()
 SKILLS_INDEX_PATH = SKILLS_LIBRARY_DIR / "index.json"
 
 PROVIDER_MODEL_OPTIONS = {
@@ -464,6 +477,119 @@ def _skill_summaries():
         "createdAt": item.get("createdAt"),
         "updatedAt": item.get("updatedAt"),
     } for item in _read_skills_index()["skills"]]
+
+
+def _skill_package_files(archive):
+    files = {}
+    total_size = 0
+    for entry in archive.infolist():
+        if entry.is_dir():
+            continue
+        if entry.flag_bits & 1:
+            raise RuntimeError("模板包不能包含加密文件。")
+        name = entry.filename.replace("\\", "/")
+        path = PurePosixPath(name)
+        if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+            raise RuntimeError(f"模板包包含无效路径：{entry.filename}")
+        total_size += entry.file_size
+        if total_size > MAX_MARKDOWN_ARCHIVE_BYTES:
+            raise RuntimeError("模板包解压后的总大小不能超过 50 MB。")
+        files[path.as_posix()] = entry
+    if len(files) > MAX_MARKDOWN_FILES * 2 + 1:
+        raise RuntimeError("模板包内文件数量过多。")
+    return files
+
+
+def _skill_package_specs(archive, files):
+    manifest_entry = files.get("manifest.json")
+    if manifest_entry:
+        manifest = json.loads(archive.read(manifest_entry).decode("utf-8"))
+        if not isinstance(manifest, dict) or manifest.get("format") != "kktools-skills" or not isinstance(manifest.get("skills"), list):
+            raise RuntimeError("模板包 manifest.json 格式不正确。")
+        if len(manifest["skills"]) > MAX_MARKDOWN_FILES:
+            raise RuntimeError("模板包内 Skill 不能超过 100 个。")
+        specs = []
+        for item in manifest["skills"]:
+            if not isinstance(item, dict):
+                raise RuntimeError("模板包 manifest.json 包含无效 Skill。")
+            markdown = str(item.get("markdown") or "").replace("\\", "/")
+            cover = str(item.get("cover") or "").replace("\\", "/")
+            if markdown not in files or Path(markdown).suffix.lower() != ".md":
+                raise RuntimeError(f"模板包缺少 Markdown：{markdown}")
+            if cover and cover not in files:
+                raise RuntimeError(f"模板包缺少封面：{cover}")
+            specs.append({"name": str(item.get("name") or "").strip(), "markdown": markdown, "cover": cover})
+        return specs
+
+    markdown_paths = sorted(name for name in files if Path(name).suffix.lower() == ".md")
+    if len(markdown_paths) > MAX_MARKDOWN_FILES:
+        raise RuntimeError("模板包内 Skill 不能超过 100 个。")
+    specs = []
+    for markdown in markdown_paths:
+        path = PurePosixPath(markdown)
+        cover = next((
+            path.with_suffix(suffix).as_posix()
+            for suffix in (".jpg", ".jpeg", ".png", ".webp")
+            if path.with_suffix(suffix).as_posix() in files
+        ), "")
+        specs.append({"name": path.stem, "markdown": markdown, "cover": cover})
+    return specs
+
+
+def _skill_cover_from_package(archive, entry):
+    if entry.file_size > MAX_MARKDOWN_FILE_BYTES:
+        raise RuntimeError(f"封面文件不能超过 5 MB：{entry.filename}")
+    image = Image.open(io.BytesIO(archive.read(entry)))
+    if image.width > 4096 or image.height > 4096 or image.width * image.height > 16_000_000:
+        raise RuntimeError(f"封面图片尺寸过大：{entry.filename}")
+    return np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
+
+
+def _import_skill_package(data):
+    imported = 0
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        files = _skill_package_files(archive)
+        specs = _skill_package_specs(archive, files)
+        if not specs:
+            raise RuntimeError("模板包中没有 Markdown Skill。")
+        for spec in specs:
+            entry = files[spec["markdown"]]
+            if entry.file_size > MAX_MARKDOWN_FILE_BYTES:
+                raise RuntimeError(f"Markdown 文件不能超过 5 MB：{spec['markdown']}")
+            content = archive.read(entry).decode("utf-8")
+            record = _save_skill({"filename": Path(spec["markdown"]).name, "content": content})
+            if spec["name"]:
+                record = _rename_skill(record["id"], spec["name"])
+            if spec["cover"]:
+                _save_skill_cover(record["id"], _skill_cover_from_package(archive, files[spec["cover"]]))
+                index = _read_skills_index()
+                for item in index["skills"]:
+                    if item.get("id") == record["id"]:
+                        item["hasCover"] = True
+                _write_skills_index(index)
+            imported += 1
+    return imported
+
+
+def _export_skill_package():
+    buffer = io.BytesIO()
+    manifest = {"format": "kktools-skills", "version": 1, "skills": []}
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for item in _read_skills_index()["skills"]:
+            skill_id = str(item["id"])
+            safe_name = re.sub(r"[\\/:*?\"<>|]", "_", item.get("name") or skill_id).strip() or skill_id
+            directory = f"skills/{skill_id}"
+            markdown_path = f"{directory}/{safe_name}.md"
+            archive.writestr(markdown_path, item.get("content") or "")
+            exported = {"name": item.get("name") or skill_id, "markdown": markdown_path}
+            cover = _skill_cover_path(skill_id)
+            if item.get("hasCover") and cover.is_file():
+                cover_path = f"{directory}/{safe_name}.jpg"
+                archive.writestr(cover_path, cover.read_bytes())
+                exported["cover"] = cover_path
+            manifest["skills"].append(exported)
+        archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+    return buffer.getvalue()
 
 
 class kkSkillsTemplateSelector:
@@ -955,6 +1081,34 @@ try:
             return web.json_response({"skills": _skill_summaries()})
         except RuntimeError as exc:
             return web.json_response({"error": str(exc)}, status=500)
+
+    @PromptServer.instance.routes.post("/kktools/skills/import")
+    async def kktools_import_skills(request):
+        try:
+            reader = await request.multipart()
+            field = await reader.next()
+            if field is None or not field.filename or Path(field.filename).suffix.lower() != ".zip":
+                return web.json_response({"ok": False, "error": "请选择 .zip 模板包。"}, status=400)
+            data = bytearray()
+            while True:
+                chunk = await field.read_chunk()
+                if not chunk:
+                    break
+                data.extend(chunk)
+                if len(data) > MAX_MARKDOWN_ARCHIVE_BYTES:
+                    return web.json_response({"ok": False, "error": "模板包不能超过 50 MB。"}, status=400)
+            imported = _import_skill_package(data)
+            return web.json_response({"ok": True, "imported": imported})
+        except (zipfile.BadZipFile, UnicodeDecodeError, OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
+            return web.json_response({"ok": False, "error": f"模板包导入失败：{exc}"}, status=400)
+
+    @PromptServer.instance.routes.get("/kktools/skills/export")
+    async def kktools_export_skills(_request):
+        try:
+            data = _export_skill_package()
+            return web.Response(body=data, content_type="application/zip", headers={"Content-Disposition": "attachment; filename=kktools-skills-package.zip"})
+        except (OSError, RuntimeError, ValueError) as exc:
+            return web.json_response({"ok": False, "error": f"模板包导出失败：{exc}"}, status=500)
 
     @PromptServer.instance.routes.get("/kktools/skills/cover")
     async def kktools_get_skill_cover(request):

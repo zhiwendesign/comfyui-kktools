@@ -15,6 +15,9 @@
 - 新增 `kkMarkdown上传`，支持单个 `.md`、ComfyUI 输入目录中的文件夹及 `.zip` 压缩包。
 - 新增 `kkSkills模板选择器`，支持本地入库、封面、搜索、自动刷新、悬浮改名和右上角删除。
 - `kkSkills模板选择器` 输出携带完整模板集合，可交给 `kkRandomSelector` 按 seed 随机选择 Skill。
+- `kkSkills模板选择器` 新增模板包导入与导出，支持恢复模板名称和同名封面；导入会校验路径、文件数、单文件大小与解压后总大小。
+- Skills 本地数据迁移到 ComfyUI 用户目录 `user/kktools/skills-templates`，也可通过 `KKTOOLS_SKILLS_DIR` 自定义。
+- Skills 卡片区域随节点尺寸自适应，不再强制缩小用户主动调整的节点高度。
 - `kkRandomSelector` 新增 `Markdown文件` 输入和输出，兼容 `kkMarkdown上传` 与 `kkSkills模板选择器`。
 - 移除 `kkimage2_Zuco` 和空的 `🌟kktools/AI生图` 分类。
 - 重新整理 README，补齐图像、模板、PPT、Skills、随机选择及兼容节点说明。

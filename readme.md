@@ -255,8 +255,9 @@ pip install torchaudio
 - 可选输入 `封面图` 会保存为 Skill 卡片封面；图片自动缩放到最长边 512 像素并保存为 JPEG。
 - 不连接 Markdown 时，可从节点内的卡片选择已有 Skill 并输出。
 - 卡片界面支持搜索、刷新、重命名和删除；相同 Markdown 内容会更新原记录，不会重复入库。
+- 支持导入和导出 `kktools-skills-package.zip`；模板包会保留名称、Markdown 与封面，并限制文件数、单文件大小和解压后总大小。
 - 输出：`Markdown文件`、`Skill名称`、`状态`。Markdown 主内容是当前选中的 Skill，同时在 `items` 中携带整个模板库，可连接 `kkLLM`，也可交给 `kkRandomSelector` 随机抽取。
-- 模板库保存在插件目录的 `skills-templates`，该目录已加入 `.gitignore`。
+- 模板库保存在 ComfyUI 用户目录的 `user/kktools/skills-templates`，也可通过环境变量 `KKTOOLS_SKILLS_DIR` 指定其他本地目录；数据不再写入插件源码目录。
 
 ### kkLLM（多厂商LLM）
 

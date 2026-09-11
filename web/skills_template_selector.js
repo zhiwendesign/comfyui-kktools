@@ -8,11 +8,11 @@ function addStyles() {
   const style = document.createElement("style");
   style.id = "kk-skills-selector-style";
   style.textContent = `
-    .kk-skills-selector { display:flex; flex-direction:column; gap:8px; width:100%; height:300px; padding:8px; box-sizing:border-box; color:var(--fg-color); }
+    .kk-skills-selector { display:flex; flex-direction:column; gap:8px; width:100%; height:100%; min-height:300px; padding:8px; box-sizing:border-box; color:var(--fg-color); }
     .kk-skills-selector * { box-sizing:border-box; }
-    .kk-skills-selector__bar { display:grid; grid-template-columns:minmax(100px,1fr) auto; gap:6px; }
+    .kk-skills-selector__bar { display:flex; flex-wrap:wrap; gap:6px; }
     .kk-skills-selector input,.kk-skills-selector button { min-height:26px; border:1px solid var(--border-color); border-radius:6px; background:var(--comfy-input-bg); color:var(--input-text); }
-    .kk-skills-selector input { width:100%; padding:4px 8px; }
+    .kk-skills-selector input { flex:1 1 180px; width:100%; padding:4px 8px; }
     .kk-skills-selector button { padding:3px 7px; cursor:pointer; }
     .kk-skills-selector__status { min-height:16px; color:var(--descrip-text); font-size:11px; }
     .kk-skills-selector__content { flex:1; min-height:180px; overflow-y:auto; }
@@ -63,7 +63,15 @@ function setup(node) {
   search.placeholder = "搜索 Skill 名称或内容";
   const refreshButton = document.createElement("button");
   refreshButton.textContent = "刷新";
-  bar.append(search, refreshButton);
+  const importButton = document.createElement("button");
+  importButton.textContent = "导入模板包";
+  const exportButton = document.createElement("button");
+  exportButton.textContent = "导出模板包";
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".zip,application/zip";
+  fileInput.hidden = true;
+  bar.append(search, refreshButton, importButton, exportButton, fileInput);
   const status = document.createElement("div");
   status.className = "kk-skills-selector__status";
   const content = document.createElement("div");
@@ -193,6 +201,27 @@ function setup(node) {
 
   search.oninput = () => { state.query = search.value; render(); };
   refreshButton.onclick = refresh;
+  importButton.onclick = () => fileInput.click();
+  fileInput.onchange = async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
+    state.message = "正在导入模板包...";
+    render();
+    try {
+      const data = await request("/kktools/skills/import", { method: "POST", body: form });
+      state.message = `已导入 ${data.imported || 0} 个模板`;
+      await refresh();
+    } catch (error) { state.message = error.message; render(); }
+    fileInput.value = "";
+  };
+  exportButton.onclick = () => {
+    const link = document.createElement("a");
+    link.href = "/kktools/skills/export?t=" + Date.now();
+    link.download = "kktools-skills-package.zip";
+    link.click();
+  };
   node.addDOMWidget("Skills模板选择器", "kk-skills-selector", root, { serialize: false, hideOnZoom: false });
   const originalExecuted = node.onExecuted;
   node.onExecuted = function (message, ...args) {
@@ -206,7 +235,9 @@ function setup(node) {
     refresh();
     return result;
   };
-  if ((node.size?.[0] || 0) < 420 || (node.size?.[1] || 0) < 430) node.setSize?.([Math.max(node.size?.[0] || 0, 420), Math.max(node.size?.[1] || 0, 430)]);
+  if ((node.size?.[0] || 0) < 420 || (node.size?.[1] || 0) < 430) {
+    node.setSize?.([Math.max(node.size?.[0] || 0, 420), Math.max(node.size?.[1] || 0, 430)]);
+  }
   refresh();
 }
 
