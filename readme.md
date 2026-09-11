@@ -13,9 +13,10 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
 - `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
+- 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
 - 示例工作流已经同步到当前节点名
 
-发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkimage2_API`。
+发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkGPT-image_API`。
 
 ## 🚀 安装
 
@@ -40,7 +41,8 @@ pip install torchaudio
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
 - 图像 API 节点：
-  - `kkimage2_API`：支持普通多图参考、模板束与 PPT束；在节点内填写 API Key 和可选 `base_url`。
+  - `kk_API配置`：集中保存 Base URL 和 API Key，可同时连接 `kkGPT-image_API` 与 `kkLLM`。
+  - `kkGPT-image_API`：支持普通多图参考、模板束与 PPT束；可直接填写接口信息，也可连接 `kk_API配置`。
   - 模板工具位于 `🌟kktools/模板工具`，PPT 工具位于 `🌟kktools/PPT工具`。
 - 当前仓库已自带前端扩展目录 [web](web)，无需额外配置即可加载 `provider` / `model` 联动
 
@@ -54,7 +56,7 @@ pip install torchaudio
 - 如果你手里有旧工作流，请留意：
   - 当前全部节点都已切换为 `kk...` 前缀命名
   - 旧工作流里的旧节点名需要重新选择或替换
-  - `kkLingsiNativePromptImage` 已移除菜单注册；旧工作流请使用兼容节点 `kkimage2_API`。
+  - `kkLingsiNativePromptImage` 已移除菜单注册；请使用 `kkGPT-image_API`。
   - 旧工作流如果使用过 `kkVideoTextOCR`，需要手动移除或改用其他文本提取方案
 
 ## 📁 项目结构
@@ -63,6 +65,7 @@ pip install torchaudio
 - [nodes](nodes)：全部节点源码
 - [nodes/openmaic](nodes/openmaic)：OpenMAIC 独立版课件导入、讲稿、TTS、字幕和视频导出节点
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
+- [web/kk_markdown_upload.js](web/kk_markdown_upload.js)：`kkMarkdown上传` 的文件选择和上传前端脚本
 - [workflows](workflows)：总览与分模块示例工作流
 - [fonts](fonts)：可选字体资源
 - [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：当前版本更新说明
@@ -82,9 +85,9 @@ pip install torchaudio
 
 ## 🧾 节点清单
 
-- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kkimage2_API`
+- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kk_API配置`、`kkGPT-image_API`
 - 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
-- 提示词模块：`kkBatchPrompt`、`kkLLM`
+- 提示词模块：`kkBatchPrompt`、`kkMarkdown上传`、`kkLLM`
 - 尺寸模块：`kkSizeNode`
 - 字符串模块：`kkStringNode`、`kkStringNodeAdvanced`、`kkStringMergeNode`、`kkInputNode`、`kkReplaceNode`、`kkSomethingToAny`、`kkStringToIntNode`
 - 随机模块：`kkRandomSelector`
@@ -167,16 +170,26 @@ pip install torchaudio
 - 遇到奇数尺寸或分块尺寸不一致时，会自动 padding 到统一尺寸，方便继续接入宫格合并或批处理节点。
 - 输出 `merged_tiles` 以及最多 16 个 `tile_xx` 子图，适合大图切块工作流。
 
-### kkimage2_API
+### kk_API配置
+
+- 输入：`Base URL`、`API Key`。
+- 输出：单一 `API配置` 束，可复用到多个 `kkGPT-image_API` 或 `kkLLM` 节点。
+- 连接配置束后，下游节点优先使用束内地址和密钥；未连接时仍可在下游节点内直接填写。
+- API Key 会保存在工作流节点数据中，分享工作流前请先清空密钥。
+
+### kkGPT-image_API
 
 - 基于灵思 MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
-- 支持 `gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率和生成数量。
-- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`count`、`base_url`
+- 可选的 `API配置` 输入用于连接 `kk_API配置`，配置束中的 Base URL 和 API Key 优先于节点内直接填写的值。
+- 支持 `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率、质量和生成数量。
+- 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`quality`、`count`、`base_url`
+- `quality` 支持 `auto / low / medium / high / xhigh / max`，默认 `high`；`xhigh` 和 `max` 仅用于 GPT Image 2.5。GPT Image 的文生图、参考图编辑和 PPT 批量模式都会传给接口。
 - `base_url` 默认是 `https://mindapi.cc`；填第三方兼容站点时，节点仍会自动使用当前固定路由。
+- 可选的 `ratio` 字符串输入可连接 `kkSizeNode.ratio`，连接后会覆盖 `aspect_ratio` 下拉框；传入比例仍须属于生图节点支持的比例列表。
 - 可选输入：默认只有 `image`；连接后自动显示下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
 - 不接参考图时为文生图；接入任意参考图时为多图参考生图。
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
-- 输出：`IMAGE`、`raw_json`
+- 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`。内容审核失败时，日志会提示修改提示词或上传参考图像。
 
 ## 🔢 数学模块
 
@@ -215,13 +228,21 @@ pip install torchaudio
 - 常用参数：`prompt_file`、`file_mode`、`batch_size`、`current_batch`
 - 输出：当前批次提示词、批次索引、总批次数、文件信息
 
+### kkMarkdown上传
+
+- 点击节点上的按钮上传 `.md` 文件，文件必须采用 UTF-8 编码且不能超过 5 MB。
+- 文件保存在 ComfyUI 输入目录的 `kktools_markdown` 子目录；上传和读取阶段都会校验扩展名与目录边界。
+- 输出：单一 `Markdown文件` 束，用于连接 `kkLLM.Markdown文件`。
+
 ### kkLLM（多厂商LLM）
 
-- 使用 LLM 优化提示词，当前支持 DeepSeek、OpenAI、Gemini、豆包。
+- 使用 LLM 优化提示词，当前支持 DeepSeek V4、OpenAI GPT-5.6、Gemini 3.x/2.5 和豆包 Seed 2.0/1.6。
+- `Markdown文件` 接入后，Markdown 全文会覆盖手动填写的 `base_prompt`，此时 `base_prompt` 可以留空。
 - 切换 `provider` 时，前端会自动刷新对应的 `model` 选项。
-- 支持 `provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`
+- 支持 `base_prompt`、`provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`，并可接入 `Markdown文件` 与 `API配置`。
+- 可选的 `API配置` 输入可连接 `kk_API配置`；连接后优先使用配置束中的 API Key，并将 Base URL 转换为兼容的 `/v1/chat/completions` 地址。
 - 没填 `api_key` 时会直接返回原始提示词，不会中断工作流；请求失败、额度不足或网络异常时会退回本地优化方案。
-- 输出：优化后的提示词、原始提示词、优化信息
+- 输出顺序：`original_prompt`、`optimized_prompt`、`optimization_info`。
 
 ---
 
@@ -404,24 +425,24 @@ kktools 还集成了一组独立的 PPT 节点，和模板节点一样使用统�
 
 `PPT 页面拼装` 支持并发调用 LLM 拼装每页 prompt，`并发数` 默认 20、最大 50，输出仍按 PPT 页序排列。
 
-`kkimage2_API` 可以直接连接 `PPT束`，一次性并发生成所有页面并把图片路径写回束内；`并发数` 默认 3、最大 20。遇到 429 限流会自动重试，默认重试 6 次，基础等待 15 秒并指数退避，单次等待最多 500 秒。生成后把 `kkimage2_API.PPT束` 接到 `PPT 导出.PPT束` 即可导出 PPTX。
+`kkGPT-image_API` 可以直接连接 `PPT束`，一次性并发生成所有页面并把图片路径写回束内；`并发数` 默认 3、最大 20。遇到 429 限流会自动重试，默认重试 6 次，基础等待 15 秒并指数退避，单次等待最多 500 秒。生成后把 `kkGPT-image_API.PPT束` 接到 `PPT 导出.PPT束` 即可导出 PPTX。
 
 `PPT RunningHub 批量生图` 仍可作为 RunningHub 渠道使用，支持并发提交页面任务，`并发数` 默认 50、最大 100；同时保留 `单页超时分钟`、`轮询间隔秒` 参数。
 
-`PPT 页面拼装`、`kkimage2_API` 的 PPT 批量模式和 `PPT RunningHub 批量生图` 会在节点内部显示运行状态条，包括当前页、阶段、完成数和失败提示；更详细的排队、轮询、兜底信息会同步打印到 ComfyUI 控制台。页面拼装还提供 `单页超时秒`，默认 180 秒。
+`PPT 页面拼装`、`kkGPT-image_API` 的 PPT 批量模式和 `PPT RunningHub 批量生图` 会在节点内部显示运行状态条，包括当前页、阶段、完成数和失败提示；更详细的排队、轮询、兜底信息会同步打印到 ComfyUI 控制台。页面拼装还提供 `单页超时秒`，默认 180 秒。
 
-单页调试时，也可以使用 `PPT 束拆包` 把指定页的 `正向提示词` 拆成普通 `STRING`，再连接到 `kkimage2_API.prompt`。拆包节点会额外输出 `当前页码`，可直接连接到 `PPT 图像写回.页码`，这样拆第几页就会自动写回第几页。
+单页调试时，也可以使用 `PPT 束拆包` 把指定页的 `正向提示词` 拆成普通 `STRING`，再连接到 `kkGPT-image_API.prompt`。拆包节点会额外输出 `当前页码`，可直接连接到 `PPT 图像写回.页码`，这样拆第几页就会自动写回第几页。
 
 ```text
 PPT 页面拼装.PPT束 -> PPT 束拆包.PPT束
-PPT 束拆包.正向提示词 -> kkimage2_API.prompt
-kkimage2_API.image -> PPT 图像写回.图像
+PPT 束拆包.正向提示词 -> kkGPT-image_API.prompt
+kkGPT-image_API.image -> PPT 图像写回.图像
 PPT 束拆包.PPT束 -> PPT 图像写回.PPT束
 PPT 束拆包.当前页码 -> PPT 图像写回.页码
 PPT 图像写回.PPT束 -> PPT 导出.PPT束
 ```
 
-推荐导出连线：`kkimage2_API.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面图片路径或 URL 生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
+推荐导出连线：`kkGPT-image_API.PPT束 -> PPT 导出.PPT束`。`PPT 导出` 会从束里的页面图片路径或 URL 生成 PPTX；`图像` 输入只作为高级备用入口，默认示例不再连接它。
 
 PPTX 默认保存到 ComfyUI 输出目录下的 `output/imagen-ppt/`，节点右侧 `PPT文件路径` 会返回完整文件路径。
 
@@ -509,8 +530,9 @@ workflows/kktools_imagen_studio_ppt_pipe.workflow.json
 
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
 - 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
+- Markdown 上传：只接受 UTF-8 编码、最大 5 MB 的 `.md` 文件；上传按钮未出现时请重启 ComfyUI 并强制刷新浏览器页面。
 - 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
-- 图像 API：`kkimage2_API` 需要有效接口 Key；接口异常时会在 `raw_json` 中提供排查信息。
+- 图像 API：`kkGPT-image_API` 需要有效接口 Key；接口异常时会在 `raw_json` 中提供排查信息。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
 - 音频采样率：`kkAudioMerge4` 遇到不同采样率时建议安装 `torchaudio`。
 - 图像切分与合并：`kkImageTileSplit2x2`、`kkImageSplit`、`kkImageGridMerge` 会在输出 batch 前统一尺寸，减少奇数分辨率导致的 `Sizes of tensors must match` 错误。

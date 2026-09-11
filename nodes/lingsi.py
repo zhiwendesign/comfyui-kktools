@@ -15,9 +15,12 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import numpy as np
+
 
 DEFAULT_BASE_URL = "https://mindapi.cc"
 IMAGEN_STUDIO_PIPE_TYPE = "IMAGEN_STUDIO_PIPE"
+KK_IMAGE_API_CONFIG_TYPE = "KK_IMAGE_API_CONFIG"
 CHAT_ROUTE = "/v1/chat/completions"
 IMAGE_GENERATIONS_ROUTE = "/v1/images/generations"
 IMAGE_EDITS_ROUTE = "/v1/images/edits"
@@ -59,8 +62,11 @@ DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
 DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 15
 MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 500
 MAX_REFERENCE_IMAGES = 9
+CONTENT_MODERATION_LOG = "生成图像为敏感内容，请修改提示词或上传参考图像"
 
 MODELS = [
+    "gpt-image-2.5-sunburst",
+    "gpt-image-2.5-flare",
     "gpt-image-2",
     "nano-banana-2",
     "nano-banana-pro",
@@ -86,6 +92,8 @@ ASPECT_RATIOS = [
 ]
 
 RESOLUTIONS = ["1K", "2K", "4K"]
+QUALITIES = ["auto", "low", "medium", "high", "xhigh", "max"]
+DEFAULT_QUALITY = "high"
 EDGE_FROM_RESOLUTION = {"1K": 1024, "2K": 2048, "4K": 3840}
 SAFE_1K_SIZES = {
     (16, 9): "1536x864",
@@ -156,11 +164,38 @@ def _fit_dimensions(width, height):
 
 
 def is_gpt_image_model(model):
-    return re.match(r"^gpt-image-2(?:$|[-_])", str(model or ""), re.I) is not None
+    return re.match(r"^gpt-image-2(?:\.5)?(?:$|[-_])", str(model or ""), re.I) is not None
+
+
+def is_gpt_image_25_model(model):
+    return re.match(r"^gpt-image-2\.5(?:$|[-_])", str(model or ""), re.I) is not None
+
+
+def validate_quality_for_model(model, quality):
+    normalized = str(quality or DEFAULT_QUALITY).strip().lower()
+    if normalized not in QUALITIES:
+        raise RuntimeError(f"Unsupported quality: {normalized}")
+    if normalized in {"xhigh", "max"} and not is_gpt_image_25_model(model):
+        raise RuntimeError(f"quality '{normalized}' requires a gpt-image-2.5 model")
+    return normalized
 
 
 def is_banana_model(model):
     return str(model or "") in {"nano-banana-2", "nano-banana-pro"}
+
+
+def is_content_moderation_error(exc):
+    message = str(exc or "").lower()
+    return any(marker in message for marker in ("content blocked", "nsfw", "content moderation"))
+
+
+def moderation_fallback_image(image=None):
+    if image is not None:
+        shape = getattr(image, "shape", None)
+        if shape is not None and len(shape) == 4 and int(shape[0]) > 0:
+            return image[:1]
+        return image
+    return numpy_batch_to_comfy(np.zeros((1, 512, 512, 3), dtype=np.float32))
 
 
 def size_from_aspect(aspect_ratio, max_edge):
@@ -873,7 +908,7 @@ def safe_status_text(value, limit=180):
 def emit_lingsi_ppt_status(node_id=None, stage="", message="", current=0, total=1, level="info"):
     payload = {
         "node_id": "" if node_id is None else str(node_id),
-        "node_class": "kkimage2_API",
+        "node_class": "kkGPT-image_API",
         "stage": str(stage or ""),
         "message": safe_status_text(message),
         "current": max(0, int(current or 0)),
@@ -1097,6 +1132,7 @@ def generate_lingsi_ppt_batch(
     retry_count=DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES,
     retry_wait_seconds=DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
     node_id=None,
+    quality=DEFAULT_QUALITY,
 ):
     pipe = coerce_ppt_pipe(ppt_pipe)
     if not pipe:
@@ -1113,6 +1149,7 @@ def generate_lingsi_ppt_batch(
     resolution = str(resolution or "1K").strip().upper()
     if resolution not in RESOLUTIONS:
         raise RuntimeError(f"Unsupported resolution: {resolution}")
+    quality = validate_quality_for_model(model, quality)
     base_url = normalize_api_base_url(base_url)
     aspect_ratio = normalize_ppt_aspect_ratio(pipe.get("aspect_ratio") or "16:9")
     page_jobs = []
@@ -1170,6 +1207,7 @@ def generate_lingsi_ppt_batch(
                     model=model,
                     aspect_ratio=aspect_ratio,
                     resolution=resolution,
+                    quality=quality,
                     count=1,
                     image=None,
                     base_url=base_url,
@@ -1268,6 +1306,7 @@ def generate_lingsi_ppt_batch(
         "model": model,
         "aspectRatio": aspect_ratio,
         "resolution": resolution,
+        "quality": quality,
         "concurrency": effective_concurrency,
         "rateLimitRetries": rate_limit_retries,
         "rateLimitWaitSeconds": rate_limit_wait,
@@ -1290,6 +1329,36 @@ def generate_lingsi_ppt_batch(
     return normalize_image_batch(images), _json_dumps(pipe["lingsi"]), pipe
 
 
+class kkAPIConfig:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "Base URL": ("STRING", {
+                    "default": DEFAULT_BASE_URL,
+                    "multiline": False,
+                    "placeholder": "https://mindapi.cc 或第三方兼容 API 根地址",
+                }),
+                "API Key": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "输入 API Key",
+                }),
+            }
+        }
+
+    RETURN_TYPES = (KK_IMAGE_API_CONFIG_TYPE,)
+    RETURN_NAMES = ("API配置",)
+    FUNCTION = "build"
+    CATEGORY = "🌟kktools/图像"
+
+    def build(self, **kwargs):
+        return ({
+            "base_url": normalize_api_base_url(kwargs.get("Base URL")),
+            "api_key": str(kwargs.get("API Key") or "").strip(),
+        },)
+
+
 class kkLingsiNativePromptImage:
     @classmethod
     def INPUT_TYPES(cls):
@@ -1299,6 +1368,10 @@ class kkLingsiNativePromptImage:
                 "model": (MODELS, {"default": "gpt-image-2"}),
                 "aspect_ratio": (ASPECT_RATIOS, {"default": "auto"}),
                 "resolution": (RESOLUTIONS, {"default": "1K"}),
+                "quality": (QUALITIES, {
+                    "default": DEFAULT_QUALITY,
+                    "tooltip": "图像生成质量；GPT Image 2.5 额外支持 xhigh / max，auto 表示自动选择。",
+                }),
                 "count": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "base_url": ("STRING", {
                     "default": DEFAULT_BASE_URL,
@@ -1328,6 +1401,10 @@ class kkLingsiNativePromptImage:
                 }),
             },
             "optional": {
+                "ratio": ("STRING", {
+                    "forceInput": True,
+                    "tooltip": "可连接 kkSizeNode.ratio；连接后覆盖 aspect_ratio 下拉框。",
+                }),
                 "prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
@@ -1340,12 +1417,13 @@ class kkLingsiNativePromptImage:
                 },
                 "模板束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接 Imagen Studio 模板拼装输出；默认读取束内正向提示词。"}),
                 "PPT束": (IMAGEN_STUDIO_PIPE_TYPE, {"tooltip": "可选，连接 PPT 页面拼装输出后会一次生成所有页面。"}),
+                "API配置": (KK_IMAGE_API_CONFIG_TYPE, {"tooltip": "连接 kk_API配置 后，优先使用配置束中的 Base URL 和 API Key。"}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE)
-    RETURN_NAMES = ("image", "raw_json", "PPT束")
+    RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE, "STRING")
+    RETURN_NAMES = ("image", "raw_json", "PPT束", "日志")
     FUNCTION = "generate"
     CATEGORY = "🌟kktools/图像"
 
@@ -1364,47 +1442,69 @@ class kkLingsiNativePromptImage:
         并发数=DEFAULT_LINGSI_PPT_CONCURRENCY,
         重试次数=DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES,
         限流等待秒=DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS,
+        ratio=None,
         prompt="",
         image=None,
         模板束=None,
         PPT束=None,
+        API配置=None,
         unique_id=None,
+        quality=DEFAULT_QUALITY,
         **kwargs,
     ):
+        if isinstance(API配置, dict):
+            api_key = str(API配置.get("api_key") or api_key or "").strip()
+            base_url = str(API配置.get("base_url") or base_url or DEFAULT_BASE_URL).strip()
+        aspect_ratio = str(ratio or "").strip() or aspect_ratio
         if PPT束:
-            return generate_lingsi_ppt_batch(
-                api_key=api_key,
-                ppt_pipe=PPT束,
-                model=model,
-                resolution=resolution,
-                base_url=base_url,
-                concurrency=并发数,
-                retry_count=重试次数,
-                retry_wait_seconds=限流等待秒,
-                node_id=unique_id,
-            )
+            try:
+                image_batch, raw_json, ppt_pipe = generate_lingsi_ppt_batch(
+                    api_key=api_key,
+                    ppt_pipe=PPT束,
+                    model=model,
+                    resolution=resolution,
+                    quality=quality,
+                    base_url=base_url,
+                    concurrency=并发数,
+                    retry_count=重试次数,
+                    retry_wait_seconds=限流等待秒,
+                    node_id=unique_id,
+                )
+                return image_batch, raw_json, ppt_pipe, "图像生成成功"
+            except Exception as exc:
+                if not is_content_moderation_error(exc):
+                    raise
+                return moderation_fallback_image(), str(exc), PPT束, CONTENT_MODERATION_LOG
         extra_images = [kwargs.get(f"image_{index}") for index in range(1, MAX_REFERENCE_IMAGES)]
         template_pipe = 模板束 if isinstance(模板束, dict) else {}
         effective_prompt = str(template_pipe.get("prompt") or "").strip() or str(prompt or "").strip()
-        image_batch, raw_json = self._generate_single(
-            api_key=api_key,
-            prompt=effective_prompt,
-            model=model,
-            aspect_ratio=aspect_ratio,
-            resolution=resolution,
-            count=count,
-            image=image,
-            images=extra_images,
-            base_url=base_url,
-        )
-        return image_batch, raw_json, template_pipe
+        try:
+            image_batch, raw_json = self._generate_single(
+                api_key=api_key,
+                prompt=effective_prompt,
+                model=model,
+                aspect_ratio=aspect_ratio,
+                resolution=resolution,
+                quality=quality,
+                count=count,
+                image=image,
+                images=extra_images,
+                base_url=base_url,
+            )
+            return image_batch, raw_json, template_pipe, "图像生成成功"
+        except Exception as exc:
+            if not is_content_moderation_error(exc):
+                raise
+            fallback_image = image if image is not None else next((item for item in extra_images if item is not None), None)
+            return moderation_fallback_image(fallback_image), str(exc), template_pipe, CONTENT_MODERATION_LOG
 
-    def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL, images=None):
+    def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL, images=None, quality=DEFAULT_QUALITY):
         api_key = str(api_key or "").strip()
         prompt = str(prompt or "").strip()
         model = str(model or "").strip()
         aspect_ratio = str(aspect_ratio or "auto").strip()
         resolution = str(resolution or "1K").strip().upper()
+        quality = str(quality or DEFAULT_QUALITY).strip().lower()
         count = max(1, min(12, int(count or 1)))
         base_url = normalize_api_base_url(base_url)
         api_endpoints = resolve_api_endpoints(base_url)
@@ -1419,6 +1519,7 @@ class kkLingsiNativePromptImage:
             raise RuntimeError(f"Unsupported aspect_ratio: {aspect_ratio}")
         if resolution not in RESOLUTIONS:
             raise RuntimeError(f"Unsupported resolution: {resolution}")
+        quality = validate_quality_for_model(model, quality)
 
         extra_images = images if isinstance(images, (list, tuple)) else [images]
         reference_images = normalize_reference_images([image, *extra_images])
@@ -1468,6 +1569,7 @@ class kkLingsiNativePromptImage:
                     "model": model,
                     "prompt": prompt,
                     "n": "1",
+                    "quality": quality,
                 }
                 if upstream_size:
                     multipart_fields["size"] = upstream_size
@@ -1502,6 +1604,7 @@ class kkLingsiNativePromptImage:
                     "model": model,
                     "prompt": prompt,
                     "n": count,
+                    "quality": quality,
                 }
                 if upstream_size:
                     request_body["size"] = upstream_size
@@ -1846,17 +1949,18 @@ class kkLingsiNativePromptImage:
             raise RuntimeError(_json_dumps(debug)) from exc
 
 
-class kkimage2_API(kkLingsiNativePromptImage):
+class kkGPT_image_API(kkLingsiNativePromptImage):
     pass
 
 
-def generate_lingsi_image(api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL):
+def generate_lingsi_image(api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL, quality=DEFAULT_QUALITY):
     return kkLingsiNativePromptImage()._generate_single(
         api_key=api_key,
         prompt=prompt,
         model=model,
         aspect_ratio=aspect_ratio,
         resolution=resolution,
+        quality=quality,
         count=count,
         image=image,
         base_url=base_url,
@@ -1864,9 +1968,11 @@ def generate_lingsi_image(api_key, prompt, model, aspect_ratio, resolution, coun
 
 
 NODE_CLASS_MAPPINGS = {
-    "kkimage2_API": kkimage2_API,
+    "kk_API配置": kkAPIConfig,
+    "kkGPT-image_API": kkGPT_image_API,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "kkimage2_API": "kkimage2_API",
+    "kk_API配置": "kk_API配置",
+    "kkGPT-image_API": "kkGPT-image_API",
 }

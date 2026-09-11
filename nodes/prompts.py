@@ -8,14 +8,25 @@ import json
 import os
 import glob
 import re
+import uuid
+from pathlib import Path
+
+KK_IMAGE_API_CONFIG_TYPE = "KK_IMAGE_API_CONFIG"
+KK_MARKDOWN_FILE_TYPE = "KK_MARKDOWN_FILE"
+MAX_MARKDOWN_FILE_BYTES = 5 * 1024 * 1024
 
 PROVIDER_MODEL_OPTIONS = {
     "deepseek": [
-        "deepseek-chat",
-        "deepseek-reasoner",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+        "deepseek-v4-flash-vision-exp",
         "custom",
     ],
     "openai": [
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+        "gpt-5.6",
         "gpt-5.4",
         "gpt-5.4-pro",
         "gpt-5-mini",
@@ -33,12 +44,25 @@ PROVIDER_MODEL_OPTIONS = {
         "custom",
     ],
     "gemini": [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-3.1-pro-preview",
+        "gemini-3-flash-preview",
         "gemini-2.5-pro",
         "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
         "custom",
     ],
     "doubao": [
+        "doubao-seed-2-0-pro-260215",
+        "doubao-seed-2-0-lite-260428",
+        "doubao-seed-2-0-lite-260215",
+        "doubao-seed-2-0-mini-260428",
+        "doubao-seed-2-0-code-preview-260215",
         "doubao-seed-1-6-251015",
         "doubao-seed-1-6-250615",
         "doubao-seed-1-6-thinking-250715",
@@ -187,6 +211,49 @@ class kkBatchPrompt:
             return ("", 0, 0, error_msg)
 
 
+class kkMarkdownUpload:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "markdown_file": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "点击下方按钮上传 .md 文件",
+                }),
+            }
+        }
+
+    RETURN_TYPES = (KK_MARKDOWN_FILE_TYPE,)
+    RETURN_NAMES = ("Markdown文件",)
+    FUNCTION = "load"
+    CATEGORY = "🌟kktools/提示词"
+
+    def load(self, markdown_file):
+        relative_path = str(markdown_file or "").strip()
+        if not relative_path:
+            raise RuntimeError("请先上传 Markdown 文件。")
+        if Path(relative_path).suffix.lower() != ".md":
+            raise RuntimeError("仅支持 .md 文件。")
+
+        import folder_paths
+
+        input_root = Path(folder_paths.get_input_directory()).resolve()
+        file_path = (input_root / relative_path).resolve()
+        if os.path.commonpath((str(input_root), str(file_path))) != str(input_root):
+            raise RuntimeError("Markdown 文件路径超出 ComfyUI 输入目录。")
+        if not file_path.is_file():
+            raise RuntimeError(f"Markdown 文件不存在：{relative_path}")
+        if file_path.stat().st_size > MAX_MARKDOWN_FILE_BYTES:
+            raise RuntimeError("Markdown 文件不能超过 5 MB。")
+
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise RuntimeError("Markdown 文件必须使用 UTF-8 编码。") from exc
+        return ({"filename": relative_path, "content": content},)
+
+
 class kkLLM:
     """多厂商 LLM 提示词优化节点，支持 DeepSeek、OpenAI、Gemini 和豆包 API。"""
     
@@ -199,7 +266,7 @@ class kkLLM:
                 "base_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "placeholder": "输入基础提示词"
+                    "placeholder": "可选；连接 Markdown 文件后可留空"
                 }),
                 "api_key": ("STRING", {
                     "default": "",
@@ -229,6 +296,12 @@ class kkLLM:
                 }),
             },
             "optional": {
+                "Markdown文件": (KK_MARKDOWN_FILE_TYPE, {
+                    "tooltip": "连接 kkMarkdown上传；连接后使用 Markdown 文件全文作为基础提示词。",
+                }),
+                "API配置": (KK_IMAGE_API_CONFIG_TYPE, {
+                    "tooltip": "连接 kk_API配置 后，优先使用其中的 Base URL 和 API Key。",
+                }),
                 "max_length": ("INT", {
                     "default": 500,
                     "min": 50,
@@ -245,21 +318,23 @@ class kkLLM:
         }
     
     RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("optimized_prompt", "original_prompt", "optimization_info")
+    RETURN_NAMES = ("original_prompt", "optimized_prompt", "optimization_info")
     FUNCTION = "optimize_prompt"
     CATEGORY = "🌟kktools/提示词"
     
     def optimize_prompt(
         self,
-        base_prompt,
-        api_key,
-        provider,
-        model,
-        custom_model,
-        base_url,
-        system_message,
+        base_prompt="",
+        api_key="",
+        provider="deepseek",
+        model="deepseek-v4-flash",
+        custom_model="",
+        base_url="",
+        system_message="",
         max_length=500,
         temperature=0.7,
+        API配置=None,
+        Markdown文件=None,
     ):
         """
         通过多厂商 LLM API 优化提示词
@@ -275,11 +350,19 @@ class kkLLM:
             temperature: 生成温度
             
         Returns:
-            (优化后的提示词, 原始提示词, 优化信息)
+            (原始提示词, 优化后的提示词, 优化信息)
         """
         try:
+            if isinstance(Markdown文件, dict):
+                base_prompt = str(Markdown文件.get("content") or "")
+            if isinstance(API配置, dict):
+                api_key = str(API配置.get("api_key") or api_key or "").strip()
+                configured_base_url = str(API配置.get("base_url") or "").strip()
+                if configured_base_url:
+                    base_url = self._chat_endpoint_from_config(configured_base_url)
+
             if not base_prompt.strip():
-                return ("", base_prompt, "错误: 基础提示词为空")
+                return (base_prompt, "", "错误: 基础提示词为空")
             
             if not api_key.strip():
                 return (base_prompt, base_prompt, "警告: 未提供API密钥，返回原始提示词")
@@ -304,7 +387,7 @@ class kkLLM:
             if optimized_prompt:
                 resolved_model = self._resolve_model(provider, model, custom_model)
                 info = f"优化完成 | provider={provider} | model={resolved_model}"
-                return (optimized_prompt, base_prompt, info)
+                return (base_prompt, optimized_prompt, info)
             else:
                 return (base_prompt, base_prompt, "API调用失败，返回原始提示词")
                 
@@ -312,6 +395,15 @@ class kkLLM:
             error_msg = f"优化提示词时出错: {str(e)}"
             print(f"kkLLM Error: {error_msg}")
             return (base_prompt, base_prompt, f"错误: {error_msg}")
+
+    @staticmethod
+    def _chat_endpoint_from_config(base_url):
+        url = str(base_url or "").strip().rstrip("/")
+        if url.endswith("/chat/completions"):
+            return url
+        if url.endswith("/v1"):
+            return f"{url}/chat/completions"
+        return f"{url}/v1/chat/completions"
     
     @classmethod
     def _get_provider_models(cls, provider):
@@ -523,13 +615,63 @@ class kkLLM:
 # ComfyUI 节点注册
 NODE_CLASS_MAPPINGS = {
     "kkBatchPrompt": kkBatchPrompt,
+    "kkMarkdown上传": kkMarkdownUpload,
     "kkLLM": kkLLM,
 }
 
 # 节点在菜单中显示的名称
 NODE_DISPLAY_NAME_MAPPINGS = {
     "kkBatchPrompt": "kkBatchPrompt（批量提示词）",
+    "kkMarkdown上传": "kkMarkdown上传",
     "kkLLM": "kkLLM（多厂商LLM）",
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+
+
+try:
+    import folder_paths
+    from aiohttp import web
+    from server import PromptServer
+
+    @PromptServer.instance.routes.post("/kktools/upload_markdown")
+    async def kktools_upload_markdown(request):
+        reader = await request.multipart()
+        field = await reader.next()
+        if field is None or field.name != "file" or not field.filename:
+            return web.json_response({"error": "未选择文件。"}, status=400)
+
+        filename = Path(field.filename).name
+        if Path(filename).suffix.lower() != ".md":
+            return web.json_response({"error": "仅支持 .md 文件。"}, status=400)
+
+        chunks = []
+        total_size = 0
+        while True:
+            chunk = await field.read_chunk()
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > MAX_MARKDOWN_FILE_BYTES:
+                return web.json_response({"error": "Markdown 文件不能超过 5 MB。"}, status=400)
+            chunks.append(chunk)
+
+        try:
+            b"".join(chunks).decode("utf-8")
+        except UnicodeDecodeError:
+            return web.json_response({"error": "Markdown 文件必须使用 UTF-8 编码。"}, status=400)
+
+        input_root = Path(folder_paths.get_input_directory()).resolve()
+        upload_root = input_root / "kktools_markdown"
+        upload_root.mkdir(parents=True, exist_ok=True)
+        upload_root = upload_root.resolve()
+        if os.path.commonpath((str(input_root), str(upload_root))) != str(input_root):
+            return web.json_response({"error": "Markdown 上传目录无效。"}, status=400)
+        target = upload_root / filename
+        if target.exists():
+            target = upload_root / f"{target.stem}-{uuid.uuid4().hex[:8]}.md"
+        target.write_bytes(b"".join(chunks))
+        relative_path = target.relative_to(input_root).as_posix()
+        return web.json_response({"filename": relative_path})
+except (ImportError, AttributeError):
+    pass
