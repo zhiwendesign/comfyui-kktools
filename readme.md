@@ -244,6 +244,7 @@ pip install torchaudio
 ### kkMarkdown上传
 
 - 支持三种来源：上传单个 `.md`、读取 ComfyUI 输入目录内的文件夹、上传 `.zip` 压缩包。
+- 可选填写 `Tag`，会作为第二个 `Tag` 字符串输出，可直接连接 `kkSkills模板选择器.Tag`。
 - 文件夹和 ZIP 会递归收集最多 100 个 `.md`；单个 Markdown 最大 5 MB，ZIP 及其中 Markdown 的总大小最大 50 MB。
 - Markdown 必须采用 UTF-8 编码；ZIP 内容直接读取，不会解压到文件系统。
 - 文件保存在 ComfyUI 输入目录的 `kktools_markdown` 子目录；上传和读取阶段都会校验扩展名与目录边界。
@@ -252,6 +253,7 @@ pip install torchaudio
 ### kkSkills模板选择器
 
 - 可选输入 `Markdown文件` 用于连接 `kkMarkdown上传`；每次执行都会把 Markdown 内容保存或更新到本地 Skills 模板库。
+- 可选输入 `Tag` 为 Skill 写入分类标签；标签会保存到模板库、显示在卡片上，并支持搜索。
 - 可选输入 `封面图` 会保存为 Skill 卡片封面；图片自动缩放到最长边 512 像素并保存为 JPEG。
 - 不连接 Markdown 时，可从节点内的卡片选择已有 Skill 并输出。
 - 卡片界面支持搜索、刷新、重命名和删除；相同 Markdown 内容会更新原记录，不会重复入库。

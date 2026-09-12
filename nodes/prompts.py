@@ -257,16 +257,22 @@ class kkMarkdownUpload:
                     "multiline": False,
                     "placeholder": "点击下方按钮上传 .zip 压缩包",
                 }),
+                "Tag": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "可选分类标签，例如：人像 / PPT / 电商",
+                    "tooltip": "随 Markdown 文件一起输出，供 Skills 模板选择器使用。",
+                }),
             },
         }
 
-    RETURN_TYPES = (KK_MARKDOWN_FILE_TYPE,)
-    RETURN_NAMES = ("Markdown文件",)
+    RETURN_TYPES = (KK_MARKDOWN_FILE_TYPE, "STRING")
+    RETURN_NAMES = ("Markdown文件", "Tag")
     FUNCTION = "load"
     CATEGORY = "🌟kktools/提示词"
 
     @classmethod
-    def IS_CHANGED(cls, markdown_file, folder_path="", archive_file=""):
+    def IS_CHANGED(cls, markdown_file, folder_path="", archive_file="", Tag=""):
         try:
             items = _load_markdown_sources(markdown_file, folder_path, archive_file)
             digest = hashlib.sha1()
@@ -275,15 +281,15 @@ class kkMarkdownUpload:
                 digest.update(item["content"].encode("utf-8"))
             return digest.hexdigest()
         except (OSError, ValueError, RuntimeError, zipfile.BadZipFile):
-            return f"{markdown_file}|{folder_path}|{archive_file}"
+            return f"{markdown_file}|{folder_path}|{archive_file}|{Tag}"
 
-    def load(self, markdown_file, folder_path="", archive_file=""):
+    def load(self, markdown_file, folder_path="", archive_file="", Tag=""):
         items = _load_markdown_sources(markdown_file, folder_path, archive_file)
         return ({
             "filename": items[0]["filename"] if len(items) == 1 else f"Markdown集合（{len(items)}个文件）",
             "content": "\n\n".join(item["content"] for item in items),
             "items": items,
-        },)
+        }, str(Tag or "").strip())
 
 
 def _input_path(value, expected):
@@ -409,7 +415,7 @@ def _save_skill_cover(skill_id, image):
     return True
 
 
-def _save_skill(markdown_file, cover=None):
+def _save_skill(markdown_file, cover=None, tag=""):
     content = str(markdown_file.get("content") or "")
     if not content.strip():
         raise RuntimeError("Skill Markdown 内容为空。")
@@ -419,11 +425,13 @@ def _save_skill(markdown_file, cover=None):
     records = [dict(item) for item in index["skills"]]
     position = next((i for i, item in enumerate(records) if item.get("id") == skill_id), -1)
     existing = records[position] if position >= 0 else {}
+    clean_tag = str(tag or existing.get("tag") or "").strip()
     now = int(time.time() * 1000)
     has_cover = _save_skill_cover(skill_id, cover) or bool(existing.get("hasCover"))
     record = {
         "id": skill_id,
         "name": existing.get("name") or source_name,
+        "tag": clean_tag,
         "description": next((line.lstrip("# ").strip() for line in content.splitlines() if line.strip()), ""),
         "content": content,
         "sourceFilename": str(markdown_file.get("filename") or ""),
@@ -454,6 +462,17 @@ def _rename_skill(skill_id, name):
     raise RuntimeError(f"Skills 模板库中未找到：{skill_id}")
 
 
+def _tag_skill(skill_id, tag):
+    index = _read_skills_index()
+    for record in index["skills"]:
+        if record.get("id") == skill_id:
+            record["tag"] = str(tag or "").strip()
+            record["updatedAt"] = int(time.time() * 1000)
+            _write_skills_index(index)
+            return record
+    raise RuntimeError(f"Skills 模板库中未找到：{skill_id}")
+
+
 def _delete_skill(skill_id):
     index = _read_skills_index()
     record = next((item for item in index["skills"] if item.get("id") == skill_id), None)
@@ -471,6 +490,7 @@ def _skill_summaries():
     return [{
         "id": item.get("id"),
         "name": item.get("name"),
+        "tag": item.get("tag", ""),
         "description": item.get("description"),
         "sourceFilename": item.get("sourceFilename"),
         "coverUrl": f"/kktools/skills/cover?id={item.get('id')}&t={item.get('updatedAt')}" if item.get("hasCover") else "",
@@ -518,7 +538,7 @@ def _skill_package_specs(archive, files):
                 raise RuntimeError(f"模板包缺少 Markdown：{markdown}")
             if cover and cover not in files:
                 raise RuntimeError(f"模板包缺少封面：{cover}")
-            specs.append({"name": str(item.get("name") or "").strip(), "markdown": markdown, "cover": cover})
+            specs.append({"name": str(item.get("name") or "").strip(), "tag": str(item.get("tag") or "").strip(), "markdown": markdown, "cover": cover})
         return specs
 
     markdown_paths = sorted(name for name in files if Path(name).suffix.lower() == ".md")
@@ -532,7 +552,7 @@ def _skill_package_specs(archive, files):
             for suffix in (".jpg", ".jpeg", ".png", ".webp")
             if path.with_suffix(suffix).as_posix() in files
         ), "")
-        specs.append({"name": path.stem, "markdown": markdown, "cover": cover})
+        specs.append({"name": path.stem, "tag": "", "markdown": markdown, "cover": cover})
     return specs
 
 
@@ -557,9 +577,11 @@ def _import_skill_package(data):
             if entry.file_size > MAX_MARKDOWN_FILE_BYTES:
                 raise RuntimeError(f"Markdown 文件不能超过 5 MB：{spec['markdown']}")
             content = archive.read(entry).decode("utf-8")
-            record = _save_skill({"filename": Path(spec["markdown"]).name, "content": content})
+            record = _save_skill({"filename": Path(spec["markdown"]).name, "content": content}, tag=spec.get("tag", ""))
             if spec["name"]:
                 record = _rename_skill(record["id"], spec["name"])
+            if spec.get("tag") is not None:
+                record = _tag_skill(record["id"], spec["tag"])
             if spec["cover"]:
                 _save_skill_cover(record["id"], _skill_cover_from_package(archive, files[spec["cover"]]))
                 index = _read_skills_index()
@@ -581,7 +603,7 @@ def _export_skill_package():
             directory = f"skills/{skill_id}"
             markdown_path = f"{directory}/{safe_name}.md"
             archive.writestr(markdown_path, item.get("content") or "")
-            exported = {"name": item.get("name") or skill_id, "markdown": markdown_path}
+            exported = {"name": item.get("name") or skill_id, "tag": item.get("tag", ""), "markdown": markdown_path}
             cover = _skill_cover_path(skill_id)
             if item.get("hasCover") and cover.is_file():
                 cover_path = f"{directory}/{safe_name}.jpg"
@@ -601,6 +623,7 @@ class kkSkillsTemplateSelector:
             },
             "optional": {
                 "Markdown文件": (KK_MARKDOWN_FILE_TYPE, {"tooltip": "连接 kkMarkdown上传；执行后自动保存到 Skills 模板库。"}),
+                "Tag": ("STRING", {"default": "", "multiline": False, "forceInput": True, "tooltip": "可选分类标签，连接 kkMarkdown上传 的 Tag 输出。"}),
                 "封面图": ("IMAGE", {"tooltip": "可选，作为本次入库 Skill 的卡片封面。"}),
             },
         }
@@ -619,7 +642,7 @@ class kkSkillsTemplateSelector:
         markdown_file = kwargs.get("Markdown文件")
         if isinstance(markdown_file, dict):
             items = markdown_file.get("items") if isinstance(markdown_file.get("items"), list) else [markdown_file]
-            records = [_save_skill(item, kwargs.get("封面图")) for item in items if isinstance(item, dict)]
+            records = [_save_skill(item, kwargs.get("封面图"), kwargs.get("Tag", "")) for item in items if isinstance(item, dict)]
             if not records:
                 raise RuntimeError("Markdown 束中没有可保存的 Skill。")
             record = records[0]
@@ -635,6 +658,7 @@ class kkSkillsTemplateSelector:
         skill_items = [{
             "filename": item.get("sourceFilename") or f"{item['name']}.md",
             "content": item["content"],
+            "tag": item.get("tag", ""),
         } for item in _read_skills_index()["skills"]]
         return {
             "ui": {"skill_id": [record["id"]]},
@@ -1124,6 +1148,8 @@ try:
         try:
             body = await request.json()
             record = _rename_skill(request.match_info.get("skill_id", ""), body.get("name"))
+            if "tag" in body:
+                record = _tag_skill(record["id"], body.get("tag"))
             return web.json_response({"ok": True, "skill": record})
         except (RuntimeError, json.JSONDecodeError) as exc:
             return web.json_response({"ok": False, "error": str(exc)}, status=400)
