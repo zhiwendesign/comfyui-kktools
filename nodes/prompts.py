@@ -243,19 +243,22 @@ class kkMarkdownUpload:
                 "markdown_file": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "placeholder": "点击下方按钮上传 .md 文件",
+                    "placeholder": "三选一：点击下方按钮上传 .md 文件",
+                    "tooltip": "与文件夹地址、ZIP 压缩包三选一。",
                 }),
             },
             "optional": {
                 "folder_path": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "placeholder": "ComfyUI input 内的文件夹地址",
+                    "placeholder": "三选一：ComfyUI input 内的文件夹地址",
+                    "tooltip": "与 MD 文件、ZIP 压缩包三选一。",
                 }),
                 "archive_file": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "placeholder": "点击下方按钮上传 .zip 压缩包",
+                    "placeholder": "三选一：点击下方按钮上传 .zip 压缩包",
+                    "tooltip": "与 MD 文件、文件夹地址三选一。",
                 }),
                 "Tag": ("STRING", {
                     "default": "",
@@ -320,6 +323,11 @@ def _load_markdown_sources(markdown_file="", folder_path="", archive_file=""):
     archive_value = str(archive_file or "").strip()
     folder_value = str(folder_path or "").strip()
     markdown_value = str(markdown_file or "").strip()
+    source_count = sum(bool(value) for value in (markdown_value, folder_value, archive_value))
+    if source_count == 0:
+        raise RuntimeError("请选择一种来源：MD 文件、文件夹地址或 ZIP 压缩包。")
+    if source_count > 1:
+        raise RuntimeError("MD 文件、文件夹地址和 ZIP 压缩包只能三选一。")
     if archive_value:
         _input_root, path = _input_path(archive_value, "file")
         if path.suffix.lower() != ".zip":
@@ -358,8 +366,6 @@ def _load_markdown_sources(markdown_file="", folder_path="", archive_file=""):
         if path.suffix.lower() != ".md":
             raise RuntimeError("仅支持 .md 文件。")
         items = [_read_markdown_file(path, path.relative_to(input_root).as_posix())]
-    else:
-        raise RuntimeError("请上传 Markdown 文件、填写文件夹地址或上传 ZIP 压缩包。")
     if not items:
         raise RuntimeError("没有找到可加载的 Markdown 文件。")
     return items

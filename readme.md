@@ -257,7 +257,7 @@ pip install torchaudio
 
 ### kkMarkdown上传
 
-- 支持三种来源：上传单个 `.md`、读取 ComfyUI 输入目录内的文件夹、上传 `.zip` 压缩包。
+- 三种来源必须三选一：上传单个 `.md`、读取 ComfyUI 输入目录内的文件夹，或上传 `.zip` 压缩包；同时填写多个来源会直接报错。
 - 可选填写 `Tag`，会作为第二个 `Tag` 字符串输出，可直接连接 `kkSkills模板选择器.Tag`。
 - 文件夹和 ZIP 会递归收集最多 100 个 `.md`；单个 Markdown 最大 5 MB，ZIP 及其中 Markdown 的总大小最大 50 MB。
 - Markdown 必须采用 UTF-8 编码；ZIP 内容直接读取，不会解压到文件系统。
@@ -758,7 +758,7 @@ workflows/kktools_imagen_studio_ppt_pipe.workflow.json
 
 - 字体问题：`kkImageFrame` 需要可用字体，中文建议放到 [fonts](fonts) 目录。
 - 提示词 API：`kkLLM` 未填写 `api_key` 时会返回原始提示词；请求失败时会自动退回本地优化结果。
-- Markdown 上传：只接受 UTF-8 编码、最大 5 MB 的 `.md` 文件；上传按钮未出现时请重启 ComfyUI 并强制刷新浏览器页面。
+- Markdown 上传：MD 文件、文件夹地址、ZIP 压缩包必须三选一；只接受 UTF-8 编码、最大 5 MB 的 `.md` 文件；上传按钮未出现时请重启 ComfyUI 并强制刷新浏览器页面。
 - 分镜 API：`kkStoryboardScriptLLM` 需要有效 `api_key`，不会像 `kkLLM` 一样自动切回本地分镜生成。
 - 图像 API：`kkGPT-image_API` 需要有效接口 Key；接口异常时会在 `raw_json` 中提供排查信息。
 - 旧工作流兼容：如果旧工作流使用过 `InputNode` 或 `RegexNode`，请改为 `kkInputNode` 和 `kkRegexNode`。
