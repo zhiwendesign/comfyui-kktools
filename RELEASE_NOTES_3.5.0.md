@@ -4,6 +4,14 @@
 
 ## 更新概览
 
+### 2026-09-14 文档与字符串节点更新
+
+- 新增 `kkMarkdownToString（MD转字符串）`，接收 `KK_MARKDOWN_FILE` 并输出标准 `STRING`。
+- 补充 `kkMarkdownToString` 的中文显示名和备用注册入口。
+- 按当前代码重新盘点并重写 README 节点清单，完整列出 69 个可注册节点标识和 17 个分类。
+- 模板、PPT、OpenMAIC 与兼容节点改为逐节点说明，同时标明节点标识和界面显示名。
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage`、`kkImageAPI` 改列为已停用节点，不再混入现役节点清单。
+
 ### 2026-09-11 功能更新
 
 - 新增 `kk_API配置`，集中输出 Base URL 与 API Key；`kkGPT-image_API` 和 `kkLLM` 均可直接接入。
@@ -53,7 +61,7 @@
 - `MergeVideos` -> `kkMergeVideos`
 - `StoryboardScriptLLM` -> `kkStoryboardScriptLLM`
 
-当前版本共整理为 28 个 `kk` 前缀节点。
+当前代码共包含 35 个 `kk` 前缀的现役节点；模板、PPT、OpenMAIC 和兼容节点继续使用各自已有标识。
 
 ### 2. 字符串模块文件重命名
 

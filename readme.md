@@ -74,32 +74,49 @@ pip install torchaudio
 
 ## 🧩 源码入口
 
-- 图像模块：[nodes/image.py](nodes/image.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)
-- 数学模块：[nodes/Math.py](nodes/Math.py)
-- 提示词模块：[nodes/prompts.py](nodes/prompts.py)
-- 尺寸模块：[nodes/size.py](nodes/size.py)
-- 字符串模块：[nodes/kkstring.py](nodes/kkstring.py)
-- 随机模块：[nodes/RandomSelector.py](nodes/RandomSelector.py)
-- 视频模块：[nodes/video.py](nodes/video.py)
-- 音频模块：[nodes/audio.py](nodes/audio.py)
-- 分镜模块：[nodes/StoryboardScript.py](nodes/StoryboardScript.py)
-- OpenMAIC 模块：[nodes/openmaic_nodes.py](nodes/openmaic_nodes.py)、[nodes/openmaic](nodes/openmaic)
+| 模块 | 分类 | 源码 |
+|---|---|---|
+| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
+| 数学计算 | `🌟kktools/数学计算` | [Math.py](nodes/Math.py) |
+| 提示词 | `🌟kktools/提示词` | [prompts.py](nodes/prompts.py) |
+| 尺寸 | `🌟kktools/尺寸` | [size.py](nodes/size.py) |
+| 字符串 | `🌟kktools/字符串` | [kkstring.py](nodes/kkstring.py) |
+| 随机 | `🌟kktools/随机` | [RandomSelector.py](nodes/RandomSelector.py) |
+| 视频 | `🌟kktools/视频` | [video.py](nodes/video.py) |
+| 音频 | `🌟kktools/音频` | [audio.py](nodes/audio.py) |
+| 分镜 | `🌟kktools/分镜` | [StoryboardScript.py](nodes/StoryboardScript.py) |
+| 模板工具 | `🌟kktools/模板工具` | [imagen_studio.py](nodes/imagen_studio.py) |
+| PPT 工具 | `🌟kktools/PPT工具` | [imagen_ppt.py](nodes/imagen_ppt.py) |
+| 兼容 | `🌟kktools/兼容` | [compat_text.py](nodes/compat_text.py) |
+| OpenMAIC | `OpenMAIC/导入`、`OpenMAIC/独立版`、`OpenMAIC/导出`、`OpenMAIC/音频`、`OpenMAIC/工具` | [openmaic_nodes.py](nodes/openmaic_nodes.py)、[openmaic](nodes/openmaic) |
 
-## 🧾 节点清单
+## 🧾 全部节点与分类
 
-- 图像模块：`kkImageOverlay`、`kkPadImageToCanvas`、`kkImageFrame`、`kkResize`、`kkGetImage`、`kkBatchImageLoader`、`kkImageTileSplit2x2`、`kkImageGridMerge`、`kkImageSplit`、`kk_API配置`、`kkGPT-image_API`、`kkimage2_GAPI`
-- 数学模块：`kkMathExpressionNode`、`kkRegexNode`、`kkRegexNodeAdvanced`
-- 提示词模块：`kkBatchPrompt`、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`
-- 尺寸模块：`kkSizeNode`
-- 字符串模块：`kkStringNode`、`kkStringNodeAdvanced`、`kkStringMergeNode`、`kkInputNode`、`kkReplaceNode`、`kkSomethingToAny`、`kkStringToIntNode`
-- 随机模块：`kkRandomSelector`
-- 视频模块：`kkVideoFirstLastFrames`、`kkVideoFramesAdvanced`、`kkMergeVideos`
-- 音频模块：`kkAudioMerge4`
-- 分镜模块：`kkStoryboardScript`、`kkStoryboardScriptLLM`、`kkStoryboardShotOutput`
-- 模板工具：`模板蒸馏`、`模板入库`、`模板选择器`、`模板拼装`、`RunningHub 生图`
-- PPT 工具：`PPT 大纲草拟`、`PPT 大纲规划`、`PPT 设计规范`、`PPT 页面拼装`、`PPT RunningHub 批量生图`、`PPT 束拆包`、`PPT 图像写回`、`PPT 导出`
-- OpenMAIC：课件导入、讲稿生成、TTS、字幕、音频混合及视频导出节点
-- 兼容节点：`ShowText|pysssss`、`CR Text`，仅用于缺少原扩展时加载旧工作流
+当前代码共提供 69 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+
+| 分类 | 节点标识（界面显示名） |
+|---|---|
+| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
+| `🌟kktools/数学计算` | `kkMathExpressionNode`（数学表达式）、`kkRegexNode`（正则表达式）、`kkRegexNodeAdvanced`（正则表达式高级） |
+| `🌟kktools/提示词` | `kkBatchPrompt`（批量提示词）、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`（多厂商LLM） |
+| `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
+| `🌟kktools/字符串` | `kkStringNode`（字符串裁剪）、`kkStringNodeAdvanced`（字符串裁剪高级）、`kkStringMergeNode`（字符串合并）、`kkStringToIntNode`（字符串转整数）、`kkMarkdownToString`（MD转字符串）、`kkInputNode`（多类型输入）、`kkReplaceNode`（字符串替换）、`kkSomethingToAny`（任意类型转换） |
+| `🌟kktools/随机` | `kkRandomSelector`（随机选择器） |
+| `🌟kktools/视频` | `kkVideoFirstLastFrames`（视频首尾帧提取）、`kkVideoFramesAdvanced`（视频抽帧高级）、`kkMergeVideos`（视频合并） |
+| `🌟kktools/音频` | `kkAudioMerge4`（音频四合一） |
+| `🌟kktools/分镜` | `kkStoryboardScript`（默认分镜）、`kkStoryboardScriptLLM`（LLM分镜）、`kkStoryboardShotOutput`（分镜输出） |
+| `🌟kktools/模板工具` | `ImagenStudioTemplateDistiller`（模板蒸馏）、`ImagenStudioTemplateIngest`（模板入库）、`ImagenStudioTemplateSelector`（模板选择器）、`ImagenStudioTemplateComposer`（模板拼装）、`ImagenStudioRunningHubRHArtG2`（RunningHub 生图） |
+| `🌟kktools/PPT工具` | `ImagenStudioPPTOutlineDraft`（PPT 大纲草拟）、`ImagenStudioPPTOutlinePlan`（PPT 大纲规划）、`ImagenStudioPPTDesignBrief`（PPT 设计规范）、`ImagenStudioPPTPageComposer`（PPT 页面拼装）、`ImagenStudioPPTRunningHubBatch`（PPT RunningHub 批量生图）、`ImagenStudioPPTPipeUnpack`（PPT 束拆包）、`ImagenStudioPPTImageWriteback`（PPT 图像写回）、`ImagenStudioPPTExport`（PPT 导出） |
+| `🌟kktools/兼容` | `ShowText\|pysssss`（兼容文本展示）、`CR Text`（兼容文本） |
+| `OpenMAIC/导入` | `OpenMAIC_PPTX导入独立版`（📊 PPTX导入（独立版））、`OpenMAIC_导入课件独立版`（同实现兼容标识）、`OpenMAIC_图片导入独立版`（📁 图片导入（独立版）） |
+| `OpenMAIC/独立版` | `OpenMAICStandaloneImportCourseware`（OpenMAIC 独立导入课件）、`OpenMAICStandaloneGenerateScript`（OpenMAIC 独立生成讲稿）、`OpenMAICStandaloneBatchTTS`（OpenMAIC 独立批量TTS）、`OpenMAICStandaloneTTSAdapter`（OpenMAIC TTS文本转接器）、`OpenMAICStandaloneCollectTTSAudio`（OpenMAIC 收集TTS音频）、`OpenMAICStandaloneExportVideo`（OpenMAIC 独立导出课件视频） |
+| `OpenMAIC/导出` | `OpenMAIC_视频导出`（📹 视频导出）、`OpenMAIC_导出设置`（⚙️ 导出设置） |
+| `OpenMAIC/音频` | `OpenMAIC_TTS设置`（🎙️ TTS 设置）、`OpenMAIC_文本转语音`（🔊 文本转语音）、`OpenMAIC_音频混音`（🎵 音频混音）、`OpenMAIC_字幕生成`（📝 字幕生成）、`OpenMAIC_FunASR字幕对齐`（🎙️ FunASR字幕对齐）、`OpenMAIC_简单字幕对齐`（📋 简单字幕对齐） |
+| `OpenMAIC/工具` | `OpenMAIC_拆分讲解列表`（🔢 拆分讲解列表）、`OpenMAIC_从动作提取字幕`（🎬 字幕时间点提取） |
+
+### 已停用节点
+
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 69 个现役节点标识。
 
 ---
 
@@ -196,13 +213,10 @@ pip install torchaudio
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
 - 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`。内容审核失败时，日志会提示修改提示词或上传参考图像。
 
-### kkimage2_GAPI
+### kkimage2_GAPI（已停用）
 
-- 调用 OpenAI Images 兼容接口，支持文生图和最多 5 组参考图编辑。
-- 可设置模型、画幅比例、分辨率、画质、风格、输出格式、内容审核、生成张数、超时与重试次数；`自定义模型` 会覆盖模型下拉框。
-- 无参考图时请求生成接口；连接参考图后请求编辑接口，并将参考图最长边限制在 `参考图上传长边`。
-- `代理` 可留空、填写代理 URL 或选择系统代理；API Key 也可由 `GAPI_API_KEY` 环境变量提供。
-- 输出：`图像`、`状态`。
+- 源码仍保留，但已从菜单注册中停用，不属于当前可用节点。
+- 现有工作流请改用 `kkGPT-image_API`。
 
 ## 🔢 数学模块
 
@@ -332,6 +346,11 @@ pip install torchaudio
 - 当前逻辑不会解析字符串内容，而是固定输出 `1`、`2`、`3`、`4`。
 - 适合做固定占位、演示或兼容某些固定输入场景。
 
+### kkMarkdownToString（MD 转 String）
+
+- 接收 `kkMarkdown上传` 输出的 `Markdown文件`。
+- 输出 Markdown 文件全文的标准 `STRING`，方便连接普通字符串节点。
+
 ---
 
 ## 🎲 随机模块
@@ -393,28 +412,28 @@ pip install torchaudio
 
 模板工具使用统一的 `IMAGEN_STUDIO_PIPE` 模板束传递模板内容、提示词和生成结果。
 
-### 模板蒸馏
+### ImagenStudioTemplateDistiller（模板蒸馏）
 
 - 分析一张或多张参考图，提取可复用的视觉风格、负面提示词和结构化视觉特征。
 - 主要输入：`参考图像`、`模板类型`、`模板名称`、`模板需求`、`BaseURL`、`API Key`、`最长边`。
 - 输出：`模板束`、`模板JSON`、中英文风格提示词、负面提示词、视觉特征 JSON。
 
-### 模板入库
+### ImagenStudioTemplateIngest（模板入库）
 
 - 把模板束保存到本地模板库，可选择是否覆盖同名模板，并可用 `缩略图` 配置卡片封面。
 - 输出：更新后的 `模板束`、`模板ID`、`模板名称`、`保存路径`。
 
-### 模板选择器
+### ImagenStudioTemplateSelector（模板选择器）
 
 - 通过卡片浏览本地模板库，支持搜索、缩略图、改名和删除。
 - 输出选中模板的 `模板束`、模板 JSON、中英文风格提示词、负面提示词和模板名称。
 
-### 模板拼装
+### ImagenStudioTemplateComposer（模板拼装）
 
 - 把模板束、用户需求、画面比例、提示词语言及可选参考图拼装为最终生图提示词。
 - 输出：写入拼装结果的 `模板束`、正向提示词、负面提示词、拼装说明和拼装 JSON。
 
-### RunningHub 生图
+### ImagenStudioRunningHubRHArtG2（RunningHub 生图）
 
 - 读取模板束内提示词或手动提示词，调用 RunningHub RHArt G2；有参考图时自动进入图生图模式。
 - 支持渠道、比例、分辨率和 `low / medium / high` 质量设置。
@@ -460,42 +479,42 @@ workflows/kktools_imagen_studio_template_pipe_runninghub.api.json
 
 PPT 节点使用统一的 `IMAGEN_STUDIO_PIPE` 束传递模板信息、页面计划、提示词、生成结果和导出信息。
 
-### PPT 大纲草拟
+### ImagenStudioPPTOutlineDraft（PPT 大纲草拟）
 
 - 根据用户想法、已有 Markdown 大纲和可选模板束生成或润色 PPT 大纲。
 - 输出：`大纲Markdown`、`草拟说明`。
 
-### PPT 大纲规划
+### ImagenStudioPPTOutlinePlan（PPT 大纲规划）
 
 - 将 Markdown 大纲拆分成页面计划，并设置画面比例、提示词语言和目标模型。
 - 输出：`PPT束`、`页面计划JSON`、`PPT标题`。
 
-### PPT 设计规范
+### ImagenStudioPPTDesignBrief（PPT 设计规范）
 
 - 根据 PPT 束和可选参考图建立整套演示文稿统一的视觉规范。
 - 输出：更新后的 `PPT束`、`设计规范JSON`、`参考图分析JSON`。
 
-### PPT 页面拼装
+### ImagenStudioPPTPageComposer（PPT 页面拼装）
 
 - 并发为每一页生成生图提示词；支持单页超时和 1–50 并发。
 - 输出：更新后的 `PPT束`、`Prompt列表JSON`、`页面JSON`。
 
-### PPT RunningHub 批量生图
+### ImagenStudioPPTRunningHubBatch（PPT RunningHub 批量生图）
 
 - 并发调用 RunningHub 生成全部页面，可配置渠道、分辨率、质量、单页超时和轮询间隔。
 - 输出：页面 `图像` 批次、写入结果的 `PPT束`、`结果JSON`。
 
-### PPT 束拆包
+### ImagenStudioPPTPipeUnpack（PPT 束拆包）
 
 - 按页或合并全部页面，从 PPT 束中拆出普通字符串提示词，便于连接任意生图节点。
 - 输出：`PPT束`、正负提示词、页面标题、页面 JSON、总页数和当前页码。
 
-### PPT 图像写回
+### ImagenStudioPPTImageWriteback（PPT 图像写回）
 
 - 将外部生图结果写回 PPT 束中的指定页。
 - 输出：更新后的 `PPT束`、`写回JSON`。
 
-### PPT 导出
+### ImagenStudioPPTExport（PPT 导出）
 
 - 使用束内图片路径、URL 或可选图像批次导出图片型 PPTX。
 - 输出：`PPT文件路径`、`导出JSON`；默认保存到 ComfyUI 输出目录的 `imagen-ppt` 子目录。
@@ -584,39 +603,126 @@ workflows/kktools_imagen_studio_ppt_pipe.workflow.json
 
 源码位置：[nodes/openmaic](nodes/openmaic)、[nodes/openmaic_nodes.py](nodes/openmaic_nodes.py)。详细依赖与工作流说明见 [nodes/openmaic/README.md](nodes/openmaic/README.md)。
 
-### 课件导入
+### OpenMAIC_PPTX导入独立版（📊 PPTX导入（独立版））
 
-- `PPTX导入（独立版）`：解析 PPTX 课件并输出课件数据、匹配结果、动作列表和页面数量；兼容类型 `OpenMAIC_导入课件独立版` 指向同一实现。
-- `图片导入（独立版）`：把图片目录作为课件页面导入，输出结构与 PPTX 导入一致。
-- `OpenMAIC 独立导入课件`：统一接收 PPTX、PDF 或图片目录，生成页面图片、页面文本和课件数据；输出课件数据、页面图片 JSON、图片目录、页面文本 JSON和页数。
+- 分类：`OpenMAIC/导入`。
+- 解析 PPTX 课件并输出课件数据、匹配结果、动作列表和页面数量。
 
-### 讲稿与 TTS
+### OpenMAIC_导入课件独立版（兼容标识）
 
-- `OpenMAIC 独立生成讲稿`：根据课件数据生成逐页或分段讲稿，支持保留原文、口语化和教学化；输出分段讲稿 JSON、完整讲稿和段数。
-- `OpenMAIC 独立批量TTS`：批量将分段讲稿转为语音并合并；输出音频清单、合并音频、音频片段 JSON 和数量。
-- `OpenMAIC TTS文本转接器`：把分段讲稿拆成可连接外部 TTS 的文本任务；输出 TTS 文本、任务 JSON 和任务数量。
-- `OpenMAIC 收集TTS音频`：收集外部 TTS 返回的音频并恢复为课件音频清单；输出合并音频及片段信息。
-- `TTS 设置`：集中生成 TTS 厂商、接口、声音、语速等配置束。
-- `文本转语音`：读取文本和 TTS 配置生成音频文件；输出音频文件路径和音频片段信息。
+- 分类：`OpenMAIC/导入`。
+- 指向 `OpenMAIC_PPTX导入独立版` 的同一个实现，用于兼容已有工作流。
 
-### 字幕、音频与导出
+### OpenMAIC_图片导入独立版（📁 图片导入（独立版））
 
-- `拆分讲解列表`：按索引从讲解列表取出单条讲解，输出当前索引和总数。
-- `FunASR字幕对齐`：使用 ASR 时间戳对齐讲稿与音频；输出字幕时间点和对齐统计，需额外安装 FunASR。
-- `简单字幕对齐`：不依赖 ASR，按音频时长估算字幕时间点。
-- `字幕时间点提取`：从动作列表提取可供字幕生成节点使用的时间轴。
-- `字幕生成`：根据字幕时间点生成 ASS 字幕文件。
-- `音频混音`：混合讲解音频与背景音乐，输出混音文件和时长。
-- `导出设置`：生成分辨率、帧率、编码器、字幕、BGM 和音量配置束。
-- `视频导出`：合并视频画面、讲解音频、字幕与 BGM；输出视频和音频路径。
-- `OpenMAIC 独立导出课件视频`：直接将页图、逐页音频、字幕和 BGM 合成为最终课件视频，输出视频路径与视频清单 JSON。
+- 分类：`OpenMAIC/导入`。
+- 把图片目录作为课件页面导入，输出结构与 PPTX 导入节点一致。
+
+### OpenMAICStandaloneImportCourseware（OpenMAIC 独立导入课件）
+
+- 分类：`OpenMAIC/独立版`。
+- 接收 PPTX、PDF 或图片目录，生成页面图片、页面文本和课件数据。
+- 输出：课件数据、页面图片 JSON、图片目录、页面文本 JSON、页数。
+
+### OpenMAICStandaloneGenerateScript（OpenMAIC 独立生成讲稿）
+
+- 分类：`OpenMAIC/独立版`。
+- 根据课件数据生成逐页或分段讲稿，支持保留原文、口语化和教学化。
+- 输出：分段讲稿 JSON、完整讲稿、段数。
+
+### OpenMAICStandaloneBatchTTS（OpenMAIC 独立批量TTS）
+
+- 分类：`OpenMAIC/独立版`。
+- 批量将分段讲稿转为语音并合并。
+- 输出：音频清单、合并音频、音频片段 JSON、数量。
+
+### OpenMAICStandaloneTTSAdapter（OpenMAIC TTS文本转接器）
+
+- 分类：`OpenMAIC/独立版`。
+- 把分段讲稿拆成可连接外部 TTS 的文本任务。
+- 输出：TTS 文本、任务 JSON、任务数量。
+
+### OpenMAICStandaloneCollectTTSAudio（OpenMAIC 收集TTS音频）
+
+- 分类：`OpenMAIC/独立版`。
+- 收集外部 TTS 返回的音频并恢复为课件音频清单。
+- 输出：合并音频及音频片段信息。
+
+### OpenMAICStandaloneExportVideo（OpenMAIC 独立导出课件视频）
+
+- 分类：`OpenMAIC/独立版`。
+- 将页图、逐页音频、字幕和 BGM 合成为课件视频。
+- 输出：视频路径、视频清单 JSON。
+
+### OpenMAIC_视频导出（📹 视频导出）
+
+- 分类：`OpenMAIC/导出`。
+- 合并视频画面、讲解音频、字幕与 BGM。
+- 输出：视频路径、音频路径。
+
+### OpenMAIC_导出设置（⚙️ 导出设置）
+
+- 分类：`OpenMAIC/导出`。
+- 生成分辨率、帧率、编码器、字幕、BGM 和音量配置束。
+
+### OpenMAIC_TTS设置（🎙️ TTS 设置）
+
+- 分类：`OpenMAIC/音频`。
+- 集中生成 TTS 厂商、接口、声音、语速等配置束。
+
+### OpenMAIC_文本转语音（🔊 文本转语音）
+
+- 分类：`OpenMAIC/音频`。
+- 读取文本和 TTS 配置生成语音文件。
+- 输出：音频文件路径、音频片段信息。
+
+### OpenMAIC_音频混音（🎵 音频混音）
+
+- 分类：`OpenMAIC/音频`。
+- 混合讲解音频与背景音乐。
+- 输出：混音文件、时长。
+
+### OpenMAIC_字幕生成（📝 字幕生成）
+
+- 分类：`OpenMAIC/音频`。
+- 根据字幕时间点生成 ASS 字幕文件。
+
+### OpenMAIC_FunASR字幕对齐（🎙️ FunASR字幕对齐）
+
+- 分类：`OpenMAIC/音频`。
+- 使用 ASR 时间戳对齐讲稿与音频，需额外安装 FunASR。
+- 输出：字幕时间点、对齐统计。
+
+### OpenMAIC_简单字幕对齐（📋 简单字幕对齐）
+
+- 分类：`OpenMAIC/音频`。
+- 不依赖 ASR，按音频时长估算字幕时间点。
+
+### OpenMAIC_拆分讲解列表（🔢 拆分讲解列表）
+
+- 分类：`OpenMAIC/工具`。
+- 按索引从讲解列表取出单条讲解。
+- 输出：单条讲解、当前索引、总数。
+
+### OpenMAIC_从动作提取字幕（🎬 字幕时间点提取）
+
+- 分类：`OpenMAIC/工具`。
+- 从动作列表提取可供字幕生成节点使用的时间轴。
 
 ## 🔌 兼容文本节点
 
 源码位置：[nodes/compat_text.py](nodes/compat_text.py)
 
-- `ShowText|pysssss（兼容文本展示）`：在未安装原扩展时接收并展示字符串，帮助旧工作流正常加载。
-- `CR Text（兼容文本）`：提供旧工作流需要的基础字符串输入与透传。
+### ShowText|pysssss（兼容文本展示）
+
+- 分类：`🌟kktools/兼容`。
+- 在未安装原扩展时接收并展示字符串，帮助旧工作流正常加载。
+
+### CR Text（兼容文本）
+
+- 分类：`🌟kktools/兼容`。
+- 提供旧工作流需要的基础字符串输入与透传。
+
 - 这两个节点是兼容入口，不建议在新工作流中主动使用；安装对应原扩展后应优先使用原节点。
 
 ---
