@@ -178,6 +178,13 @@ try:
 except Exception as exc:
     print(f"[kktools Settings] 接口注册失败：{exc}")
 
+try:
+    from runtime_manager_routes import register_routes as register_runtime_manager_routes
+
+    register_runtime_manager_routes()
+except Exception as exc:
+    print(f"[kktools 运行管理] 接口注册失败：{exc}")
+
 # 手动加载特定节点（备用方案，如果自动发现失败）
 if not NODE_CLASS_MAPPINGS:
     print("⚠️  自动发现失败，使用手动加载...")

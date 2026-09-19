@@ -15,6 +15,8 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
 - 前端扩展 [web/skills_template_selector.js](web/skills_template_selector.js) 为 `kkSkills模板选择器` 提供 Skill 卡片管理
+- 前端扩展 [web/imagen_theme.js](web/imagen_theme.js) 参考 PPT 工具风格，为不同节点分类提供独立配色
+- 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
 
 发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkGPT-image_API`。
@@ -68,6 +70,9 @@ pip install torchaudio
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
 - [web/kk_markdown_upload.js](web/kk_markdown_upload.js)：`kkMarkdown上传` 的文件选择和上传前端脚本
 - [web/skills_template_selector.js](web/skills_template_selector.js)：`kkSkills模板选择器` 的卡片选择、搜索、改名和删除界面
+- [web/imagen_theme.js](web/imagen_theme.js)：PPT、模板及其他节点分类的主题配色
+- [web/runtime_manager.js](web/runtime_manager.js)：顶部运行资源监控与原生运行工具栏吸附交互
+- [runtime_manager_routes.py](runtime_manager_routes.py)：本机 CPU、内存、GPU 与显存统计接口
 - [workflows](workflows)：总览与分模块示例工作流
 - [fonts](fonts)：可选字体资源
 - [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：当前版本更新说明
@@ -89,6 +94,21 @@ pip install torchaudio
 | PPT 工具 | `🌟kktools/PPT工具` | [imagen_ppt.py](nodes/imagen_ppt.py) |
 | 兼容 | `🌟kktools/兼容` | [compat_text.py](nodes/compat_text.py) |
 | OpenMAIC | `OpenMAIC/导入`、`OpenMAIC/独立版`、`OpenMAIC/导出`、`OpenMAIC/音频`、`OpenMAIC/工具` | [openmaic_nodes.py](nodes/openmaic_nodes.py)、[openmaic](nodes/openmaic) |
+
+## 🖥️ 运行管理
+
+- 默认显示在 ComfyUI 顶部工具栏，实时查看 CPU、系统内存、GPU 和显存使用情况。
+- 每 2 秒自动刷新；点击状态栏可立即刷新。
+- GPU 利用率仅在当前计算后端支持读取时显示，其他环境会显示设备类型和显存占用。
+- 保留 ComfyUI 原生运行按钮及其拖拽功能；拖动原生工具栏靠近顶部运行管理区域时，会自动吸附到显存信息右侧。
+- 所有数据只通过本机 ComfyUI 接口读取，不会发送到外部服务。
+
+## 🎨 分类主题
+
+- 沿用 PPT 工具的深色节点样式，通过标题栏颜色快速区分不同功能分类。
+- 图像、数学计算、提示词、尺寸、字符串、随机、视频、音频、分镜和兼容分类均使用独立配色。
+- 模板工具、PPT 工具和现有特殊节点保留各自主题；OpenMAIC 的导入、独立版、导出、音频和工具分类也分别配色。
+- 主题只改变节点外观，不修改节点输入、输出、执行逻辑或现有工作流兼容性。
 
 ## 🧾 全部节点与分类
 
@@ -156,9 +176,9 @@ pip install torchaudio
 
 ### kkGetImage（获取图像尺寸）
 
-- 读取输入图像的宽高信息。
+- 读取输入图像的宽高，并自动匹配最接近的常用比例：`16:9`、`9:16`、`1:1`、`3:2`、`2:3`、`3:4`、`4:3`、`21:9`。
 - 适合把图像尺寸继续传给后续节点做动态计算。
-- 输出：`width`、`height`
+- 输出：`width`、`height`、`ratio`
 
 ### kkBatchImageLoader（批量图像加载）
 
