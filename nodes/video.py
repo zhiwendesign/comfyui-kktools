@@ -382,7 +382,10 @@ class kkVideoCompare(_VideoNodeMixin):
             "required": {
                 "video1": ("VIDEO",),
                 "video2": ("VIDEO",),
-            }
+            },
+            "optional": {
+                "audio": ("AUDIO",),
+            },
         }
 
     RETURN_TYPES = ("VIDEO",)
@@ -405,7 +408,7 @@ class kkVideoCompare(_VideoNodeMixin):
             align_corners=False,
         ).permute(0, 2, 3, 1)
 
-    def compare_videos(self, video1, video2):
+    def compare_videos(self, video1, video2, audio=None):
         components1 = self._get_video_components(video1)
         components2 = self._get_video_components(video2)
         images1 = self._extract_images(video1, components=components1)[..., :3]
@@ -434,7 +437,13 @@ class kkVideoCompare(_VideoNodeMixin):
             right = self._resize_frames(right, target_height, width2).to(left.device)
             batches.append(torch.cat((left, right), dim=2))
 
-        comparison = _KKVideo(torch.cat(batches, dim=0), output_fps)
+        if audio is None:
+            output_audio = self._extract_audio(video1, components=components1)
+        else:
+            waveform, sample_rate = self._get_audio_parts(audio, "audio")
+            output_audio = {"waveform": waveform.clone(), "sample_rate": sample_rate}
+
+        comparison = _KKVideo(torch.cat(batches, dim=0), output_fps, output_audio)
         return {
             "ui": _save_video_preview(comparison).as_dict(),
             "result": (comparison,),
