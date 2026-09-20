@@ -1,5 +1,8 @@
 import torch.nn.functional as torch_functional
 import torch
+from comfy_extras.nodes_depth_anything_3 import DA3Inference as _DA3Inference
+from comfy_extras.nodes_depth_anything_3 import DA3Render as _DA3Render
+from comfy_extras.nodes_video import save_video_preview as _save_video_preview
 
 
 class _VideoNodeMixin:
@@ -204,7 +207,17 @@ class _KKVideo:
         width = int(self.images.shape[2])
         return (width, height)
 
-    def save_to(self, path, format, codec, metadata=None):
+    def save_to(
+        self,
+        path,
+        format,
+        codec,
+        metadata=None,
+        bit_depth=None,
+        crf=None,
+        color_space=None,
+        preset=None,
+    ):
         from fractions import Fraction
         from comfy_api.latest import InputImpl, Types
 
@@ -218,6 +231,10 @@ class _KKVideo:
             format=format,
             codec=codec,
             metadata=metadata,
+            bit_depth=bit_depth,
+            crf=crf,
+            color_space=color_space,
+            preset=preset,
         )
 
 
@@ -295,6 +312,133 @@ class kkVideoFramesAdvanced(_VideoNodeMixin):
         )
 
         return (selected_images, fps, extracted_count, info)
+
+
+class kkVideoDepth(_VideoNodeMixin):
+    """使用 ComfyUI 内置的 Depth Anything 3 将视频逐帧转换为深度视频。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video": ("VIDEO",),
+                "da3_model": ("DA3_MODEL",),
+                "resolution": ("INT", {"default": 504, "min": 140, "max": 2520, "step": 14}),
+                "resize_method": (
+                    ["upper_bound_resize", "lower_bound_resize"],
+                    {"default": "upper_bound_resize"},
+                ),
+                "normalization": (["v2_style", "min_max"], {"default": "v2_style"}),
+                "output_mode": (["grayscale", "color"], {"default": "grayscale"}),
+                "keep_audio": ("BOOLEAN", {"default": True}),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("depth_video",)
+    FUNCTION = "create_depth_video"
+    CATEGORY = "🌟kktools/视频"
+
+    def create_depth_video(
+        self,
+        video,
+        da3_model,
+        resolution,
+        resize_method,
+        normalization,
+        output_mode,
+        keep_audio,
+    ):
+        components = self._get_video_components(video)
+        images = self._extract_images(video, components=components)[..., :3]
+        fps = self._extract_fps(video, components=components)
+        audio = self._extract_audio(video, components=components) if keep_audio else None
+
+        geometry = _DA3Inference.execute(
+            da3_model,
+            images,
+            resolution,
+            resize_method,
+            {"mode": "mono"},
+        )[0]
+        depth_images = _DA3Render.execute(
+            geometry,
+            {
+                "output": "depth_colored" if output_mode == "color" else "depth",
+                "normalization": normalization,
+                "apply_sky_clip": False,
+            },
+        )[0]
+
+        return (_KKVideo(depth_images, fps, audio),)
+
+
+class kkVideoCompare(_VideoNodeMixin):
+    """将两路视频按时间同步后左右并排，并使用一个原生播放器预览。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video1": ("VIDEO",),
+                "video2": ("VIDEO",),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("comparison_video",)
+    FUNCTION = "compare_videos"
+    CATEGORY = "🌟kktools/视频"
+    OUTPUT_NODE = True
+
+    def _scaled_width(self, width, height, target_height):
+        scaled = max(2, int(round(width * target_height / height)))
+        return scaled if scaled % 2 == 0 else scaled + 1
+
+    def _resize_frames(self, frames, target_height, target_width):
+        if frames.shape[1] == target_height and frames.shape[2] == target_width:
+            return frames
+        return torch_functional.interpolate(
+            frames.permute(0, 3, 1, 2),
+            size=(target_height, target_width),
+            mode="bilinear",
+            align_corners=False,
+        ).permute(0, 2, 3, 1)
+
+    def compare_videos(self, video1, video2):
+        components1 = self._get_video_components(video1)
+        components2 = self._get_video_components(video2)
+        images1 = self._extract_images(video1, components=components1)[..., :3]
+        images2 = self._extract_images(video2, components=components2)[..., :3]
+        fps1 = self._extract_fps(video1, components=components1)
+        fps2 = self._extract_fps(video2, components=components2)
+
+        output_fps = min(fps1, fps2)
+        duration = min(images1.shape[0] / fps1, images2.shape[0] / fps2)
+        output_frame_count = max(1, int(duration * output_fps))
+        timestamps = torch.arange(output_frame_count, dtype=torch.float64) / output_fps
+        indices1 = torch.floor(timestamps * fps1).to(dtype=torch.long).clamp(max=images1.shape[0] - 1)
+        indices2 = torch.floor(timestamps * fps2).to(dtype=torch.long).clamp(max=images2.shape[0] - 1)
+
+        target_height = min(int(images1.shape[1]), int(images2.shape[1]))
+        target_height = max(2, target_height - target_height % 2)
+        width1 = self._scaled_width(images1.shape[2], images1.shape[1], target_height)
+        width2 = self._scaled_width(images2.shape[2], images2.shape[1], target_height)
+
+        batches = []
+        for start in range(0, output_frame_count, 32):
+            end = min(start + 32, output_frame_count)
+            left = images1.index_select(0, indices1[start:end].to(images1.device))
+            right = images2.index_select(0, indices2[start:end].to(images2.device))
+            left = self._resize_frames(left, target_height, width1)
+            right = self._resize_frames(right, target_height, width2).to(left.device)
+            batches.append(torch.cat((left, right), dim=2))
+
+        comparison = _KKVideo(torch.cat(batches, dim=0), output_fps)
+        return {
+            "ui": _save_video_preview(comparison).as_dict(),
+            "result": (comparison,),
+        }
 
 
 class kkMergeVideos(_VideoNodeMixin):

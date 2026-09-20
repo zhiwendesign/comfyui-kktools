@@ -112,7 +112,7 @@ pip install torchaudio
 
 ## 🧾 全部节点与分类
 
-当前代码共提供 69 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+当前代码共提供 71 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
 
 | 分类 | 节点标识（界面显示名） |
 |---|---|
@@ -122,7 +122,7 @@ pip install torchaudio
 | `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
 | `🌟kktools/字符串` | `kkStringNode`（字符串裁剪）、`kkStringNodeAdvanced`（字符串裁剪高级）、`kkStringMergeNode`（字符串合并）、`kkStringToIntNode`（字符串转整数）、`kkMarkdownToString`（MD转字符串）、`kkInputNode`（多类型输入）、`kkReplaceNode`（字符串替换）、`kkSomethingToAny`（任意类型转换） |
 | `🌟kktools/随机` | `kkRandomSelector`（随机选择器） |
-| `🌟kktools/视频` | `kkVideoFirstLastFrames`（视频首尾帧提取）、`kkVideoFramesAdvanced`（视频抽帧高级）、`kkMergeVideos`（视频合并） |
+| `🌟kktools/视频` | `kkVideoFirstLastFrames`（视频首尾帧提取）、`kkVideoFramesAdvanced`（视频抽帧高级）、`kkVideoDepth`（视频转深度视频）、`kkVideoCompare`（视频对比）、`kkMergeVideos`（视频合并） |
 | `🌟kktools/音频` | `kkAudioMerge4`（音频四合一） |
 | `🌟kktools/分镜` | `kkStoryboardScript`（默认分镜）、`kkStoryboardScriptLLM`（LLM分镜）、`kkStoryboardShotOutput`（分镜输出） |
 | `🌟kktools/模板工具` | `ImagenStudioTemplateDistiller`（模板蒸馏）、`ImagenStudioTemplateIngest`（模板入库）、`ImagenStudioTemplateSelector`（模板选择器）、`ImagenStudioTemplateComposer`（模板拼装）、`ImagenStudioRunningHubRHArtG2`（RunningHub 生图） |
@@ -136,7 +136,7 @@ pip install torchaudio
 
 ### 已停用节点
 
-- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 69 个现役节点标识。
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 71 个现役节点标识。
 
 ---
 
@@ -404,6 +404,25 @@ pip install torchaudio
   - `interval_seconds`：按秒间隔抽帧
 - 输出：图像批次、FPS、抽取帧数、说明信息
 - 适合做视频分析、关键帧提取、视频转图像序列。
+
+### kkVideoDepth（视频转深度视频）
+
+- 使用 ComfyUI 内置的 Depth Anything 3 对输入 `VIDEO` 逐帧估算深度，并输出保持原分辨率和 FPS 的新 `VIDEO`。
+- `da3_model` 连接官方 `Load Depth Anything 3` 节点；推荐使用 ComfyUI 官方蓝图采用的 `depth_anything_3_mono_large.safetensors`。
+- 模型官方下载：[Comfy-Org 模型页面](https://huggingface.co/Comfy-Org/Depth-Anything-3/blob/main/geometry_estimation/depth_anything_3_mono_large.safetensors)；[直接下载模型](https://huggingface.co/Comfy-Org/Depth-Anything-3/resolve/main/geometry_estimation/depth_anything_3_mono_large.safetensors)。
+- 模型大小约 1.34 GB，SHA256：`9b44eda5bedba5b4e125686fdb79d1db309c1b9785277576eb930f885b008f96`。下载后放入 ComfyUI 的 `models/geometry_estimation` 目录并刷新模型列表。
+- `resolution` 控制模型处理分辨率；较低数值速度更快、显存占用更低，较高数值可保留更多细节。
+- `output_mode` 支持灰度深度视频和 Turbo 彩色深度视频，`normalization` 支持 `v2_style` 与 `min_max`。
+- `keep_audio` 默认开启，输出视频会保留输入视频的原始音轨；关闭后输出无音频深度视频。
+- 输出：`depth_video`
+
+### kkVideoCompare（视频对比）
+
+- 输入 `video1` 和 `video2`，节点内直接输出左右并排的同步视频预览：左侧为视频 1，右侧为视频 2。
+- 两路画面合成为一个标准视频流，因此共用同一个播放、暂停和进度拖拽控件，不会出现两个播放器进度不同步的问题。
+- 自动使用两路视频中较低的 FPS，并以较短视频的结束时间作为对比时长；画面按较小高度等比例缩放，避免拉伸变形。
+- 对比视频不混入任一输入的音轨，输出可继续连接原生 `SaveVideo` 保存。
+- 输出：`comparison_video`
 
 ### kkMergeVideos（视频合并）
 
