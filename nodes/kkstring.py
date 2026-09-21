@@ -276,6 +276,28 @@ class kkStringToIntNode:
         return (int1, int2, int3, int4)
 
 
+class kkMarkdownToString:
+    """将 kkMarkdown上传 的 Markdown 文件内容转换为普通字符串。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "Markdown文件": ("KK_MARKDOWN_FILE", {
+                    "tooltip": "连接 kkMarkdown上传 输出的 Markdown文件。",
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("String",)
+    FUNCTION = "to_string"
+    CATEGORY = "🌟kktools/字符串"
+
+    def to_string(self, Markdown文件):
+        return (str(Markdown文件.get("content", "")),)
+
+
 class kkInputNode:
     """输入节点（多类型输入）（多类型输入节点） - 可以输入2组字符串、整数或浮点数"""
     
@@ -631,6 +653,7 @@ __all__ = [
     'kkStringNodeAdvanced',   # 高级字符串裁剪
     'kkStringMergeNode',      # 字符串合并
     'kkStringToIntNode',      # 字符串转整数
+    'kkMarkdownToString',     # Markdown 转字符串
     'kkInputNode',          # 多类型输入
     'kkReplaceNode',          # 字符串替换
     'kkSomethingToAny'        # 任意类型转换

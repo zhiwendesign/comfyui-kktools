@@ -1,5 +1,10 @@
 import torch.nn.functional as torch_functional
 import torch
+from comfy_extras.nodes_depth_anything_3 import DA3Inference as _DA3Inference
+from comfy_extras.nodes_depth_anything_3 import DA3Render as _DA3Render
+from comfy_extras.nodes_sdpose import SDPoseDrawKeypoints as _SDPoseDrawKeypoints
+from comfy_extras.nodes_sdpose import SDPoseKeypointExtractor as _SDPoseKeypointExtractor
+from comfy_extras.nodes_video import save_video_preview as _save_video_preview
 
 
 class _VideoNodeMixin:
@@ -204,7 +209,17 @@ class _KKVideo:
         width = int(self.images.shape[2])
         return (width, height)
 
-    def save_to(self, path, format, codec, metadata=None):
+    def save_to(
+        self,
+        path,
+        format,
+        codec,
+        metadata=None,
+        bit_depth=None,
+        crf=None,
+        color_space=None,
+        preset=None,
+    ):
         from fractions import Fraction
         from comfy_api.latest import InputImpl, Types
 
@@ -218,6 +233,10 @@ class _KKVideo:
             format=format,
             codec=codec,
             metadata=metadata,
+            bit_depth=bit_depth,
+            crf=crf,
+            color_space=color_space,
+            preset=preset,
         )
 
 
@@ -295,6 +314,219 @@ class kkVideoFramesAdvanced(_VideoNodeMixin):
         )
 
         return (selected_images, fps, extracted_count, info)
+
+
+class kkVideoDepth(_VideoNodeMixin):
+    """使用 ComfyUI 内置的 Depth Anything 3 将视频逐帧转换为深度视频。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video": ("VIDEO",),
+                "da3_model": ("DA3_MODEL",),
+                "resolution": ("INT", {"default": 504, "min": 140, "max": 2520, "step": 14}),
+                "resize_method": (
+                    ["upper_bound_resize", "lower_bound_resize"],
+                    {"default": "upper_bound_resize"},
+                ),
+                "normalization": (["v2_style", "min_max"], {"default": "v2_style"}),
+                "output_mode": (["grayscale", "color"], {"default": "grayscale"}),
+                "keep_audio": ("BOOLEAN", {"default": True}),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("depth_video",)
+    FUNCTION = "create_depth_video"
+    CATEGORY = "🌟kktools/视频"
+
+    def create_depth_video(
+        self,
+        video,
+        da3_model,
+        resolution,
+        resize_method,
+        normalization,
+        output_mode,
+        keep_audio,
+    ):
+        components = self._get_video_components(video)
+        images = self._extract_images(video, components=components)[..., :3]
+        fps = self._extract_fps(video, components=components)
+        audio = self._extract_audio(video, components=components) if keep_audio else None
+
+        geometry = _DA3Inference.execute(
+            da3_model,
+            images,
+            resolution,
+            resize_method,
+            {"mode": "mono"},
+        )[0]
+        depth_images = _DA3Render.execute(
+            geometry,
+            {
+                "output": "depth_colored" if output_mode == "color" else "depth",
+                "normalization": normalization,
+                "apply_sky_clip": False,
+            },
+        )[0]
+
+        return (_KKVideo(depth_images, fps, audio),)
+
+
+class kkVideoPose(_VideoNodeMixin):
+    """使用 ComfyUI 内置的 SDPose 将视频逐帧转换为人体骨骼视频。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video": ("VIDEO",),
+                "model": ("MODEL",),
+                "vae": ("VAE",),
+                "batch_size": ("INT", {"default": 16, "min": 1, "max": 10000, "step": 1}),
+                "draw_body": ("BOOLEAN", {"default": True}),
+                "draw_head": ("BOOLEAN", {"default": True}),
+                "draw_hands": ("BOOLEAN", {"default": True}),
+                "draw_face": ("BOOLEAN", {"default": True}),
+                "draw_feet": ("BOOLEAN", {"default": True}),
+                "stick_width": ("INT", {"default": 4, "min": 1, "max": 10, "step": 1}),
+                "face_point_size": ("INT", {"default": 3, "min": 1, "max": 10, "step": 1}),
+                "score_threshold": ("FLOAT", {"default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "keep_audio": ("BOOLEAN", {"default": True}),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("pose_video",)
+    FUNCTION = "create_pose_video"
+    CATEGORY = "🌟kktools/视频"
+
+    def create_pose_video(
+        self,
+        video,
+        model,
+        vae,
+        batch_size,
+        draw_body,
+        draw_head,
+        draw_hands,
+        draw_face,
+        draw_feet,
+        stick_width,
+        face_point_size,
+        score_threshold,
+        keep_audio,
+    ):
+        components = self._get_video_components(video)
+        images = self._extract_images(video, components=components)[..., :3]
+        fps = self._extract_fps(video, components=components)
+        audio = self._extract_audio(video, components=components) if keep_audio else None
+
+        keypoints = _SDPoseKeypointExtractor.execute(model, vae, images, batch_size)[0]
+        pose_images = _SDPoseDrawKeypoints.execute(
+            keypoints,
+            draw_body,
+            draw_hands,
+            draw_face,
+            draw_feet,
+            stick_width,
+            face_point_size,
+            score_threshold,
+            draw_head,
+        )[0]
+
+        return (_KKVideo(pose_images, fps, audio),)
+
+
+class kkVideoCompare(_VideoNodeMixin):
+    """将最多五路视频按时间同步后横向并排，并使用一个原生播放器预览。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video1": ("VIDEO",),
+                "video2": ("VIDEO",),
+            },
+            "optional": {
+                "video3": ("VIDEO",),
+                "video4": ("VIDEO",),
+                "video5": ("VIDEO",),
+                "audio": ("AUDIO",),
+            },
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("comparison_video",)
+    FUNCTION = "compare_videos"
+    CATEGORY = "🌟kktools/视频"
+    OUTPUT_NODE = True
+
+    def _scaled_width(self, width, height, target_height):
+        scaled = max(2, int(round(width * target_height / height)))
+        return scaled if scaled % 2 == 0 else scaled + 1
+
+    def _resize_frames(self, frames, target_height, target_width):
+        if frames.shape[1] == target_height and frames.shape[2] == target_width:
+            return frames
+        return torch_functional.interpolate(
+            frames.permute(0, 3, 1, 2),
+            size=(target_height, target_width),
+            mode="bilinear",
+            align_corners=False,
+        ).permute(0, 2, 3, 1)
+
+    def compare_videos(self, video1, video2, audio=None, video3=None, video4=None, video5=None):
+        videos = [video for video in (video1, video2, video3, video4, video5) if video is not None]
+        components = [self._get_video_components(video) for video in videos]
+        images = [
+            self._extract_images(video, components=video_components)[..., :3]
+            for video, video_components in zip(videos, components)
+        ]
+        frame_rates = [
+            self._extract_fps(video, components=video_components)
+            for video, video_components in zip(videos, components)
+        ]
+
+        output_fps = min(frame_rates)
+        duration = min(frames.shape[0] / fps for frames, fps in zip(images, frame_rates))
+        output_frame_count = max(1, int(duration * output_fps))
+        timestamps = torch.arange(output_frame_count, dtype=torch.float64) / output_fps
+        frame_indices = [
+            torch.floor(timestamps * fps).to(dtype=torch.long).clamp(max=frames.shape[0] - 1)
+            for frames, fps in zip(images, frame_rates)
+        ]
+
+        target_height = min(int(frames.shape[1]) for frames in images)
+        target_height = max(2, target_height - target_height % 2)
+        target_widths = [
+            self._scaled_width(frames.shape[2], frames.shape[1], target_height)
+            for frames in images
+        ]
+
+        batches = []
+        for start in range(0, output_frame_count, 32):
+            end = min(start + 32, output_frame_count)
+            resized_frames = []
+            for frames, indices, target_width in zip(images, frame_indices, target_widths):
+                selected = frames.index_select(0, indices[start:end].to(frames.device))
+                resized = self._resize_frames(selected, target_height, target_width)
+                resized_frames.append(resized.to(images[0].device))
+            batches.append(torch.cat(resized_frames, dim=2))
+
+        if audio is None:
+            output_audio = self._extract_audio(video1, components=components[0])
+        else:
+            waveform, sample_rate = self._get_audio_parts(audio, "audio")
+            output_audio = {"waveform": waveform.clone(), "sample_rate": sample_rate}
+
+        comparison = _KKVideo(torch.cat(batches, dim=0), output_fps, output_audio)
+        return {
+            "ui": _save_video_preview(comparison).as_dict(),
+            "result": (comparison,),
+        }
 
 
 class kkMergeVideos(_VideoNodeMixin):

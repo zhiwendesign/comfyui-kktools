@@ -31,6 +31,7 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkInputNode": "多类型输入",
     "kkLLM": "多厂商LLM",
     "kkMathExpressionNode": "数学表达式",
+    "kkMarkdownToString": "MD转字符串",
     "kkMergeVideos": "视频合并",
     "kkPadImageToCanvas": "图像填充到画布",
     "kkRandomSelector": "随机选择器",
@@ -49,6 +50,9 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkStringToIntNode": "字符串转整数",
     "kkVideoFirstLastFrames": "视频首尾帧提取",
     "kkVideoFramesAdvanced": "视频抽帧高级",
+    "kkVideoDepth": "视频转深度视频",
+    "kkVideoPose": "视频转人体骨骼视频",
+    "kkVideoCompare": "视频对比",
 }
 
 NODE_DISPLAY_NAME_OVERRIDES = {
@@ -177,6 +181,13 @@ try:
 except Exception as exc:
     print(f"[kktools Settings] 接口注册失败：{exc}")
 
+try:
+    from runtime_manager_routes import register_routes as register_runtime_manager_routes
+
+    register_runtime_manager_routes()
+except Exception as exc:
+    print(f"[kktools 运行管理] 接口注册失败：{exc}")
+
 # 手动加载特定节点（备用方案，如果自动发现失败）
 if not NODE_CLASS_MAPPINGS:
     print("⚠️  自动发现失败，使用手动加载...")
@@ -187,14 +198,14 @@ if not NODE_CLASS_MAPPINGS:
         ("prompts.py", ["kkBatchPrompt", "kkLLM"]),
         ("kkstring.py", ["kkStringNode", "kkStringNodeAdvanced",
                         "kkStringMergeNode", "kkStringToIntNode",
-                        "kkInputNode", "kkReplaceNode", "kkSomethingToAny"]),
+                        "kkMarkdownToString", "kkInputNode", "kkReplaceNode", "kkSomethingToAny"]),
         ("Math.py", ["kkMathExpressionNode", "kkRegexNode", "kkRegexNodeAdvanced"]),
         ("image.py", ["kkImageOverlay", "kkPadImageToCanvas", "kkImageFrame", "kkResize",
                      "kkGetImage", "kkBatchImageLoader", "kkImageTileSplit2x2",
                      "kkImageGridMerge"]),
         ("ImageSplit.py", ["kkImageSplit"]),
         ("RandomSelector.py", ["kkRandomSelector"]),
-        ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkMergeVideos"]),
+        ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkVideoDepth", "kkVideoPose", "kkVideoCompare", "kkMergeVideos"]),
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
         ("kk_image_api.py", ["kkImageAPI"]),

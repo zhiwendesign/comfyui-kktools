@@ -889,16 +889,23 @@ class kkGetImage:
             }
         }
 
-    RETURN_TYPES = ("INT", "INT")
-    RETURN_NAMES = ("width", "height")
+    RETURN_TYPES = ("INT", "INT", "STRING")
+    RETURN_NAMES = ("width", "height", "ratio")
     FUNCTION = "get_image_size"
     CATEGORY = "🌟kktools/图像"
+
+    COMMON_RATIOS = ("16:9", "9:16", "1:1", "3:2", "2:3", "3:4", "4:3", "21:9")
 
     def get_image_size(self, image):
         # 获取图像的基本信息
         batch_size, height, width, channels = image.shape
-        
-        return (width, height)
+        image_ratio = width / height
+        ratio = min(
+            self.COMMON_RATIOS,
+            key=lambda value: abs(image_ratio - (int(value.split(":")[0]) / int(value.split(":")[1]))),
+        )
+
+        return (width, height, ratio)
 
 class kkBatchImageLoader:
     """批量图像加载节点 - 支持顺序/倒序/随机加载和加载间隔"""

@@ -4,6 +4,37 @@
 
 ## 更新概览
 
+### 2026-09-20 视频深度转换节点
+
+- 新增 `kkVideoPose（视频转人体骨骼视频）`，复用 ComfyUI 内置 SDPose 将输入视频逐帧转换为人体骨骼视频。
+- 支持分别显示身体、头部、手部、面部和脚部，可调整线宽、面部点大小和置信度，并可选保留输入音轨。
+- 节点直接使用官方 `sdpose_wholebody_fp16.safetensors` 的 `MODEL` 和 `VAE` 输出，不增加第三方依赖或后台下载。
+- 新增 `kkVideoCompare（视频对比）`，支持 2–5 路视频按时间同步后横向并排，在节点内使用同一个播放器、播放按钮和进度条预览；支持可选外部音频，未连接时默认使用视频 1 的音轨。
+- 新增 `kkVideoDepth（视频转深度视频）`，使用 ComfyUI 内置 Depth Anything 3 将输入视频逐帧转换为深度视频。
+- 支持灰度与 Turbo 彩色输出、`v2_style` 与 `min_max` 两种归一化方式，并可调节模型处理分辨率。
+- 输出保持输入视频的原分辨率和 FPS，可选择保留或移除原始音频。
+- 节点直接接入官方 `DA3_MODEL`，不新增第三方依赖，也不会自动下载模型。
+- 修复 `kkVideoDepth` 和 `kkMergeVideos` 输出连接新版 `SaveVideo` 时，因 `crf` 等编码参数未被视频对象接收而保存失败的问题。
+
+### 2026-09-19 运行管理、比例输出与分类主题更新
+
+- `kkGetImage（获取图像尺寸）` 新增 `ratio` 字符串输出，会从 `16:9`、`9:16`、`1:1`、`3:2`、`2:3`、`3:4`、`4:3`、`21:9` 中返回最接近输入图像的常用比例。
+- 新增顶部“运行管理”，实时显示 CPU、系统内存、GPU 与显存使用情况；默认每 2 秒刷新，也可点击立即刷新。
+- 运行管理仅读取本机状态，不会发送统计信息到外部服务。
+- 保留 ComfyUI 原生运行工具栏及其功能；拖动工具栏靠近顶部运行管理区域时，会自动吸附到显存信息右侧。
+- 参考 PPT 工具的深色 UI，为图像、数学计算、提示词、尺寸、字符串、随机、视频、音频、分镜和兼容分类增加独立配色。
+- OpenMAIC 的导入、独立版、导出、音频和工具分类同步增加差异化配色；模板、PPT 及现有特殊节点继续保留原有主题。
+- 分类主题仅修改节点外观，不改变节点输入、输出或执行逻辑。
+
+### 2026-09-14 文档与字符串节点更新
+
+- 新增 `kkMarkdownToString（MD转字符串）`，接收 `KK_MARKDOWN_FILE` 并输出标准 `STRING`。
+- 补充 `kkMarkdownToString` 的中文显示名和备用注册入口。
+- 按当前代码重新盘点并重写 README 节点清单，完整列出 69 个可注册节点标识和 17 个分类。
+- 模板、PPT、OpenMAIC 与兼容节点改为逐节点说明，同时标明节点标识和界面显示名。
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage`、`kkImageAPI` 改列为已停用节点，不再混入现役节点清单。
+- `kkMarkdown上传` 的 MD 文件、文件夹地址和 ZIP 压缩包改为严格三选一；同时填写多个来源会明确报错，通过上传按钮选择文件时会自动清空另外两个来源。
+
 ### 2026-09-11 功能更新
 
 - 新增 `kk_API配置`，集中输出 Base URL 与 API Key；`kkGPT-image_API` 和 `kkLLM` 均可直接接入。
@@ -15,6 +46,11 @@
 - 新增 `kkMarkdown上传`，支持单个 `.md`、ComfyUI 输入目录中的文件夹及 `.zip` 压缩包。
 - 新增 `kkSkills模板选择器`，支持本地入库、封面、搜索、自动刷新、悬浮改名和右上角删除。
 - `kkSkills模板选择器` 输出携带完整模板集合，可交给 `kkRandomSelector` 按 seed 随机选择 Skill。
+- `kkSkills模板选择器` 新增模板包导入与导出，支持恢复模板名称和同名封面；导入会校验路径、文件数、单文件大小与解压后总大小。
+- Skills 本地数据迁移到 ComfyUI 用户目录 `user/kktools/skills-templates`，也可通过 `KKTOOLS_SKILLS_DIR` 自定义。
+- Skills 卡片区域随节点尺寸自适应，不再强制缩小用户主动调整的节点高度。
+- `kkSkills模板选择器` 新增 `Tag` 字符串输入，支持为 Markdown Skill 写入分类标签、卡片展示和搜索。
+- `kkMarkdown上传` 新增可选 `Tag` 输入与第二个 `Tag` 输出，可直接连接 `kkSkills模板选择器.Tag`。
 - `kkRandomSelector` 新增 `Markdown文件` 输入和输出，兼容 `kkMarkdown上传` 与 `kkSkills模板选择器`。
 - 移除 `kkimage2_Zuco` 和空的 `🌟kktools/AI生图` 分类。
 - 重新整理 README，补齐图像、模板、PPT、Skills、随机选择及兼容节点说明。
@@ -48,7 +84,7 @@
 - `MergeVideos` -> `kkMergeVideos`
 - `StoryboardScriptLLM` -> `kkStoryboardScriptLLM`
 
-当前版本共整理为 28 个 `kk` 前缀节点。
+当前代码共包含 35 个 `kk` 前缀的现役节点；模板、PPT、OpenMAIC 和兼容节点继续使用各自已有标识。
 
 ### 2. 字符串模块文件重命名
 

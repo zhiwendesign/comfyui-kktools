@@ -10,6 +10,7 @@ app.registerExtension({
     nodeType.prototype.onNodeCreated = function () {
       const result = onNodeCreated?.apply(this, arguments);
       const pathWidget = this.widgets?.find((widget) => widget.name === "markdown_file");
+      const folderWidget = this.widgets?.find((widget) => widget.name === "folder_path");
       const archiveWidget = this.widgets?.find((widget) => widget.name === "archive_file");
 
       const upload = async (accept, targetWidget) => {
@@ -29,6 +30,12 @@ app.registerExtension({
             return;
           }
           if (targetWidget) {
+            for (const widget of [pathWidget, folderWidget, archiveWidget]) {
+              if (widget && widget !== targetWidget) {
+                widget.value = "";
+                widget.callback?.("");
+              }
+            }
             targetWidget.value = data.filename;
             targetWidget.callback?.(data.filename);
           }
