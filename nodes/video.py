@@ -1,3 +1,5 @@
+import math
+
 import torch.nn.functional as torch_functional
 import torch
 from comfy_extras.nodes_depth_anything_3 import DA3Inference as _DA3Inference
@@ -403,6 +405,25 @@ class kkVideoPose(_VideoNodeMixin):
     FUNCTION = "create_pose_video"
     CATEGORY = "🌟kktools/视频"
 
+    def _sanitize_keypoints(self, keypoints):
+        keypoint_names = (
+            "pose_keypoints_2d",
+            "foot_keypoints_2d",
+            "face_keypoints_2d",
+            "hand_right_keypoints_2d",
+            "hand_left_keypoints_2d",
+        )
+        for frame in keypoints:
+            for person in frame.get("people", ()):
+                for name in keypoint_names:
+                    values = person.get(name)
+                    if not values:
+                        continue
+                    for index in range(0, len(values) - 2, 3):
+                        if not all(math.isfinite(float(value)) for value in values[index:index + 3]):
+                            values[index:index + 3] = (0.0, 0.0, 0.0)
+        return keypoints
+
     def create_pose_video(
         self,
         video,
@@ -425,6 +446,7 @@ class kkVideoPose(_VideoNodeMixin):
         audio = self._extract_audio(video, components=components) if keep_audio else None
 
         keypoints = _SDPoseKeypointExtractor.execute(model, vae, images, batch_size)[0]
+        keypoints = self._sanitize_keypoints(keypoints)
         pose_images = _SDPoseDrawKeypoints.execute(
             keypoints,
             draw_body,
