@@ -425,6 +425,7 @@ pip install torchaudio
 - 模型大小为 `1,916,645,792` 字节（约 1.79 GiB），SHA256：`63d01f9a7494560693b24767f4469d59c9d3266b31ff0a253e74d1e611442721`。
 - 下载后放入 `ComfyUI/models/checkpoints/sdpose_wholebody_fp16.safetensors`，然后刷新模型列表或重启 ComfyUI。
 - 可分别控制身体、头部、手部、面部和脚部的绘制，并可调整骨架线宽、面部点大小和置信度阈值。
+- 会自动忽略模型在个别帧中输出的无效关键点，避免 `NaN` 坐标导致骨骼绘制中断。
 - 输出保持输入视频的分辨率和 FPS；`keep_audio` 默认开启，可保留原视频音轨。
 - 当前节点按整帧识别主体；多人画面如需更精确的分人检测，可使用 ComfyUI 官方 SDPose 多人蓝图。
 - 输出：`pose_video`
