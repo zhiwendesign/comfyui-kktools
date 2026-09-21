@@ -51,6 +51,7 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkVideoFirstLastFrames": "视频首尾帧提取",
     "kkVideoFramesAdvanced": "视频抽帧高级",
     "kkVideoDepth": "视频转深度视频",
+    "kkVideoPose": "视频转人体骨骼视频",
     "kkVideoCompare": "视频对比",
 }
 
@@ -204,7 +205,7 @@ if not NODE_CLASS_MAPPINGS:
                      "kkImageGridMerge"]),
         ("ImageSplit.py", ["kkImageSplit"]),
         ("RandomSelector.py", ["kkRandomSelector"]),
-        ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkVideoDepth", "kkVideoCompare", "kkMergeVideos"]),
+        ("video.py", ["kkVideoFirstLastFrames", "kkVideoFramesAdvanced", "kkVideoDepth", "kkVideoPose", "kkVideoCompare", "kkMergeVideos"]),
         ("audio.py", ["kkAudioMerge4"]),
         ("StoryboardScript.py", ["kkStoryboardScript", "kkStoryboardScriptLLM", "kkStoryboardShotOutput"]),
         ("kk_image_api.py", ["kkImageAPI"]),

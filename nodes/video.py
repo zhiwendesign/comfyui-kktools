@@ -2,6 +2,8 @@ import torch.nn.functional as torch_functional
 import torch
 from comfy_extras.nodes_depth_anything_3 import DA3Inference as _DA3Inference
 from comfy_extras.nodes_depth_anything_3 import DA3Render as _DA3Render
+from comfy_extras.nodes_sdpose import SDPoseDrawKeypoints as _SDPoseDrawKeypoints
+from comfy_extras.nodes_sdpose import SDPoseKeypointExtractor as _SDPoseKeypointExtractor
 from comfy_extras.nodes_video import save_video_preview as _save_video_preview
 
 
@@ -373,8 +375,73 @@ class kkVideoDepth(_VideoNodeMixin):
         return (_KKVideo(depth_images, fps, audio),)
 
 
+class kkVideoPose(_VideoNodeMixin):
+    """使用 ComfyUI 内置的 SDPose 将视频逐帧转换为人体骨骼视频。"""
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "video": ("VIDEO",),
+                "model": ("MODEL",),
+                "vae": ("VAE",),
+                "batch_size": ("INT", {"default": 16, "min": 1, "max": 10000, "step": 1}),
+                "draw_body": ("BOOLEAN", {"default": True}),
+                "draw_head": ("BOOLEAN", {"default": True}),
+                "draw_hands": ("BOOLEAN", {"default": True}),
+                "draw_face": ("BOOLEAN", {"default": True}),
+                "draw_feet": ("BOOLEAN", {"default": True}),
+                "stick_width": ("INT", {"default": 4, "min": 1, "max": 10, "step": 1}),
+                "face_point_size": ("INT", {"default": 3, "min": 1, "max": 10, "step": 1}),
+                "score_threshold": ("FLOAT", {"default": 0.3, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "keep_audio": ("BOOLEAN", {"default": True}),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO",)
+    RETURN_NAMES = ("pose_video",)
+    FUNCTION = "create_pose_video"
+    CATEGORY = "🌟kktools/视频"
+
+    def create_pose_video(
+        self,
+        video,
+        model,
+        vae,
+        batch_size,
+        draw_body,
+        draw_head,
+        draw_hands,
+        draw_face,
+        draw_feet,
+        stick_width,
+        face_point_size,
+        score_threshold,
+        keep_audio,
+    ):
+        components = self._get_video_components(video)
+        images = self._extract_images(video, components=components)[..., :3]
+        fps = self._extract_fps(video, components=components)
+        audio = self._extract_audio(video, components=components) if keep_audio else None
+
+        keypoints = _SDPoseKeypointExtractor.execute(model, vae, images, batch_size)[0]
+        pose_images = _SDPoseDrawKeypoints.execute(
+            keypoints,
+            draw_body,
+            draw_hands,
+            draw_face,
+            draw_feet,
+            stick_width,
+            face_point_size,
+            score_threshold,
+            draw_head,
+        )[0]
+
+        return (_KKVideo(pose_images, fps, audio),)
+
+
 class kkVideoCompare(_VideoNodeMixin):
-    """将两路视频按时间同步后左右并排，并使用一个原生播放器预览。"""
+    """将最多五路视频按时间同步后横向并排，并使用一个原生播放器预览。"""
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -384,6 +451,9 @@ class kkVideoCompare(_VideoNodeMixin):
                 "video2": ("VIDEO",),
             },
             "optional": {
+                "video3": ("VIDEO",),
+                "video4": ("VIDEO",),
+                "video5": ("VIDEO",),
                 "audio": ("AUDIO",),
             },
         }
@@ -408,37 +478,46 @@ class kkVideoCompare(_VideoNodeMixin):
             align_corners=False,
         ).permute(0, 2, 3, 1)
 
-    def compare_videos(self, video1, video2, audio=None):
-        components1 = self._get_video_components(video1)
-        components2 = self._get_video_components(video2)
-        images1 = self._extract_images(video1, components=components1)[..., :3]
-        images2 = self._extract_images(video2, components=components2)[..., :3]
-        fps1 = self._extract_fps(video1, components=components1)
-        fps2 = self._extract_fps(video2, components=components2)
+    def compare_videos(self, video1, video2, audio=None, video3=None, video4=None, video5=None):
+        videos = [video for video in (video1, video2, video3, video4, video5) if video is not None]
+        components = [self._get_video_components(video) for video in videos]
+        images = [
+            self._extract_images(video, components=video_components)[..., :3]
+            for video, video_components in zip(videos, components)
+        ]
+        frame_rates = [
+            self._extract_fps(video, components=video_components)
+            for video, video_components in zip(videos, components)
+        ]
 
-        output_fps = min(fps1, fps2)
-        duration = min(images1.shape[0] / fps1, images2.shape[0] / fps2)
+        output_fps = min(frame_rates)
+        duration = min(frames.shape[0] / fps for frames, fps in zip(images, frame_rates))
         output_frame_count = max(1, int(duration * output_fps))
         timestamps = torch.arange(output_frame_count, dtype=torch.float64) / output_fps
-        indices1 = torch.floor(timestamps * fps1).to(dtype=torch.long).clamp(max=images1.shape[0] - 1)
-        indices2 = torch.floor(timestamps * fps2).to(dtype=torch.long).clamp(max=images2.shape[0] - 1)
+        frame_indices = [
+            torch.floor(timestamps * fps).to(dtype=torch.long).clamp(max=frames.shape[0] - 1)
+            for frames, fps in zip(images, frame_rates)
+        ]
 
-        target_height = min(int(images1.shape[1]), int(images2.shape[1]))
+        target_height = min(int(frames.shape[1]) for frames in images)
         target_height = max(2, target_height - target_height % 2)
-        width1 = self._scaled_width(images1.shape[2], images1.shape[1], target_height)
-        width2 = self._scaled_width(images2.shape[2], images2.shape[1], target_height)
+        target_widths = [
+            self._scaled_width(frames.shape[2], frames.shape[1], target_height)
+            for frames in images
+        ]
 
         batches = []
         for start in range(0, output_frame_count, 32):
             end = min(start + 32, output_frame_count)
-            left = images1.index_select(0, indices1[start:end].to(images1.device))
-            right = images2.index_select(0, indices2[start:end].to(images2.device))
-            left = self._resize_frames(left, target_height, width1)
-            right = self._resize_frames(right, target_height, width2).to(left.device)
-            batches.append(torch.cat((left, right), dim=2))
+            resized_frames = []
+            for frames, indices, target_width in zip(images, frame_indices, target_widths):
+                selected = frames.index_select(0, indices[start:end].to(frames.device))
+                resized = self._resize_frames(selected, target_height, target_width)
+                resized_frames.append(resized.to(images[0].device))
+            batches.append(torch.cat(resized_frames, dim=2))
 
         if audio is None:
-            output_audio = self._extract_audio(video1, components=components1)
+            output_audio = self._extract_audio(video1, components=components[0])
         else:
             waveform, sample_rate = self._get_audio_parts(audio, "audio")
             output_audio = {"waveform": waveform.clone(), "sample_rate": sample_rate}
