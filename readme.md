@@ -298,7 +298,9 @@ pip install torchaudio
 ### kkLLM（多厂商LLM）
 
 - 使用 LLM 优化提示词，当前支持 DeepSeek V4、OpenAI GPT-5.6、Gemini 3.x/2.5 和豆包 Seed 2.0/1.6。
-- `Markdown文件` 接入后，Markdown 全文会覆盖手动填写的 `base_prompt`，此时 `base_prompt` 可以留空。
+- `base_prompt` 用于输入用户的原始 Prompt；`Markdown文件` 可连接 `kkMarkdown上传` 或 `kkSkills模板选择器`。
+- 同时接入 Prompt 和 Markdown Skill 时，节点会保留 Prompt 的主体、意图和明确约束，按 Skill 的规则补全表达、构图、风格和质量细节，并只输出最终优化 Prompt。
+- 只输入 Prompt 时按原有方式优化；只连接 Markdown 时仍会把 Markdown 全文作为输入，保持旧工作流可用。
 - 切换 `provider` 时，前端会自动刷新对应的 `model` 选项。
 - 支持 `base_prompt`、`provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`，并可接入 `Markdown文件` 与 `API配置`。
 - 可选的 `API配置` 输入可连接 `kk_API配置`；连接后优先使用配置束中的 API Key，并将 Base URL 转换为兼容的 `/v1/chat/completions` 地址。

@@ -4,6 +4,12 @@
 
 ## 更新概览
 
+### 2026-09-22 Prompt 与 Markdown Skill 组合优化
+
+- `kkLLM（多厂商LLM）` 支持同时输入用户 Prompt 和 Markdown Skill，不再用 Markdown 直接覆盖 Prompt。
+- Prompt 作为待优化内容，Markdown Skill 作为处理规则；模型会保留用户的主体、意图和约束，并按 Skill 补全细节。
+- 保持仅 Prompt、仅 Markdown、未配置 API Key 和旧工作流的兼容行为。
+
 ### 2026-09-20 视频深度转换节点
 
 - 新增 `kkVideoPose（视频转人体骨骼视频）`，复用 ComfyUI 内置 SDPose 将输入视频逐帧转换为人体骨骼视频。

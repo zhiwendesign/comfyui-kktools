@@ -692,7 +692,7 @@ class kkLLM:
                 "base_prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "placeholder": "可选；连接 Markdown 文件后可留空"
+                    "placeholder": "输入需要优化的 Prompt；可与 Markdown Skill 组合使用"
                 }),
                 "api_key": ("STRING", {
                     "default": "",
@@ -723,7 +723,7 @@ class kkLLM:
             },
             "optional": {
                 "Markdown文件": (KK_MARKDOWN_FILE_TYPE, {
-                    "tooltip": "连接 kkMarkdown上传；连接后使用 Markdown 文件全文作为基础提示词。",
+                    "tooltip": "连接 kkMarkdown上传或 kkSkills模板选择器；作为 Skill 规则与 base_prompt 组合优化。",
                 }),
                 "API配置": (KK_IMAGE_API_CONFIG_TYPE, {
                     "tooltip": "连接 kk_API配置 后，优先使用其中的 Base URL 和 API Key。",
@@ -747,6 +747,19 @@ class kkLLM:
     RETURN_NAMES = ("original_prompt", "optimized_prompt", "optimization_info")
     FUNCTION = "optimize_prompt"
     CATEGORY = "🌟kktools/提示词"
+
+    def _compose_skill_message(self, prompt, skill):
+        if not skill:
+            return prompt
+        if not prompt:
+            return skill
+        return (
+            "请依据以下 Markdown Skill 的规则优化用户 Prompt。\n"
+            "保留用户 Prompt 的主体、意图和明确约束，使用 Skill 补全表达、构图、风格和质量细节。\n"
+            "只输出最终优化后的 Prompt，不要复述 Skill，不要解释，不要使用代码块。\n\n"
+            f"<markdown_skill>\n{skill}\n</markdown_skill>\n\n"
+            f"<user_prompt>\n{prompt}\n</user_prompt>"
+        )
     
     def optimize_prompt(
         self,
@@ -779,8 +792,11 @@ class kkLLM:
             (原始提示词, 优化后的提示词, 优化信息)
         """
         try:
-            if isinstance(Markdown文件, dict):
-                base_prompt = str(Markdown文件.get("content") or "")
+            prompt_content = str(base_prompt or "")
+            skill_content = str(Markdown文件.get("content") or "") if isinstance(Markdown文件, dict) else ""
+            base_prompt = prompt_content
+            if not prompt_content.strip() and skill_content.strip():
+                base_prompt = skill_content
             if isinstance(API配置, dict):
                 api_key = str(API配置.get("api_key") or api_key or "").strip()
                 configured_base_url = str(API配置.get("base_url") or "").strip()
@@ -793,8 +809,7 @@ class kkLLM:
             if not api_key.strip():
                 return (base_prompt, base_prompt, "警告: 未提供API密钥，返回原始提示词")
             
-            # 原样发送用户输入，不额外拼接任何提示词指令。
-            user_message = base_prompt
+            user_message = self._compose_skill_message(prompt_content, skill_content)
             
             # 调用对应 LLM API
             optimized_prompt = self._call_llm_api(
@@ -812,7 +827,8 @@ class kkLLM:
             
             if optimized_prompt:
                 resolved_model = self._resolve_model(provider, model, custom_model)
-                info = f"优化完成 | provider={provider} | model={resolved_model}"
+                skill_status = " | Skill=已应用" if skill_content.strip() else ""
+                info = f"优化完成 | provider={provider} | model={resolved_model}{skill_status}"
                 return (base_prompt, optimized_prompt, info)
             else:
                 return (base_prompt, base_prompt, "API调用失败，返回原始提示词")
