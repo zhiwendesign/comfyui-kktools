@@ -385,9 +385,28 @@ def _read_skills_index():
 
 def _write_skills_index(data):
     SKILLS_LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
-    temp_path = SKILLS_INDEX_PATH.with_suffix(".json.tmp")
-    temp_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    os.replace(temp_path, SKILLS_INDEX_PATH)
+    # A fixed ``index.json.tmp`` is unsafe here: imports may trigger several
+    # overlapping writes and Windows refuses to replace a temporary file while
+    # another request still has it open.  Give every write its own sibling file
+    # and retry briefly for antivirus/indexer sharing locks on the destination.
+    temp_path = SKILLS_INDEX_PATH.with_name(
+        f".{SKILLS_INDEX_PATH.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+    )
+    try:
+        temp_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        for attempt in range(6):
+            try:
+                os.replace(temp_path, SKILLS_INDEX_PATH)
+                return
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
+    finally:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _skill_record(skill_id):
