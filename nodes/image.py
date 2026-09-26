@@ -964,8 +964,9 @@ class kkBatchImageLoader:
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "MASK", "INT", "STRING")
-    RETURN_NAMES = ("images", "masks", "loaded_count", "file_info")
+    RETURN_TYPES = ("IMAGE", "MASK", "INT", "STRING", "IMAGE")
+    RETURN_NAMES = ("images", "masks", "loaded_count", "file_info", "逐张输出")
+    OUTPUT_IS_LIST = (False, False, False, False, True)
     FUNCTION = "load_images"
     CATEGORY = "🌟kktools/图像"
     
@@ -993,7 +994,7 @@ class kkBatchImageLoader:
                 print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
-                return (empty_tensor, empty_mask, 0, error_msg)
+                return (empty_tensor, empty_mask, 0, error_msg, [empty_tensor])
             
             # 获取支持的图像文件扩展名
             extensions = self._get_supported_extensions(file_extensions)
@@ -1012,7 +1013,7 @@ class kkBatchImageLoader:
                 print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
-                return (empty_tensor, empty_mask, 0, error_msg)
+                return (empty_tensor, empty_mask, 0, error_msg, [empty_tensor])
             
             # 根据加载顺序调整文件列表
             if load_order == "reverse":
@@ -1051,7 +1052,7 @@ class kkBatchImageLoader:
                 print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
-                return (empty_tensor, empty_mask, 0, error_msg)
+                return (empty_tensor, empty_mask, 0, error_msg, [empty_tensor])
             
             # 加载图像
             images = []
@@ -1086,11 +1087,16 @@ class kkBatchImageLoader:
                 print(f"kkBatchImageLoader Error: {error_msg}")
                 empty_tensor = torch.zeros((1, 512, 512, 3))
                 empty_mask = torch.zeros((1, 512, 512, 1))
-                return (empty_tensor, empty_mask, 0, error_msg)
+                return (empty_tensor, empty_mask, 0, error_msg, [empty_tensor])
             
-            # 合并所有图像张量
-            images_tensor = torch.cat(images, dim=0)
-            masks_tensor = torch.cat(masks, dim=0)
+            image_shapes = {tuple(image.shape[1:]) for image in images}
+            if len(image_shapes) == 1:
+                images_tensor = torch.cat(images, dim=0)
+                masks_tensor = torch.cat(masks, dim=0)
+            else:
+                print("⚠️ 图片尺寸不一致，images/masks 仅输出第一张；请使用逐张输出连接后续节点")
+                images_tensor = images[0]
+                masks_tensor = masks[0]
             
             # 生成文件信息
             file_info = self._generate_file_info(loaded_files, total_files, load_order, load_interval, start_index, seed, batch_index)
@@ -1109,14 +1115,14 @@ class kkBatchImageLoader:
             print(f"  实际加载: {len(images)} 个")
             print(f"  输出尺寸: {images_tensor.shape}")
             
-            return (images_tensor, masks_tensor, len(images), file_info)
+            return (images_tensor, masks_tensor, len(images), file_info, images)
             
         except Exception as e:
             error_msg = f"批量加载图像时出错: {str(e)}"
             print(f"kkBatchImageLoader Error: {error_msg}")
             empty_tensor = torch.zeros((1, 512, 512, 3))
             empty_mask = torch.zeros((1, 512, 512, 1))
-            return (empty_tensor, empty_mask, 0, error_msg)
+            return (empty_tensor, empty_mask, 0, error_msg, [empty_tensor])
     
     def _get_supported_extensions(self, file_extensions):
         """获取支持的图像文件扩展名列表"""

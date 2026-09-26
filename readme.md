@@ -185,7 +185,9 @@ pip install torchaudio
 - 从目录批量读取图像，支持顺序、倒序、随机读取，也支持分批次取图。
 - 常用参数：`directory`、`load_order`、`load_interval`、`start_index`、`max_images`、`file_extensions`、`seed`、`batch_index`
 - 适合批量测试、批量预处理、数据集抽样。
-- 输出：`images`、`masks`、`loaded_count`、`file_info`
+- `逐张输出` 会把每张原始尺寸图片作为独立 `IMAGE` 列表输出；连接 `kkGPT-image_API` 时，ComfyUI 会逐张执行生成。
+- 图片尺寸一致时，`images` 和 `masks` 仍输出普通批次；尺寸不一致时这两个输出仅返回第一张，并提示改用 `逐张输出`。
+- 输出：`images`、`masks`、`loaded_count`、`file_info`、`逐张输出`
 
 ### kkImageTileSplit2x2（图像2x2分块）
 

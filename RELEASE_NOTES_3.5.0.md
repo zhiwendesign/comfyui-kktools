@@ -4,6 +4,12 @@
 
 ## 更新概览
 
+### 2026-09-26 批量图片逐张输出
+
+- `kkBatchImageLoader（批量图像加载）` 新增 `逐张输出`，保留每张图片的原始尺寸并作为列表交给 ComfyUI 逐项执行。
+- `逐张输出` 可直接连接 `kkGPT-image_API`，为目录中的每张图片分别发起生成请求。
+- 输入图片尺寸不一致时，原 `images` / `masks` 输出改为返回第一张，不再因批次拼接失败而输出 512×512 黑色占位图。
+
 ### 2026-09-22 Prompt 与 Markdown Skill 组合优化
 
 - `kkLLM（多厂商LLM）` 支持同时输入用户 Prompt 和 Markdown Skill，不再用 Markdown 直接覆盖 Prompt。
