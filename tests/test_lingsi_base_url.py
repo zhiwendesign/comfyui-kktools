@@ -33,6 +33,24 @@ def load_ppt():
 
 
 class LingsiBaseUrlTests(unittest.TestCase):
+    def test_generated_image_is_saved_to_output_directory(self):
+        module = load_lingsi()
+        old_output_dir = module.lingsi_image_output_dir
+        temp_dir = ROOT / ".tmp_lingsi_image_output_test"
+        temp_dir.mkdir(exist_ok=True)
+        module.lingsi_image_output_dir = lambda: temp_dir
+        try:
+            image = np.full((1, 12, 16, 3), 0.5, dtype=np.float32)
+            path = Path(module.save_generated_image(image, "gpt-image-2.5-flare"))
+            self.assertTrue(path.exists())
+            self.assertEqual(path.parent, temp_dir)
+            self.assertTrue(path.name.startswith("gpt-image-2.5-flare-"))
+        finally:
+            module.lingsi_image_output_dir = old_output_dir
+            for path in temp_dir.iterdir():
+                path.unlink()
+            temp_dir.rmdir()
+
     def test_default_endpoints_match_mindapi(self):
         module = load_lingsi()
         endpoints = module.resolve_api_endpoints("")

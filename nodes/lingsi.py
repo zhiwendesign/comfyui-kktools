@@ -1020,6 +1020,17 @@ def lingsi_ppt_output_dir():
     return root
 
 
+def lingsi_image_output_dir():
+    try:
+        import folder_paths
+
+        root = Path(folder_paths.get_output_directory()) / "kktools-gpt-image"
+    except Exception:
+        root = Path(__file__).resolve().parents[1] / "output" / "kktools-gpt-image"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def safe_filename(value, fallback="page"):
     clean = re.sub(r'[\\/:*?"<>|]+', "_", str(value or fallback))
     clean = re.sub(r"\s+", "_", clean).strip("._ ")
@@ -1035,6 +1046,18 @@ def save_ppt_page_image(images, title, page_no):
         raise RuntimeError("图像输入为空，无法写回 PPT束。")
     image = Image.fromarray((np.clip(arr[0], 0, 1) * 255).astype(np.uint8)).convert("RGB")
     path = lingsi_ppt_output_dir() / f"{safe_filename(title, 'page')}-p{int(page_no):03d}-{int(time.time())}.png"
+    image.save(path, format="PNG")
+    return str(path)
+
+
+def save_generated_image(images, model):
+    from PIL import Image
+
+    arr = tensor_to_numpy_batch(images)
+    image = Image.fromarray((np.clip(arr[0], 0, 1) * 255).astype(np.uint8)).convert("RGB")
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"{safe_filename(model, 'image')}-{timestamp}-{uuid.uuid4().hex[:8]}.png"
+    path = lingsi_image_output_dir() / filename
     image.save(path, format="PNG")
     return str(path)
 
@@ -1759,6 +1782,7 @@ class kkLingsiNativePromptImage:
                             image_fetch_attempts.extend(attempts)
                             continue
                         image_tensor, original_size, final_size, resized = image_bytes_to_tensor_info(image_bytes)
+                        saved_path = save_generated_image(image_tensor, model)
                         output_tensors.append(image_tensor)
                         response_items.append({
                             "index": len(output_tensors),
@@ -1768,6 +1792,7 @@ class kkLingsiNativePromptImage:
                             "original_size": {"width": original_size[0], "height": original_size[1]},
                             "output_size": {"width": final_size[0], "height": final_size[1]},
                             "resized_to_batch": resized,
+                            "saved_path": saved_path,
                             "image_fetch_attempts": attempts,
                         })
                         collected_in_response += 1
