@@ -18,7 +18,6 @@ function addStyles() {
     .kk-image-comparer__divider { position:absolute; top:0; bottom:0; left:50%; width:2px; transform:translateX(-1px); background:rgba(255,255,255,.9); box-shadow:0 0 5px rgba(0,0,0,.8); pointer-events:none; }
     .kk-image-comparer__label { position:absolute; top:9px; padding:3px 7px; border-radius:4px; background:rgba(0,0,0,.65); color:#fff; font:600 11px/1.2 sans-serif; pointer-events:none; }
     .kk-image-comparer__label--a { left:9px; } .kk-image-comparer__label--b { right:9px; }
-    .kk-image-comparer__empty { position:absolute; inset:0; display:grid; place-items:center; color:#999; font-size:12px; pointer-events:none; }
   `;
   document.head.append(style);
 }
@@ -55,15 +54,18 @@ function setup(node) {
   labelB.className = "kk-image-comparer__label kk-image-comparer__label--b";
   labelA.textContent = "A";
   labelB.textContent = "B";
-  const empty = document.createElement("div");
-  empty.className = "kk-image-comparer__empty";
-  empty.textContent = "连接图像后运行工作流";
-  stage.append(imageA, imageB, divider, labelA, labelB, empty);
+  stage.append(imageA, imageB, divider, labelA, labelB);
   root.append(toolbar, stage);
 
   const state = { images: [], a: 0, b: 1, position: 50, stageHeight: 300 };
 
   function updateLayout() {
+    if (!state.images.length) {
+      state.stageHeight = 0;
+      node.setSize?.([Math.max(node.size?.[0] || 0, 400), 110]);
+      node.graph?.setDirtyCanvas?.(true, true);
+      return;
+    }
     const source = imageA.naturalWidth ? imageA : imageB;
     const ratio = source.naturalWidth && source.naturalHeight ? source.naturalWidth / source.naturalHeight : 1;
     const width = Math.max(240, root.clientWidth || (node.size?.[0] || 400) - 16);
@@ -107,7 +109,8 @@ function setup(node) {
     divider.style.display = hasPair ? "block" : "none";
     labelA.style.display = a ? "block" : "none";
     labelB.style.display = hasPair ? "block" : "none";
-    empty.style.display = a ? "none" : "grid";
+    root.style.display = a ? "flex" : "none";
+    stage.style.display = a ? "block" : "none";
     toolbar.style.display = state.images.length > 1 ? "flex" : "none";
     stage.style.cursor = hasPair ? "ew-resize" : "default";
     imageB.style.clipPath = `inset(0 ${100 - state.position}% 0 0)`;
@@ -132,7 +135,7 @@ function setup(node) {
   imageB.onload = () => { if (!imageA.naturalWidth) updateLayout(); };
 
   node.__kkImageComparer = { state, render };
-  node.addDOMWidget("图像对比", "kk-image-comparer", root, { serialize:false, hideOnZoom:false, getMinHeight:() => state.stageHeight + (state.images.length > 1 ? 38 : 8) });
+  node.addDOMWidget("图像对比", "kk-image-comparer", root, { serialize:false, hideOnZoom:false, getMinHeight:() => state.images.length ? state.stageHeight + (state.images.length > 1 ? 38 : 8) : 0 });
   const originalExecuted = node.onExecuted;
   node.onExecuted = function (message, ...args) {
     const result = originalExecuted?.call(this, message, ...args);
@@ -157,7 +160,7 @@ function setup(node) {
     resizeObserver.disconnect();
     return originalRemoved?.apply(this, args);
   };
-  if ((node.size?.[0] || 0) < 400) node.setSize?.([400, Math.max(node.size?.[1] || 0, 410)]);
+  if ((node.size?.[0] || 0) < 400) node.setSize?.([400, node.size?.[1] || 110]);
   render();
   requestAnimationFrame(updateLayout);
 }
