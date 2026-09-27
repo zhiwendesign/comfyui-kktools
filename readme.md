@@ -81,7 +81,7 @@ pip install torchaudio
 
 | 模块 | 分类 | 源码 |
 |---|---|---|
-| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
+| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[image_comparer.py](nodes/image_comparer.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
 | 数学计算 | `🌟kktools/数学计算` | [Math.py](nodes/Math.py) |
 | 提示词 | `🌟kktools/提示词` | [prompts.py](nodes/prompts.py) |
 | 尺寸 | `🌟kktools/尺寸` | [size.py](nodes/size.py) |
@@ -112,11 +112,11 @@ pip install torchaudio
 
 ## 🧾 全部节点与分类
 
-当前代码共提供 72 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+当前代码共提供 73 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
 
 | 分类 | 节点标识（界面显示名） |
 |---|---|
-| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
+| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkimage Comparer`（图像对比）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
 | `🌟kktools/数学计算` | `kkMathExpressionNode`（数学表达式）、`kkRegexNode`（正则表达式）、`kkRegexNodeAdvanced`（正则表达式高级） |
 | `🌟kktools/提示词` | `kkBatchPrompt`（批量提示词）、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`（多厂商LLM） |
 | `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
@@ -142,7 +142,7 @@ pip install torchaudio
 
 ## 🖼️ 图像模块
 
-源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/image_comparer.py](nodes/image_comparer.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
 
 ### kkImageOverlay（图像叠加）
 
@@ -188,6 +188,13 @@ pip install torchaudio
 - `逐张输出` 会把每张原始尺寸图片作为独立 `IMAGE` 列表输出；连接 `kkGPT-image_API` 时，ComfyUI 会逐张执行生成。
 - 图片尺寸一致时，`images` 和 `masks` 仍输出普通批次；尺寸不一致时这两个输出仅返回第一张，并提示改用 `逐张输出`。
 - 输出：`images`、`masks`、`loaded_count`、`file_info`、`逐张输出`
+
+### kkimage Comparer（图像对比）
+
+- 可选输入 `image_a` 和 `image_b`，支持只连接一个图像 batch，从 batch 中选择任意两张对比。
+- 支持“滑动”和“点击”两种交互方式；滑动模式跟随鼠标位置，点击模式按住显示 B 图。
+- 两张图可以使用不同分辨率和长宽比，预览时会分别等比缩放，不会修改原图尺寸。
+- 该节点用于界面预览，无图像输出。
 
 ### kkImageTileSplit2x2（图像2x2分块）
 

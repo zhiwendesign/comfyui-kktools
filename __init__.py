@@ -24,6 +24,7 @@ NODE_CHINESE_NAME_MAPPINGS = {
     "kkBatchPrompt": "批量提示词",
     "kkGetImage": "获取图像尺寸",
     "kkImageGridMerge": "图像宫格合并",
+    "kkimage Comparer": "图像对比",
     "kkImageFrame": "图像边框",
     "kkImageOverlay": "图像叠加",
     "kkImageSplit": "图像切割",
