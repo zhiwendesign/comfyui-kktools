@@ -5,6 +5,7 @@ import time
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -33,6 +34,25 @@ def load_ppt():
 
 
 class LingsiBaseUrlTests(unittest.TestCase):
+    def test_generated_image_download_retries_timeout(self):
+        module = load_lingsi()
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b"image-bytes"
+
+        with mock.patch.object(module.urllib.request, "urlopen", side_effect=[TimeoutError("slow"), TimeoutError("slow"), Response()]) as urlopen:
+            with mock.patch.object(module.time, "sleep"):
+                result = module._image_bytes_from_url("https://example.com/image.png", "secret")
+        self.assertEqual(result, b"image-bytes")
+        self.assertEqual(urlopen.call_count, 3)
+
     def test_generated_image_is_saved_to_output_directory(self):
         module = load_lingsi()
         old_output_dir = module.lingsi_image_output_dir

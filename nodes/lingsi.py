@@ -56,6 +56,7 @@ IMAGE_EDITS_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, IMAGE_EDITS_ROUTE)
 BANANA_GENERATE_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, BANANA_GENERATE_ROUTE)
 ENDPOINT = CHAT_ENDPOINT
 REQUEST_TIMEOUT_SECONDS = 300
+IMAGE_DOWNLOAD_RETRIES = 3
 MAX_PIXELS = 8_294_400
 DEFAULT_LINGSI_PPT_CONCURRENCY = 3
 DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
@@ -691,22 +692,38 @@ def _image_bytes_from_data_url(data_url):
     return base64.b64decode(encoded + padding)
 
 
-def _image_bytes_from_url(url, api_key):
-    headers = {
-        "User-Agent": "ComfyUI-Lingsi-MindAPI-Node/1.0",
-        "Accept": "image/*,*/*;q=0.8",
-    }
+def _read_image_url(url, headers, api_key):
     request = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return response.read()
     except urllib.error.HTTPError as exc:
-        if exc.code not in (401, 403):
+        if exc.code not in (401, 403) or "Authorization" in headers:
             raise
-        headers["Authorization"] = f"Bearer {api_key}"
-        request = urllib.request.Request(url, headers=headers, method="GET")
+        authorized_headers = dict(headers)
+        authorized_headers["Authorization"] = f"Bearer {api_key}"
+        request = urllib.request.Request(url, headers=authorized_headers, method="GET")
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return response.read()
+
+
+def _image_bytes_from_url(url, api_key):
+    headers = {
+        "User-Agent": "ComfyUI-Lingsi-MindAPI-Node/1.0",
+        "Accept": "image/*,*/*;q=0.8",
+    }
+    last_error = None
+    for attempt in range(1, IMAGE_DOWNLOAD_RETRIES + 1):
+        try:
+            return _read_image_url(url, headers, api_key)
+        except urllib.error.HTTPError:
+            raise
+        except (TimeoutError, urllib.error.URLError, ConnectionError) as exc:
+            last_error = exc
+            if attempt < IMAGE_DOWNLOAD_RETRIES:
+                print(f"[Lingsi] image download failed, retrying {attempt}/{IMAGE_DOWNLOAD_RETRIES}: {exc}")
+                time.sleep(attempt * 2)
+    raise last_error
 
 
 def image_bytes_from_candidate(candidate, api_key):
