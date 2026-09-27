@@ -62,18 +62,22 @@ function setup(node) {
   function updateLayout() {
     if (!state.images.length) {
       state.stageHeight = 0;
-      node.setSize?.([Math.max(node.size?.[0] || 0, 400), 110]);
+      root.style.width = "384px";
+      node.setSize?.([400, 110]);
       node.graph?.setDirtyCanvas?.(true, true);
       return;
     }
     const source = imageA.naturalWidth ? imageA : imageB;
     const ratio = source.naturalWidth && source.naturalHeight ? source.naturalWidth / source.naturalHeight : 1;
-    const width = Math.max(240, root.clientWidth || (node.size?.[0] || 400) - 16);
-    state.stageHeight = Math.round(Math.max(240, Math.min(620, width / Math.max(0.55, Math.min(1.8, ratio)))));
+    const boundedRatio = Math.max(0.55, Math.min(1.8, ratio));
+    const desiredNodeWidth = Math.round(Math.max(400, Math.min(560, 440 * Math.sqrt(boundedRatio))));
+    const contentWidth = desiredNodeWidth - 16;
+    root.style.width = `${contentWidth}px`;
+    state.stageHeight = Math.round(Math.max(240, Math.min(680, contentWidth / boundedRatio)));
     stage.style.height = `${state.stageHeight}px`;
     const desiredNodeHeight = state.stageHeight + (state.images.length > 1 ? 142 : 110);
-    if (Math.abs((node.size?.[1] || 0) - desiredNodeHeight) > 3) {
-      node.setSize?.([Math.max(node.size?.[0] || 0, 400), desiredNodeHeight]);
+    if (Math.abs((node.size?.[0] || 0) - desiredNodeWidth) > 3 || Math.abs((node.size?.[1] || 0) - desiredNodeHeight) > 3) {
+      node.setSize?.([desiredNodeWidth, desiredNodeHeight]);
     }
     node.graph?.setDirtyCanvas?.(true, true);
   }
@@ -160,7 +164,8 @@ function setup(node) {
     resizeObserver.disconnect();
     return originalRemoved?.apply(this, args);
   };
-  if ((node.size?.[0] || 0) < 400) node.setSize?.([400, node.size?.[1] || 110]);
+  root.style.width = "384px";
+  if ((node.size?.[0] || 0) !== 400) node.setSize?.([400, node.size?.[1] || 110]);
   render();
   requestAnimationFrame(updateLayout);
 }
