@@ -57,28 +57,35 @@ function setup(node) {
   stage.append(imageA, imageB, divider, labelA, labelB);
   root.append(toolbar, stage);
 
-  const state = { images: [], a: 0, b: 1, position: 50, stageHeight: 300 };
+  const state = { images: [], a: 0, b: 1, position: 50, stageHeight: 300, autoSized: false };
 
-  function updateLayout() {
+  function updateLayout(autoSize = false) {
     if (!state.images.length) {
       state.stageHeight = 0;
       root.style.width = "384px";
-      node.setSize?.([400, 110]);
+      if (autoSize) node.setSize?.([400, 110]);
       node.graph?.setDirtyCanvas?.(true, true);
       return;
     }
     const source = imageA.naturalWidth ? imageA : imageB;
     const ratio = source.naturalWidth && source.naturalHeight ? source.naturalWidth / source.naturalHeight : 1;
     const boundedRatio = Math.max(0.55, Math.min(1.8, ratio));
-    const desiredNodeWidth = Math.round(Math.max(400, Math.min(560, 440 * Math.sqrt(boundedRatio))));
-    const contentWidth = desiredNodeWidth - 16;
-    root.style.width = `${contentWidth}px`;
-    state.stageHeight = Math.round(Math.max(240, Math.min(680, contentWidth / boundedRatio)));
-    stage.style.height = `${state.stageHeight}px`;
-    const desiredNodeHeight = state.stageHeight + (state.images.length > 1 ? 142 : 110);
-    if (Math.abs((node.size?.[0] || 0) - desiredNodeWidth) > 3 || Math.abs((node.size?.[1] || 0) - desiredNodeHeight) > 3) {
-      node.setSize?.([desiredNodeWidth, desiredNodeHeight]);
+    const layoutOverhead = state.images.length > 1 ? 142 : 110;
+    let nodeWidth = Math.max(240, node.size?.[0] || 400);
+    let nodeHeight = Math.max(layoutOverhead + 180, node.size?.[1] || 410);
+    if (autoSize) {
+      nodeWidth = Math.round(Math.max(400, Math.min(560, 440 * Math.sqrt(boundedRatio))));
+      const naturalContentWidth = nodeWidth - 16;
+      const naturalStageHeight = Math.round(Math.max(240, Math.min(680, naturalContentWidth / boundedRatio)));
+      nodeHeight = naturalStageHeight + layoutOverhead;
+      node.setSize?.([nodeWidth, nodeHeight]);
+    } else if ((node.size?.[0] || 0) < 240 || (node.size?.[1] || 0) < layoutOverhead + 180) {
+      node.setSize?.([nodeWidth, nodeHeight]);
     }
+    const contentWidth = Math.max(224, nodeWidth - 16);
+    root.style.width = `${contentWidth}px`;
+    state.stageHeight = nodeHeight - layoutOverhead;
+    stage.style.height = `${state.stageHeight}px`;
     node.graph?.setDirtyCanvas?.(true, true);
   }
 
@@ -133,10 +140,18 @@ function setup(node) {
     if (state.images.length > 1) setPosition(event);
   });
   root.addEventListener("wheel", (event) => event.stopPropagation());
-  selectA.onchange = () => { state.a = Number(selectA.value); render(); requestAnimationFrame(updateLayout); };
-  selectB.onchange = () => { state.b = Number(selectB.value); render(); requestAnimationFrame(updateLayout); };
-  imageA.onload = updateLayout;
-  imageB.onload = () => { if (!imageA.naturalWidth) updateLayout(); };
+  selectA.onchange = () => { state.a = Number(selectA.value); render(); requestAnimationFrame(() => updateLayout(false)); };
+  selectB.onchange = () => { state.b = Number(selectB.value); render(); requestAnimationFrame(() => updateLayout(false)); };
+  imageA.onload = () => {
+    updateLayout(!state.autoSized);
+    state.autoSized = true;
+  };
+  imageB.onload = () => {
+    if (!imageA.naturalWidth) {
+      updateLayout(!state.autoSized);
+      state.autoSized = true;
+    }
+  };
 
   node.__kkImageComparer = { state, render };
   node.addDOMWidget("图像对比", "kk-image-comparer", root, { serialize:false, hideOnZoom:false, getMinHeight:() => state.images.length ? state.stageHeight + (state.images.length > 1 ? 38 : 8) : 0 });
@@ -154,20 +169,19 @@ function setup(node) {
     fillSelect(selectA, state.a);
     fillSelect(selectB, state.b);
     render();
-    requestAnimationFrame(updateLayout);
+    requestAnimationFrame(() => updateLayout(false));
     return result;
   };
-  const resizeObserver = new ResizeObserver(() => requestAnimationFrame(updateLayout));
-  resizeObserver.observe(root);
-  const originalRemoved = node.onRemoved;
-  node.onRemoved = function (...args) {
-    resizeObserver.disconnect();
-    return originalRemoved?.apply(this, args);
+  const originalResize = node.onResize;
+  node.onResize = function (...args) {
+    const result = originalResize?.apply(this, args);
+    requestAnimationFrame(() => updateLayout(false));
+    return result;
   };
   root.style.width = "384px";
   if ((node.size?.[0] || 0) !== 400) node.setSize?.([400, node.size?.[1] || 110]);
   render();
-  requestAnimationFrame(updateLayout);
+  requestAnimationFrame(() => updateLayout(false));
 }
 
 app.registerExtension({
