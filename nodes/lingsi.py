@@ -62,7 +62,7 @@ DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
 DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 15
 MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 500
 MAX_REFERENCE_IMAGES = 9
-CONTENT_MODERATION_LOG = "生成图像为敏感内容，请修改提示词或上传参考图像"
+CONTENT_MODERATION_LOG = "内容审核未通过，已跳过当前图片并继续后续任务"
 
 MODELS = [
     "gpt-image-2.5-sunburst",
@@ -186,7 +186,13 @@ def is_banana_model(model):
 
 def is_content_moderation_error(exc):
     message = str(exc or "").lower()
-    return any(marker in message for marker in ("content blocked", "nsfw", "content moderation"))
+    return any(marker in message for marker in (
+        "content blocked",
+        "content_filter",
+        "content moderation",
+        "appear to be unsafe",
+        "nsfw",
+    ))
 
 
 def moderation_fallback_image(image=None):
