@@ -20,7 +20,7 @@ class kkImageComparer(PreviewImage):
     FUNCTION = "compare_images"
     CATEGORY = "🌟kktools/图像"
     OUTPUT_NODE = True
-    DESCRIPTION = "交互式对比两张图像，支持不同尺寸和批次选图。"
+    DESCRIPTION = "交互式对比两张图像，支持不同尺寸和批次输入。"
 
     def compare_images(self, image_a=None, image_b=None, prompt=None, extra_pnginfo=None):
         result = {"ui": {"a_images": [], "b_images": []}}

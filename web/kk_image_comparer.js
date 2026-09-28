@@ -10,8 +10,6 @@ function addStyles() {
   style.id = STYLE_ID;
   style.textContent = `
     .kk-image-comparer { box-sizing:border-box; display:flex; flex-direction:column; gap:7px; width:100%; padding:4px; color:var(--fg-color); }
-    .kk-image-comparer__toolbar { display:flex; gap:6px; align-items:center; }
-    .kk-image-comparer__select { min-width:0; flex:1; height:26px; padding:0 7px; border:1px solid var(--border-color); border-radius:5px; background:var(--comfy-input-bg); color:var(--input-text); }
     .kk-image-comparer__stage { position:relative; width:100%; height:300px; overflow:hidden; border:1px solid var(--border-color); border-radius:7px; background:#111; cursor:ew-resize; user-select:none; touch-action:none; }
     .kk-image-comparer__layer { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; pointer-events:none; }
     .kk-image-comparer__layer--b { clip-path:inset(0 50% 0 0); }
@@ -33,12 +31,6 @@ function setup(node) {
   addStyles();
   const root = document.createElement("div");
   root.className = "kk-image-comparer";
-  const toolbar = document.createElement("div");
-  toolbar.className = "kk-image-comparer__toolbar";
-  const selectA = document.createElement("select");
-  const selectB = document.createElement("select");
-  selectA.className = selectB.className = "kk-image-comparer__select";
-  toolbar.append(selectA, selectB);
   const stage = document.createElement("div");
   stage.className = "kk-image-comparer__stage";
   const imageA = document.createElement("img");
@@ -52,10 +44,10 @@ function setup(node) {
   const labelB = document.createElement("span");
   labelA.className = "kk-image-comparer__label kk-image-comparer__label--a";
   labelB.className = "kk-image-comparer__label kk-image-comparer__label--b";
-  labelA.textContent = "A";
-  labelB.textContent = "B";
+  labelA.textContent = "image_a";
+  labelB.textContent = "image_b";
   stage.append(imageA, imageB, divider, labelA, labelB);
-  root.append(toolbar, stage);
+  root.append(stage);
 
   const state = { images: [], a: 0, b: 1, position: 50, stageHeight: 300, autoSized: false };
 
@@ -70,7 +62,7 @@ function setup(node) {
     const source = imageA.naturalWidth ? imageA : imageB;
     const ratio = source.naturalWidth && source.naturalHeight ? source.naturalWidth / source.naturalHeight : 1;
     const boundedRatio = Math.max(0.55, Math.min(1.8, ratio));
-    const layoutOverhead = state.images.length > 1 ? 142 : 110;
+    const layoutOverhead = 110;
     let nodeWidth = Math.max(240, node.size?.[0] || 400);
     let nodeHeight = Math.max(layoutOverhead + 180, node.size?.[1] || 410);
     if (autoSize) {
@@ -96,17 +88,6 @@ function setup(node) {
     else element.removeAttribute("src");
   }
 
-  function fillSelect(select, selected) {
-    select.replaceChildren();
-    state.images.forEach((item, index) => {
-      const option = document.createElement("option");
-      option.value = String(index);
-      option.textContent = item.label;
-      option.selected = index === selected;
-      select.append(option);
-    });
-  }
-
   function render() {
     const a = state.images[state.a];
     const b = state.images[state.b];
@@ -122,7 +103,6 @@ function setup(node) {
     labelB.style.display = hasPair ? "block" : "none";
     root.style.display = a ? "flex" : "none";
     stage.style.display = a ? "block" : "none";
-    toolbar.style.display = state.images.length > 1 ? "flex" : "none";
     stage.style.cursor = hasPair ? "ew-resize" : "default";
     imageB.style.clipPath = `inset(0 ${100 - state.position}% 0 0)`;
     imageB.style.opacity = "1";
@@ -140,8 +120,6 @@ function setup(node) {
     if (state.images.length > 1) setPosition(event);
   });
   root.addEventListener("wheel", (event) => event.stopPropagation());
-  selectA.onchange = () => { state.a = Number(selectA.value); render(); requestAnimationFrame(() => updateLayout(false)); };
-  selectB.onchange = () => { state.b = Number(selectB.value); render(); requestAnimationFrame(() => updateLayout(false)); };
   imageA.onload = () => {
     updateLayout(!state.autoSized);
     state.autoSized = true;
@@ -154,20 +132,18 @@ function setup(node) {
   };
 
   node.__kkImageComparer = { state, render };
-  node.addDOMWidget("图像对比", "kk-image-comparer", root, { serialize:false, hideOnZoom:false, getMinHeight:() => state.images.length ? state.stageHeight + (state.images.length > 1 ? 38 : 8) : 0 });
+  node.addDOMWidget("图像对比", "kk-image-comparer", root, { serialize:false, hideOnZoom:false, getMinHeight:() => state.images.length ? state.stageHeight + 8 : 0 });
   const originalExecuted = node.onExecuted;
   node.onExecuted = function (message, ...args) {
     const result = originalExecuted?.call(this, message, ...args);
     const aImages = Array.isArray(message?.a_images) ? message.a_images : [];
     const bImages = Array.isArray(message?.b_images) ? message.b_images : [];
     state.images = [
-      ...aImages.map((item, index) => ({ label:`A${index + 1}`, url:imageUrl(item) })),
-      ...bImages.map((item, index) => ({ label:`B${index + 1}`, url:imageUrl(item) })),
+      ...aImages.map((item) => ({ url:imageUrl(item) })),
+      ...bImages.map((item) => ({ url:imageUrl(item) })),
     ];
     state.a = 0;
     state.b = bImages.length ? aImages.length : (aImages.length > 1 ? 1 : 0);
-    fillSelect(selectA, state.a);
-    fillSelect(selectB, state.b);
     render();
     requestAnimationFrame(() => updateLayout(false));
     return result;
