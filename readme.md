@@ -19,7 +19,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
 
-发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkGPT-image_API`。
+发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；kaka 生图统一使用 `kkGPT-image_API`。
 
 ## 🚀 安装
 
@@ -235,17 +235,20 @@ pip install torchaudio
 
 ### kkGPT-image_API
 
-- 基于灵思 MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 基于 kaka MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
 - 可选的 `API配置` 输入用于连接 `kk_API配置`，配置束中的 Base URL 和 API Key 优先于节点内直接填写的值。
 - 支持 `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率、质量和生成数量。
 - 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`quality`、`count`、`base_url`
 - `quality` 支持 `auto / low / medium / high / xhigh / max`，默认 `high`；`xhigh` 和 `max` 仅用于 GPT Image 2.5。GPT Image 的文生图、参考图编辑和 PPT 批量模式都会传给接口。
 - `base_url` 默认是 `https://mindapi.cc`；填第三方兼容站点时，节点仍会自动使用当前固定路由。
 - 可选的 `ratio` 字符串输入可连接 `kkSizeNode.ratio`，连接后会覆盖 `aspect_ratio` 下拉框；传入比例仍须属于生图节点支持的比例列表。
-- 可选输入：默认只有 `image`；连接后自动显示下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
+- 参考图输入默认显示 `image`；连接后自动增加下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
+- 字符串输入默认显示 `string`；连接后同样自动增加 `string_1` 至 `string_8`（共 9 个），可把人物、风格或其他提示词片段接入节点。
+- 在 `prompt` 输入框键入 `@` 可选择已连接的图像或字符串；图像会按连接顺序写入 `@Image1`、`@Image2` 等引用，字符串使用 `@string`、`@string_1` 等输入名。
+- 示例提示词：`以 @Image1 中的人物为主体，参考 @Image2 的色彩与光影；人物描述：@string；整体风格：@string_1。`
 - 不接参考图时为文生图；接入任意参考图时为多图参考生图。
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
-- 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`。内容审核失败时，日志会提示修改提示词或上传参考图像。
+- 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`、`Prompt`。`Prompt` 输出已展开所有图像和字符串引用后的完整提示词；内容审核失败时，日志会提示修改提示词或上传参考图像。
 
 ### kkimage2_GAPI（已停用）
 

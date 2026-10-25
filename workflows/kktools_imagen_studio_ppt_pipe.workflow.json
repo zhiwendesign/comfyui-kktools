@@ -105,6 +105,7 @@
     {
       "id": 6,
       "type": "kkimage2_灵思API",
+      "title": "kkGPT-image_API",
       "pos": [2540, 100],
       "size": [450, 360],
       "flags": {},

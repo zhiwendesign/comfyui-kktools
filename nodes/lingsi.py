@@ -1,6 +1,6 @@
 """
 ComfyUI Custom Node: kkLingsiNativePromptImage
-灵思原生 Prompt 生图节点 - 调用 MindAPI 生成图像
+kaka 原生 Prompt 生图节点 - 调用 MindAPI 生成图像
 """
 
 import base64
@@ -63,7 +63,10 @@ DEFAULT_LINGSI_PPT_RATE_LIMIT_RETRIES = 6
 DEFAULT_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 15
 MAX_LINGSI_PPT_RATE_LIMIT_WAIT_SECONDS = 500
 MAX_REFERENCE_IMAGES = 9
+MAX_PROMPT_STRINGS = 9
 CONTENT_MODERATION_LOG = "内容审核未通过，已跳过当前图片并继续后续任务"
+IMAGE_REFERENCE_RE = re.compile(r"@image(?P<index>\d*)(?!\w)", re.IGNORECASE | re.ASCII)
+STRING_REFERENCE_RE = re.compile(r"@string(?P<index>_\d+)?(?!\w)", re.IGNORECASE | re.ASCII)
 
 MODELS = [
     "gpt-image-2.5-sunburst",
@@ -278,7 +281,7 @@ def _sanitize_debug_value(value):
 def _headers(api_key, content_type="application/json", accept=None):
     headers = {
         "Authorization": f"Bearer {str(api_key or '').strip()}",
-        "User-Agent": "ComfyUI-Lingsi-MindAPI-Node/1.0",
+        "User-Agent": "ComfyUI-kaka-MindAPI-Node/1.0",
         "Connection": "close",
     }
     if content_type:
@@ -709,7 +712,7 @@ def _read_image_url(url, headers, api_key):
 
 def _image_bytes_from_url(url, api_key):
     headers = {
-        "User-Agent": "ComfyUI-Lingsi-MindAPI-Node/1.0",
+        "User-Agent": "ComfyUI-kaka-MindAPI-Node/1.0",
         "Accept": "image/*,*/*;q=0.8",
     }
     last_error = None
@@ -721,7 +724,7 @@ def _image_bytes_from_url(url, api_key):
         except (TimeoutError, urllib.error.URLError, ConnectionError) as exc:
             last_error = exc
             if attempt < IMAGE_DOWNLOAD_RETRIES:
-                print(f"[Lingsi] image download failed, retrying {attempt}/{IMAGE_DOWNLOAD_RETRIES}: {exc}")
+                print(f"[kaka] image download failed, retrying {attempt}/{IMAGE_DOWNLOAD_RETRIES}: {exc}")
                 time.sleep(attempt * 2)
     raise last_error
 
@@ -811,6 +814,47 @@ def normalize_reference_images(images, limit=MAX_REFERENCE_IMAGES):
         if len(references) >= limit:
             return references
     return references
+
+
+def resolve_prompt_image_references(prompt, image_count):
+    text = str(prompt or "")
+    parts = []
+    position = 0
+    previous_end = -1
+    for match in IMAGE_REFERENCE_RE.finditer(text):
+        start = match.start()
+        if start > 0 and start != previous_end and (text[start - 1].isalnum() or text[start - 1] == "_"):
+            continue
+        index = int(match.group("index") or 1)
+        if not 1 <= index <= image_count:
+            continue
+        parts.append(text[position:start])
+        parts.append(f"image {index}")
+        position = match.end()
+        previous_end = match.end()
+    parts.append(text[position:])
+    return "".join(parts)
+
+
+def resolve_prompt_string_references(prompt, values):
+    text = str(prompt or "")
+    parts = []
+    position = 0
+    previous_end = -1
+    for match in STRING_REFERENCE_RE.finditer(text):
+        start = match.start()
+        if start > 0 and start != previous_end and (text[start - 1].isalnum() or text[start - 1] == "_"):
+            continue
+        suffix = match.group("index")
+        index = int(suffix[1:]) if suffix else 0
+        if index >= len(values) or values[index] is None:
+            continue
+        parts.append(text[position:start])
+        parts.append(str(values[index]))
+        position = match.end()
+        previous_end = match.end()
+    parts.append(text[position:])
+    return "".join(parts)
 
 
 def image_bytes_to_tensor(image_bytes):
@@ -939,7 +983,7 @@ def emit_lingsi_ppt_status(node_id=None, stage="", message="", current=0, total=
         "level": str(level or "info"),
     }
     if payload["message"]:
-        print(f"[Lingsi PPT] {payload['message']}")
+        print(f"[kaka PPT] {payload['message']}")
     try:
         from server import PromptServer
 
@@ -1227,7 +1271,7 @@ def generate_lingsi_ppt_batch(
     emit_lingsi_ppt_status(
         node_id,
         "start",
-        f"开始灵思批量生图，共 {len(page_jobs)} 页，并发 {effective_concurrency}。",
+        f"开始 kaka 批量生图，共 {len(page_jobs)} 页，并发 {effective_concurrency}。",
         0,
         len(page_jobs),
         "running",
@@ -1238,7 +1282,7 @@ def generate_lingsi_ppt_batch(
         emit_lingsi_ppt_status(
             node_id,
             "submit",
-            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》提交灵思生图。",
+            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》提交 kaka 生图。",
             completed,
             len(page_jobs),
             "running",
@@ -1282,7 +1326,7 @@ def generate_lingsi_ppt_batch(
                     "warning",
                 )
                 print(
-                    f"[Lingsi PPT] rate limited page={page_no} title={title_text} "
+                    f"[kaka PPT] rate limited page={page_no} title={title_text} "
                     f"retry={retry_index}/{rate_limit_retries} wait={wait_seconds}s error={summary}"
                 )
                 time.sleep(wait_seconds)
@@ -1306,7 +1350,7 @@ def generate_lingsi_ppt_batch(
         emit_lingsi_ppt_status(
             node_id,
             "page-done",
-            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》灵思生图完成。",
+            f"第 {page_no}/{len(page_jobs)} 页《{title_text}》 kaka 生图完成。",
             completed + 1,
             len(page_jobs),
             "running",
@@ -1333,12 +1377,12 @@ def generate_lingsi_ppt_batch(
                 emit_lingsi_ppt_status(
                     node_id,
                     "error",
-                    f"第 {page_no} 页{title_text} 灵思生图失败：{summary}",
+                    f"第 {page_no} 页{title_text} kaka 生图失败：{summary}",
                     completed,
                     len(page_jobs),
                     "error",
                 )
-                raise RuntimeError(f"第 {page_no} 页{title_text} 灵思生图失败：{summary}") from exc
+                raise RuntimeError(f"第 {page_no} 页{title_text} kaka 生图失败：{summary}") from exc
             pages[page_index] = page
             images[page_index] = image
             results[page_index] = row
@@ -1367,7 +1411,7 @@ def generate_lingsi_ppt_batch(
     emit_lingsi_ppt_status(
         node_id,
         "done",
-        f"灵思批量生图完成：{completed}/{len(page_jobs)} 页。",
+        f"kaka 批量生图完成：{completed}/{len(page_jobs)} 页。",
         completed,
         len(page_jobs),
         "success",
@@ -1454,8 +1498,13 @@ class kkLingsiNativePromptImage:
                 "prompt": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "普通生图必填；连接模板束或 PPT束 时会忽略此输入。",
+                    "tooltip": "普通生图必填；输入 @ 可引用已连接的图像或字符串。连接模板束或 PPT束 时会忽略此输入。",
                 }),
+                "string": ("STRING", {"forceInput": True, "tooltip": "可在 prompt 中通过 @string 引用；连接后会自动显示下一个输入。"}),
+                **{
+                    f"string_{index}": ("STRING", {"forceInput": True, "tooltip": f"可在 prompt 中通过 @string_{index} 引用。"})
+                    for index in range(1, MAX_PROMPT_STRINGS)
+                },
                 "image": ("IMAGE", {"tooltip": "第一张参考图；连接后会自动显示下一个输入，最多 9 张。"}),
                 **{
                     f"image_{index}": ("IMAGE", {"tooltip": f"第 {index + 1} 张参考图。"})
@@ -1468,8 +1517,8 @@ class kkLingsiNativePromptImage:
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE, "STRING")
-    RETURN_NAMES = ("image", "raw_json", "PPT束", "日志")
+    RETURN_TYPES = ("IMAGE", "STRING", IMAGEN_STUDIO_PIPE_TYPE, "STRING", "STRING")
+    RETURN_NAMES = ("image", "raw_json", "PPT束", "日志", "Prompt")
     FUNCTION = "generate"
     CATEGORY = "🌟kktools/图像"
 
@@ -1516,18 +1565,22 @@ class kkLingsiNativePromptImage:
                     retry_wait_seconds=限流等待秒,
                     node_id=unique_id,
                 )
-                return image_batch, raw_json, ppt_pipe, "图像生成成功"
+                return image_batch, raw_json, ppt_pipe, "图像生成成功", ""
             except Exception as exc:
                 if not is_content_moderation_error(exc):
                     raise
-                return moderation_fallback_image(), str(exc), PPT束, CONTENT_MODERATION_LOG
+                return moderation_fallback_image(), str(exc), PPT束, CONTENT_MODERATION_LOG, ""
         extra_images = [kwargs.get(f"image_{index}") for index in range(1, MAX_REFERENCE_IMAGES)]
+        prompt_strings = [kwargs.get("string"), *[kwargs.get(f"string_{index}") for index in range(1, MAX_PROMPT_STRINGS)]]
         template_pipe = 模板束 if isinstance(模板束, dict) else {}
         effective_prompt = str(template_pipe.get("prompt") or "").strip() or str(prompt or "").strip()
+        effective_prompt = resolve_prompt_string_references(effective_prompt, prompt_strings)
+        reference_image_count = len(normalize_reference_images([image, *extra_images]))
+        complete_prompt = resolve_prompt_image_references(effective_prompt, reference_image_count).strip()
         try:
             image_batch, raw_json = self._generate_single(
                 api_key=api_key,
-                prompt=effective_prompt,
+                prompt=complete_prompt,
                 model=model,
                 aspect_ratio=aspect_ratio,
                 resolution=resolution,
@@ -1537,12 +1590,12 @@ class kkLingsiNativePromptImage:
                 images=extra_images,
                 base_url=base_url,
             )
-            return image_batch, raw_json, template_pipe, "图像生成成功"
+            return image_batch, raw_json, template_pipe, "图像生成成功", complete_prompt
         except Exception as exc:
             if not is_content_moderation_error(exc):
                 raise
             fallback_image = image if image is not None else next((item for item in extra_images if item is not None), None)
-            return moderation_fallback_image(fallback_image), str(exc), template_pipe, CONTENT_MODERATION_LOG
+            return moderation_fallback_image(fallback_image), str(exc), template_pipe, CONTENT_MODERATION_LOG, complete_prompt
 
     def _generate_single(self, api_key, prompt, model, aspect_ratio, resolution, count=1, image=None, base_url=DEFAULT_BASE_URL, images=None, quality=DEFAULT_QUALITY):
         api_key = str(api_key or "").strip()
@@ -1569,6 +1622,7 @@ class kkLingsiNativePromptImage:
 
         extra_images = images if isinstance(images, (list, tuple)) else [images]
         reference_images = normalize_reference_images([image, *extra_images])
+        prompt = resolve_prompt_image_references(prompt, len(reference_images))
         has_input_image = bool(reference_images)
         input_image_count = len(reference_images)
         is_gpt_image = is_gpt_image_model(model)
@@ -1716,7 +1770,7 @@ class kkLingsiNativePromptImage:
         loop_count = count if (is_banana or (is_gpt_image and has_input_image)) else 1
 
         print(
-            f"[Lingsi] model={model} route={route} aspect_ratio={aspect_ratio} "
+            f"[kaka] model={model} route={route} aspect_ratio={aspect_ratio} "
             f"resolution={resolution} eff_resolution={effective_resolution} "
             f"requested_size={requested_size} upstream_size={upstream_size} "
             f"output_target={output_target_size} count={count} "
@@ -1728,7 +1782,7 @@ class kkLingsiNativePromptImage:
                 if len(output_tensors) >= count:
                     break
                 print(
-                    f"[Lingsi] iter {index + 1}/{loop_count} route={route} "
+                    f"[kaka] iter {index + 1}/{loop_count} route={route} "
                     f"collected={len(output_tensors)}/{count}"
                 )
                 if is_gpt_image and has_input_image:
@@ -1780,7 +1834,7 @@ class kkLingsiNativePromptImage:
                     response_payload,
                     exclude_values=candidate_exclude_values,
                 )
-                print(f"[Lingsi] got {len(candidates)} image candidate(s)")
+                print(f"[kaka] got {len(candidates)} image candidate(s)")
 
                 collected_in_response = 0
                 image_fetch_attempts = []
@@ -1850,7 +1904,7 @@ class kkLingsiNativePromptImage:
                     debug["image_fetch_attempts"] = image_fetch_attempts
                     raise RuntimeError(_json_dumps(debug))
 
-            print(f"[Lingsi] done, collected {len(output_tensors)} image(s)")
+            print(f"[kaka] done, collected {len(output_tensors)} image(s)")
 
             output_sizes = {
                 (item["output_size"]["width"], item["output_size"]["height"])

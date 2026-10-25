@@ -114,8 +114,49 @@ class LingsiBaseUrlTests(unittest.TestCase):
         self.assertEqual(required["限流等待秒"][1]["max"], 500)
         self.assertEqual(optional["PPT束"][0], "IMAGEN_STUDIO_PIPE")
         self.assertEqual(optional["ratio"][0], "STRING")
+        self.assertEqual(optional["string"][0], "STRING")
+        self.assertTrue(optional["string"][1]["forceInput"])
+        self.assertEqual(optional["string_8"][0], "STRING")
         self.assertEqual(optional["API配置"][0], "KK_IMAGE_API_CONFIG")
-        self.assertEqual(module.kkGPT_image_API.RETURN_NAMES, ("image", "raw_json", "PPT束", "日志"))
+        self.assertEqual(module.kkGPT_image_API.RETURN_NAMES, ("image", "raw_json", "PPT束", "日志", "Prompt"))
+
+    def test_prompt_image_references_follow_connected_image_order(self):
+        module = load_lingsi()
+        prompt = "让 @Image2 采用 @Image1 的服装，@Image 保持主体；邮箱 user@image1.com 不变"
+        self.assertEqual(
+            module.resolve_prompt_image_references(prompt, 2),
+            "让 image 2 采用 image 1 的服装，image 1 保持主体；邮箱 user@image1.com 不变",
+        )
+
+    def test_prompt_image_reference_outside_connected_range_is_preserved(self):
+        module = load_lingsi()
+        self.assertEqual(
+            module.resolve_prompt_image_references("参考 @Image1 和 @Image3", 2),
+            "参考 image 1 和 @Image3",
+        )
+
+    def test_prompt_string_references_follow_input_names(self):
+        module = load_lingsi()
+        prompt = "主体：@string；补充：@string_1；邮箱 user@string_1.com；未连接 @string_2"
+        self.assertEqual(
+            module.resolve_prompt_string_references(prompt, ["女孩", "蓝色外套", None]),
+            "主体：女孩；补充：蓝色外套；邮箱 user@string_1.com；未连接 @string_2",
+        )
+
+    def test_generate_resolves_connected_strings_before_request(self):
+        module = load_lingsi()
+        node = module.kkGPT_image_API()
+        image = np.zeros((1, 8, 8, 3), dtype=np.float32)
+        node._generate_single = mock.Mock(return_value=(image, "{}"))
+        outputs = node.generate(
+            api_key="sk-secret-value",
+            prompt="@string，@string_1，参考 @Image1",
+            image=image,
+            string="女孩",
+            string_1="蓝色外套",
+        )
+        self.assertEqual(node._generate_single.call_args.kwargs["prompt"], "女孩，蓝色外套，参考 image 1")
+        self.assertEqual(outputs[4], "女孩，蓝色外套，参考 image 1")
 
     def test_lingsi_prompt_optional_for_ppt_pipe_but_required_for_single_mode(self):
         module = load_lingsi()
@@ -134,7 +175,7 @@ class LingsiBaseUrlTests(unittest.TestCase):
                 "pipe_type": "IMAGEN_STUDIO_PIPE",
                 "pages": [{"pageNo": 1, "title": "A", "prompt": "prompt 1"}],
             }
-            image, _raw_json, out_pipe, _log = node.generate(
+            image, _raw_json, out_pipe, _log, complete_prompt = node.generate(
                 api_key="sk-secret-value",
                 model="gpt-image-2",
                 aspect_ratio="16:9",
@@ -143,6 +184,7 @@ class LingsiBaseUrlTests(unittest.TestCase):
             )
             self.assertEqual(image.shape[0], 1)
             self.assertIs(out_pipe, pipe)
+            self.assertEqual(complete_prompt, "")
             self.assertEqual(calls[0]["ppt_pipe"], pipe)
         finally:
             module.generate_lingsi_ppt_batch = old_batch
@@ -207,7 +249,7 @@ class LingsiBaseUrlTests(unittest.TestCase):
         try:
             pipe = {
                 "pipe_type": "IMAGEN_STUDIO_PIPE",
-                "title": "灵思批量 PPT",
+                "title": "kaka 批量 PPT",
                 "aspect_ratio": "16:9",
                 "pages": [
                     {"pageNo": 1, "title": "A", "prompt": "prompt 1"},
@@ -316,7 +358,7 @@ class LingsiBaseUrlTests(unittest.TestCase):
         try:
             pipe = {
                 "pipe_type": "IMAGEN_STUDIO_PIPE",
-                "title": "灵思限流重试 PPT",
+                "title": "kaka 限流重试 PPT",
                 "aspect_ratio": "16:9",
                 "pages": [
                     {"pageNo": 1, "title": "A", "prompt": "prompt 1"},

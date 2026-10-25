@@ -1775,7 +1775,7 @@ def _http_post_json(api_key, body, stream):
         body=body,
         stream=stream,
         endpoint=ENDPOINT,
-        user_agent="ComfyUI-kktools-kkimage2-LingsiAPI/1.0",
+        user_agent="ComfyUI-kktools-kkimage2-kakaAPI/1.0",
         service_name="MindAPI",
     )
 
@@ -1999,7 +1999,7 @@ def _image_bytes_from_data_url(data_url):
 
 def _image_bytes_from_url(url, api_key):
     headers = {
-        "User-Agent": "ComfyUI-kktools-kkimage2-LingsiAPI/1.0",
+        "User-Agent": "ComfyUI-kktools-kkimage2-kakaAPI/1.0",
         "Accept": "image/*,*/*;q=0.8",
     }
     request = urllib.request.Request(url, headers=headers, method="GET")
