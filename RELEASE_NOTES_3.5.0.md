@@ -4,6 +4,35 @@
 
 ## 更新概览
 
+### 2026-09-28 图像对比界面简化
+
+- `kkimage Comparer（图像对比）` 移除 `A1 / B1` 下拉选择，保留对比滑杆和节点自适应尺寸。
+- 画面角标从 `A / B` 更新为 `image_a / image_b`。
+- 两路输入时默认对比各自第一张图；只输入单个 batch 时默认对比前两张。
+
+### 2026-09-27 图像对比节点
+
+- 新增 `kkimage Comparer（图像对比）`，使用默认滑动对比，并优化图片比例、节点缩放和 batch 切换时的自适应布局。
+- 图像对比节点在未执行时隐藏空预览框，有图片结果后再自动展开。
+- 修复图像对比节点与预览区宽度不同步导致的右侧空白，节点现会按图片比例自动选择紧凑宽度。
+- 图像对比节点支持拖拽边缘自由放大缩小；自动适配只在首次显示图片时执行，不再覆盖手动尺寸。
+- 支持不同尺寸图像直接预览，以及从单个或两个图像 batch 中选取对比项。
+- `kkGPT-image_API` 现可识别接口返回的 `content_filter` 与不安全内容提示；审核失败时记录错误、跳过当前图片并继续后续批量任务。
+- 普通批量生图每成功获取一张就立即保存到 `output/kktools-gpt-image`，后续图片审核失败或任务中断也不会丢失已生成结果。
+- 生成接口返回图片 URL 后，遇到读取超时或短暂网络错误会自动重试下载，不会重复提交生成请求。
+
+### 2026-09-26 批量图片逐张输出
+
+- `kkBatchImageLoader（批量图像加载）` 新增 `逐张输出`，保留每张图片的原始尺寸并作为列表交给 ComfyUI 逐项执行。
+- `逐张输出` 可直接连接 `kkGPT-image_API`，为目录中的每张图片分别发起生成请求。
+- 输入图片尺寸不一致时，原 `images` / `masks` 输出改为返回第一张，不再因批次拼接失败而输出 512×512 黑色占位图。
+
+### 2026-09-22 Prompt 与 Markdown Skill 组合优化
+
+- `kkLLM（多厂商LLM）` 支持同时输入用户 Prompt 和 Markdown Skill，不再用 Markdown 直接覆盖 Prompt。
+- Prompt 作为待优化内容，Markdown Skill 作为处理规则；模型会保留用户的主体、意图和约束，并按 Skill 补全细节。
+- 保持仅 Prompt、仅 Markdown、未配置 API Key 和旧工作流的兼容行为。
+
 ### 2026-09-20 视频深度转换节点
 
 - 新增 `kkVideoPose（视频转人体骨骼视频）`，复用 ComfyUI 内置 SDPose 将输入视频逐帧转换为人体骨骼视频。
@@ -60,7 +89,7 @@
 
 - 模板工具分类统一为 `🌟kktools/模板工具`。
 - PPT 工具分类统一为 `🌟kktools/PPT工具`。
-- 移除重复的 `kkLingsiNativePromptImage` 注册，灵思图像节点统一为 `kkGPT-image_API`。
+- 移除重复的 `kkLingsiNativePromptImage` 注册，kaka 图像节点统一为 `kkGPT-image_API`。
 - `kkGPT-image_API` 归入 `🌟kktools/图像`，移除 `kkimage2_Zuco`；不再保留空的 `🌟kktools/AI生图` 分类。
 - 模板与 PPT 节点显示名称移除 “Imagen Studio” 前缀。
 

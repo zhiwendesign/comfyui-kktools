@@ -19,7 +19,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
 
-发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；灵思生图统一使用 `kkGPT-image_API`。
+发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；kaka 生图统一使用 `kkGPT-image_API`。
 
 ## 🚀 安装
 
@@ -81,7 +81,7 @@ pip install torchaudio
 
 | 模块 | 分类 | 源码 |
 |---|---|---|
-| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
+| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[image_comparer.py](nodes/image_comparer.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
 | 数学计算 | `🌟kktools/数学计算` | [Math.py](nodes/Math.py) |
 | 提示词 | `🌟kktools/提示词` | [prompts.py](nodes/prompts.py) |
 | 尺寸 | `🌟kktools/尺寸` | [size.py](nodes/size.py) |
@@ -112,11 +112,11 @@ pip install torchaudio
 
 ## 🧾 全部节点与分类
 
-当前代码共提供 72 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+当前代码共提供 73 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
 
 | 分类 | 节点标识（界面显示名） |
 |---|---|
-| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
+| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkimage Comparer`（图像对比）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
 | `🌟kktools/数学计算` | `kkMathExpressionNode`（数学表达式）、`kkRegexNode`（正则表达式）、`kkRegexNodeAdvanced`（正则表达式高级） |
 | `🌟kktools/提示词` | `kkBatchPrompt`（批量提示词）、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`（多厂商LLM） |
 | `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
@@ -142,7 +142,7 @@ pip install torchaudio
 
 ## 🖼️ 图像模块
 
-源码位置：[nodes/image.py](nodes/image.py) 、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/image_comparer.py](nodes/image_comparer.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
 
 ### kkImageOverlay（图像叠加）
 
@@ -185,7 +185,21 @@ pip install torchaudio
 - 从目录批量读取图像，支持顺序、倒序、随机读取，也支持分批次取图。
 - 常用参数：`directory`、`load_order`、`load_interval`、`start_index`、`max_images`、`file_extensions`、`seed`、`batch_index`
 - 适合批量测试、批量预处理、数据集抽样。
-- 输出：`images`、`masks`、`loaded_count`、`file_info`
+- `逐张输出` 会把每张原始尺寸图片作为独立 `IMAGE` 列表输出；连接 `kkGPT-image_API` 时，ComfyUI 会逐张执行生成。
+- 图片尺寸一致时，`images` 和 `masks` 仍输出普通批次；尺寸不一致时这两个输出仅返回第一张，并提示改用 `逐张输出`。
+- 输出：`images`、`masks`、`loaded_count`、`file_info`、`逐张输出`
+
+### kkimage Comparer（图像对比）
+
+- 可选输入 `image_a` 和 `image_b`，默认对比两路输入的第一张图；只连接一个图像 batch 时，默认对比前两张。
+- 对比区不显示 `A1 / B1` 下拉选择，画面角标显示为 `image_a / image_b`。
+- 默认使用滑动对比，分隔线跟随鼠标位置，无需切换交互模式。
+- 预览区会根据所选图片比例和节点宽度自适应，切换 batch 图片或调整节点宽度后会自动重新布局。
+- 节点宽度会按所选图片的横竖比例自动调整，预览区始终填满节点内容宽度，避免右侧大片空白。
+- 首次获得图片时自动适配尺寸；之后可直接拖拽节点边缘放大或缩小，图片保持等比居中。
+- 未执行时不显示空预览框，获得图片后节点会自动展开。
+- 两张图可以使用不同分辨率和长宽比，预览时会分别等比缩放，不会修改原图尺寸。
+- 该节点用于界面预览，无图像输出。
 
 ### kkImageTileSplit2x2（图像2x2分块）
 
@@ -221,17 +235,20 @@ pip install torchaudio
 
 ### kkGPT-image_API
 
-- 基于灵思 MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
+- 基于 kaka MindAPI 兼容路由的原生 Prompt 生图节点，支持纯文生图和可选参考图图生图。
 - 可选的 `API配置` 输入用于连接 `kk_API配置`，配置束中的 Base URL 和 API Key 优先于节点内直接填写的值。
 - 支持 `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`nano-banana-2`、`nano-banana-pro`，可设置比例、分辨率、质量和生成数量。
 - 常用参数：`api_key`、`prompt`、`model`、`aspect_ratio`、`resolution`、`quality`、`count`、`base_url`
 - `quality` 支持 `auto / low / medium / high / xhigh / max`，默认 `high`；`xhigh` 和 `max` 仅用于 GPT Image 2.5。GPT Image 的文生图、参考图编辑和 PPT 批量模式都会传给接口。
 - `base_url` 默认是 `https://mindapi.cc`；填第三方兼容站点时，节点仍会自动使用当前固定路由。
 - 可选的 `ratio` 字符串输入可连接 `kkSizeNode.ratio`，连接后会覆盖 `aspect_ratio` 下拉框；传入比例仍须属于生图节点支持的比例列表。
-- 可选输入：默认只有 `image`；连接后自动显示下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
+- 参考图输入默认显示 `image`；连接后自动增加下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
+- 字符串输入默认显示 `string`；连接后同样自动增加 `string_1` 至 `string_8`（共 9 个），可把人物、风格或其他提示词片段接入节点。
+- 在 `prompt` 输入框键入 `@` 可选择已连接的图像或字符串；图像会按连接顺序写入 `@Image1`、`@Image2` 等引用，字符串使用 `@string`、`@string_1` 等输入名。
+- 示例提示词：`以 @Image1 中的人物为主体，参考 @Image2 的色彩与光影；人物描述：@string；整体风格：@string_1。`
 - 不接参考图时为文生图；接入任意参考图时为多图参考生图。
 - `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
-- 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`。内容审核失败时，日志会提示修改提示词或上传参考图像。
+- 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`、`Prompt`。`Prompt` 输出已展开所有图像和字符串引用后的完整提示词；内容审核失败时，日志会提示修改提示词或上传参考图像。
 
 ### kkimage2_GAPI（已停用）
 
@@ -298,7 +315,9 @@ pip install torchaudio
 ### kkLLM（多厂商LLM）
 
 - 使用 LLM 优化提示词，当前支持 DeepSeek V4、OpenAI GPT-5.6、Gemini 3.x/2.5 和豆包 Seed 2.0/1.6。
-- `Markdown文件` 接入后，Markdown 全文会覆盖手动填写的 `base_prompt`，此时 `base_prompt` 可以留空。
+- `base_prompt` 用于输入用户的原始 Prompt；`Markdown文件` 可连接 `kkMarkdown上传` 或 `kkSkills模板选择器`。
+- 同时接入 Prompt 和 Markdown Skill 时，节点会保留 Prompt 的主体、意图和明确约束，按 Skill 的规则补全表达、构图、风格和质量细节，并只输出最终优化 Prompt。
+- 只输入 Prompt 时按原有方式优化；只连接 Markdown 时仍会把 Markdown 全文作为输入，保持旧工作流可用。
 - 切换 `provider` 时，前端会自动刷新对应的 `model` 选项。
 - 支持 `base_prompt`、`provider`、`model`、`custom_model`、`base_url`、`system_message`、`max_length`、`temperature`，并可接入 `Markdown文件` 与 `API配置`。
 - 可选的 `API配置` 输入可连接 `kk_API配置`；连接后优先使用配置束中的 API Key，并将 Base URL 转换为兼容的 `/v1/chat/completions` 地址。
