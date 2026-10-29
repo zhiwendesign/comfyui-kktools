@@ -158,6 +158,20 @@ class LingsiBaseUrlTests(unittest.TestCase):
         self.assertEqual(node._generate_single.call_args.kwargs["prompt"], "女孩，蓝色外套，参考 image 1")
         self.assertEqual(outputs[4], "女孩，蓝色外套，参考 image 1")
 
+    def test_generate_uses_first_string_when_prompt_is_empty(self):
+        module = load_lingsi()
+        node = module.kkGPT_image_API()
+        image = np.zeros((1, 8, 8, 3), dtype=np.float32)
+        node._generate_single = mock.Mock(return_value=(image, "{}"))
+        outputs = node.generate(
+            api_key="sk-secret-value",
+            prompt="",
+            string="女孩站在蓝色背景前",
+            string_1="这个输入不应被使用",
+        )
+        self.assertEqual(node._generate_single.call_args.kwargs["prompt"], "女孩站在蓝色背景前")
+        self.assertEqual(outputs[4], "女孩站在蓝色背景前")
+
     def test_lingsi_prompt_optional_for_ppt_pipe_but_required_for_single_mode(self):
         module = load_lingsi()
         node = module.kkGPT_image_API()

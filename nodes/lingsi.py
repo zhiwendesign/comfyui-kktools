@@ -1574,6 +1574,8 @@ class kkLingsiNativePromptImage:
         prompt_strings = [kwargs.get("string"), *[kwargs.get(f"string_{index}") for index in range(1, MAX_PROMPT_STRINGS)]]
         template_pipe = 模板束 if isinstance(模板束, dict) else {}
         effective_prompt = str(template_pipe.get("prompt") or "").strip() or str(prompt or "").strip()
+        if not effective_prompt:
+            effective_prompt = next((str(value).strip() for value in prompt_strings if str(value or "").strip()), "")
         effective_prompt = resolve_prompt_string_references(effective_prompt, prompt_strings)
         reference_image_count = len(normalize_reference_images([image, *extra_images]))
         complete_prompt = resolve_prompt_image_references(effective_prompt, reference_image_count).strip()
