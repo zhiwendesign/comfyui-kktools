@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 
 const NODE_NAME = "kcanvas";
 const INPUT_NAMES = Array.from({ length: 9 }, (_, index) => `image${index + 1}`);
+const MASK_NAME = "mask";
 const UPDATE_FRAME = Symbol("kcanvasDynamicInputs");
 
 function nodeClass(node) {
@@ -59,8 +60,20 @@ function orderInputs(node) {
   const imageInputs = node.inputs
     .filter((input) => INPUT_NAMES.includes(input.name))
     .sort((a, b) => INPUT_NAMES.indexOf(a.name) - INPUT_NAMES.indexOf(b.name));
-  const otherInputs = node.inputs.filter((input) => !INPUT_NAMES.includes(input.name));
-  const ordered = [...otherInputs.slice(0, first), ...imageInputs, ...otherInputs.slice(first)];
+  const maskInput = node.inputs.find((input) => input.name === MASK_NAME);
+  const beforeImages = node.inputs
+    .slice(0, first)
+    .filter((input) => !INPUT_NAMES.includes(input.name) && input.name !== MASK_NAME);
+  const afterImages = node.inputs
+    .slice(first)
+    .filter((input) => !INPUT_NAMES.includes(input.name) && input.name !== MASK_NAME);
+  const ordered = [
+    ...beforeImages,
+    ...imageInputs.slice(0, 1),
+    ...(maskInput ? [maskInput] : []),
+    ...imageInputs.slice(1),
+    ...afterImages,
+  ];
   if (ordered.every((input, index) => input === node.inputs[index])) return false;
   node.inputs.splice(0, node.inputs.length, ...ordered);
   restoreInputLinks(node, linksByName);

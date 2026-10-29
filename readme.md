@@ -151,6 +151,7 @@ pip install torchaudio
 
 - 输入 HTML 或 HTML 片段，使用本机 Chrome/Edge headless 截图渲染，支持内联 CSS 和脚本。
 - 提供 `image1` 到 `image9` 共 9 个可选 `IMAGE` 输入；在 HTML 中用 `${image1}`、`${image2}` …… `${image9}` 调用对应图片。每个输入支持批次图片，短批次会复用最后一张。
+- `mask` 可为 RGB `image1`（含 `${img}` 别名）添加透明度：Mask 值 `1`（白色）保留、`0`（黑色）透明，尺寸和批次会自动匹配 `image1`；如果 `image1` 已是 RGBA，则优先保留图像自带的 Alpha，避免背景移除节点的 Alpha 被重复应用。
 - 图片输入默认显示 `image1`，连接后自动显示下一个输入，断开后自动移除尾部空输入，最多到 `image9`。
 - `${img}` 是 `image1` 的兼容别名；未连接图片时使用透明占位图。
 - `font-family` 指定的字体会自动匹配插件 `fonts` 目录中的 `.otf`、`.ttf`、`.ttc` 文件并内联加载，例如 `font-family: 'DouyinSansBold'` 可直接使用 `fonts/DouyinSansBold.otf`。

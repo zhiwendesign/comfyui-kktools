@@ -71,7 +71,31 @@ def extract_canvas_size(html):
     return tuple(dimensions)
 
 
-def _image_frame(image, index):
+def _mask_alpha(mask, index, height, width):
+    if mask.ndim == 4:
+        frame = mask[min(index, int(mask.shape[0]) - 1)]
+        if frame.shape[0] == 1:
+            frame = frame[0]
+        elif frame.shape[-1] == 1:
+            frame = frame[:, :, 0]
+    elif mask.ndim == 3:
+        frame = mask[min(index, int(mask.shape[0]) - 1)]
+    else:
+        frame = mask
+    if frame.ndim != 2:
+        raise ValueError("kcanvas mask input must use the ComfyUI MASK format")
+    frame = frame.detach().cpu().to(dtype=torch.float32)
+    if tuple(frame.shape) != (height, width):
+        frame = torch.nn.functional.interpolate(
+            frame[None, None],
+            size=(height, width),
+            mode="bilinear",
+            align_corners=False,
+        )[0, 0]
+    return (frame.clamp(0.0, 1.0).numpy() * 255.0).round().astype(np.uint8)
+
+
+def _image_frame(image, index, mask=None):
     frame = image[min(index, int(image.shape[0]) - 1)] if image.ndim == 4 else image
     array = frame.detach().cpu().numpy()
     if array.ndim != 3:
@@ -81,12 +105,15 @@ def _image_frame(image, index):
     array = (np.clip(array, 0.0, 1.0) * 255.0).round().astype(np.uint8)
     if array.shape[-1] == 1:
         array = np.repeat(array, 3, axis=-1)
+    if mask is not None and array.shape[-1] != 4:
+        alpha = _mask_alpha(mask, index, array.shape[0], array.shape[1])
+        array = np.concatenate((array[:, :, :3], alpha[:, :, None]), axis=-1)
     return Image.fromarray(array[:, :, :4], "RGBA" if array.shape[-1] == 4 else "RGB")
 
 
-def image_to_data_url(image, index=0):
+def image_to_data_url(image, index=0, mask=None):
     buffer = io.BytesIO()
-    _image_frame(image, index).save(buffer, format="PNG")
+    _image_frame(image, index, mask).save(buffer, format="PNG")
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
@@ -95,7 +122,20 @@ def image_batch_size(image):
     return int(image.shape[0]) if image is not None and image.ndim == 4 else 1
 
 
-def template_values(html, images, batch_index):
+def image_has_alpha(image):
+    if image is None or image.ndim not in (3, 4):
+        return False
+    if image.shape[-1] == 4:
+        return True
+    channel_axis = 1 if image.ndim == 4 else 0
+    return image.shape[channel_axis] == 4
+
+
+def mask_batch_size(mask):
+    return int(mask.shape[0]) if mask is not None and mask.ndim >= 3 else 1
+
+
+def template_values(html, images, batch_index, mask=None):
     values = extract_variables(html)
     values.setdefault("texttitle", "标题")
     values.setdefault("textcontext", "内容")
@@ -104,7 +144,7 @@ def template_values(html, images, batch_index):
         key = f"image{index}"
         image = images[index - 1]
         if image is not None:
-            values[key] = image_to_data_url(image, batch_index)
+            values[key] = image_to_data_url(image, batch_index, mask if index == 1 else None)
         else:
             values.setdefault(key, TRANSPARENT_IMAGE)
 
@@ -178,6 +218,39 @@ def find_browser():
     return next((candidate for candidate in candidates if candidate and Path(candidate).is_file()), None)
 
 
+def _browser_output(value):
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value or "")
+
+
+def _run_browser(command):
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=45,
+        )
+        detail = (result.stderr or result.stdout or "Chrome did not create a screenshot").strip()
+        return result.returncode, detail
+    except subprocess.TimeoutExpired as error:
+        detail = (_browser_output(error.stderr) or _browser_output(error.stdout)).strip()
+        suffix = f": {detail}" if detail else ""
+        return None, f"Chrome timed out after {error.timeout} seconds{suffix}"
+
+
+def _is_windows_gpu_sandbox_failure(returncode, detail):
+    lowered = str(detail or "").lower()
+    return os.name == "nt" and (
+        returncode in (-1073741790, 3221225506)
+        or "gpu process isn't usable" in lowered
+        or "gpu process exited unexpectedly" in lowered
+    )
+
+
 def render_document(document, width, height):
     browser = find_browser()
     if not browser:
@@ -204,9 +277,17 @@ def render_document(document, width, height):
         ]
         if os.name != "nt" and hasattr(os, "geteuid") and os.geteuid() == 0:
             command.insert(1, "--no-sandbox")
-        result = subprocess.run(command, capture_output=True, text=True, timeout=45)
-        if result.returncode != 0 or not screenshot_path.is_file():
-            detail = (result.stderr or result.stdout or "Chrome did not create a screenshot").strip()
+
+        returncode, detail = _run_browser(command)
+        failed = returncode != 0 or not screenshot_path.is_file()
+        if failed and _is_windows_gpu_sandbox_failure(returncode, detail):
+            # Some restricted Windows sessions cannot start Chromium's GPU sandbox.
+            # Keep the normal sandboxed path as the default and only relax it for this known failure.
+            screenshot_path.unlink(missing_ok=True)
+            fallback_command = [command[0], "--no-sandbox", *command[1:]]
+            returncode, detail = _run_browser(fallback_command)
+
+        if returncode != 0 or not screenshot_path.is_file():
             raise RuntimeError(f"kcanvas render failed: {detail}")
         with Image.open(screenshot_path) as screenshot:
             array = np.asarray(screenshot.convert("RGB"), dtype=np.float32) / 255.0
@@ -221,7 +302,9 @@ class kcanvas:
                 "html": ("STRING", {"default": DEFAULT_HTML, "multiline": True}),
             },
             "optional": {
-                **{f"image{index}": ("IMAGE",) for index in range(1, MAX_IMAGES + 1)},
+                "image1": ("IMAGE",),
+                "mask": ("MASK", {"tooltip": "作为 image1 的透明度：白色保留、黑色透明；RGBA 图像优先使用自身 Alpha。"}),
+                **{f"image{index}": ("IMAGE",) for index in range(2, MAX_IMAGES + 1)},
             },
         }
 
@@ -229,14 +312,16 @@ class kcanvas:
     RETURN_NAMES = ("image",)
     FUNCTION = "render"
     CATEGORY = "🌟kktools/图像"
-    DESCRIPTION = "使用本机 Chrome 或 Edge 将 HTML 渲染为图像。"
+    DESCRIPTION = "使用本机 Chrome 或 Edge 将 HTML 渲染为图像；mask 可为 image1 添加透明度。"
 
-    def render(self, html, image1=None, **kwargs):
+    def render(self, html, image1=None, mask=None, **kwargs):
         images = [image1, *[kwargs.get(f"image{index}") for index in range(2, MAX_IMAGES + 1)]]
         batch_size = max((image_batch_size(image) for image in images if image is not None), default=1)
+        if image1 is not None and mask is not None and not image_has_alpha(image1):
+            batch_size = max(batch_size, mask_batch_size(mask))
         outputs = []
         for batch_index in range(batch_size):
-            resolved = replace_placeholders(html, template_values(html, images, batch_index))
+            resolved = replace_placeholders(html, template_values(html, images, batch_index, mask))
             document, width, height = prepare_document(resolved)
             outputs.append(render_document(document, width, height))
         return (torch.cat(outputs, dim=0),)
