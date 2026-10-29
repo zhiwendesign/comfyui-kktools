@@ -15,6 +15,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
 - 前端扩展 [web/skills_template_selector.js](web/skills_template_selector.js) 为 `kkSkills模板选择器` 提供 Skill 卡片管理
+- 前端扩展 [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js) 为 `kcanvas` 提供最多 9 路动态 `IMAGE` 输入，并清理旧工作流残留的错误连线
 - 前端扩展 [web/imagen_theme.js](web/imagen_theme.js) 参考 PPT 工具风格，为不同节点分类提供独立配色
 - 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
@@ -40,6 +41,7 @@ pip install torchaudio
 
 - 基础依赖：`torch`、`numpy`、`Pillow`
 - 网络能力：`requests`
+- `kcanvas` 需要本机已安装 Chrome 或 Edge，也可通过 `KKTOOLS_BROWSER_PATH` 指定浏览器可执行文件
 - 可选依赖：`torchaudio`
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
@@ -70,6 +72,7 @@ pip install torchaudio
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
 - [web/kk_markdown_upload.js](web/kk_markdown_upload.js)：`kkMarkdown上传` 的文件选择和上传前端脚本
 - [web/skills_template_selector.js](web/skills_template_selector.js)：`kkSkills模板选择器` 的卡片选择、搜索、改名和删除界面
+- [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js)：`kcanvas` 的动态图片输入和无效链接清理
 - [web/imagen_theme.js](web/imagen_theme.js)：PPT、模板及其他节点分类的主题配色
 - [web/runtime_manager.js](web/runtime_manager.js)：顶部运行资源监控与原生运行工具栏吸附交互
 - [runtime_manager_routes.py](runtime_manager_routes.py)：本机 CPU、内存、GPU 与显存统计接口
@@ -81,7 +84,7 @@ pip install torchaudio
 
 | 模块 | 分类 | 源码 |
 |---|---|---|
-| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[image_comparer.py](nodes/image_comparer.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
+| 图像 | `🌟kktools/图像` | [image.py](nodes/image.py)、[kcanvas.py](nodes/kcanvas.py)、[image_comparer.py](nodes/image_comparer.py)、[ImageSplit.py](nodes/ImageSplit.py)、[lingsi.py](nodes/lingsi.py) |
 | 数学计算 | `🌟kktools/数学计算` | [Math.py](nodes/Math.py) |
 | 提示词 | `🌟kktools/提示词` | [prompts.py](nodes/prompts.py) |
 | 尺寸 | `🌟kktools/尺寸` | [size.py](nodes/size.py) |
@@ -112,11 +115,11 @@ pip install torchaudio
 
 ## 🧾 全部节点与分类
 
-当前代码共提供 73 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+当前代码共提供 74 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
 
 | 分类 | 节点标识（界面显示名） |
 |---|---|
-| `🌟kktools/图像` | `kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkimage Comparer`（图像对比）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
+| `🌟kktools/图像` | `kcanvas`（HTML渲染）、`kkImageOverlay`（图像叠加）、`kkPadImageToCanvas`（图像填充到画布）、`kkImageFrame`（图像边框）、`kkResize`（图像蒙版同步调整）、`kkGetImage`（获取图像尺寸）、`kkBatchImageLoader`（批量图像加载）、`kkimage Comparer`（图像对比）、`kkImageTileSplit2x2`（图像2x2分块）、`kkImageGridMerge`（图像宫格合并）、`kkImageSplit`（图像切割）、`kk_API配置`、`kkGPT-image_API` |
 | `🌟kktools/数学计算` | `kkMathExpressionNode`（数学表达式）、`kkRegexNode`（正则表达式）、`kkRegexNodeAdvanced`（正则表达式高级） |
 | `🌟kktools/提示词` | `kkBatchPrompt`（批量提示词）、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`（多厂商LLM） |
 | `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
@@ -136,13 +139,25 @@ pip install torchaudio
 
 ### 已停用节点
 
-- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 72 个现役节点标识。
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 74 个现役节点标识。
 
 ---
 
 ## 🖼️ 图像模块
 
-源码位置：[nodes/image.py](nodes/image.py) 、[nodes/image_comparer.py](nodes/image_comparer.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+源码位置：[nodes/image.py](nodes/image.py) 、[nodes/kcanvas.py](nodes/kcanvas.py)、[nodes/image_comparer.py](nodes/image_comparer.py)、[nodes/ImageSplit.py](nodes/ImageSplit.py)、[nodes/lingsi.py](nodes/lingsi.py)、[nodes/kkimage2_gapi.py](nodes/kkimage2_gapi.py)
+
+### kcanvas（HTML渲染）
+
+- 输入 HTML 或 HTML 片段，使用本机 Chrome/Edge headless 截图渲染，支持内联 CSS 和脚本。
+- 提供 `image1` 到 `image9` 共 9 个可选 `IMAGE` 输入；在 HTML 中用 `${image1}`、`${image2}` …… `${image9}` 调用对应图片。每个输入支持批次图片，短批次会复用最后一张。
+- 图片输入默认显示 `image1`，连接后自动显示下一个输入，断开后自动移除尾部空输入，最多到 `image9`。
+- `${img}` 是 `image1` 的兼容别名；未连接图片时使用透明占位图。
+- `font-family` 指定的字体会自动匹配插件 `fonts` 目录中的 `.otf`、`.ttf`、`.ttc` 文件并内联加载，例如 `font-family: 'DouyinSansBold'` 可直接使用 `fonts/DouyinSansBold.otf`。
+- 默认示例画布尺寸为 `220×80`，尺寸从 HTML 的 `width` / `height` 像素样式或属性读取。
+- 支持代码中用 `const`、`let` 或 `var` 定义变量来替换 `${color}`、`${img}`、`${image1}` 到 `${image9}`、`${texttitle}` 和 `${textcontext}`；未定义的文字变量默认显示为“标题”和“内容”。
+- 输出 `IMAGE`，连接 ComfyUI 的 `Save Image` 节点即可保存为 PNG。
+- 如果旧工作流提示图片输入收到 `STRING`，请重启 ComfyUI 并强制刷新浏览器；前端会自动断开残留的错误连线。
 
 ### kkImageOverlay（图像叠加）
 
@@ -244,6 +259,7 @@ pip install torchaudio
 - 可选的 `ratio` 字符串输入可连接 `kkSizeNode.ratio`，连接后会覆盖 `aspect_ratio` 下拉框；传入比例仍须属于生图节点支持的比例列表。
 - 参考图输入默认显示 `image`；连接后自动增加下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
 - 字符串输入默认显示 `string`；连接后同样自动增加 `string_1` 至 `string_8`（共 9 个），可把人物、风格或其他提示词片段接入节点。
+- 如果 `prompt` 为空，节点会自动使用第一个非空的字符串输入作为完整提示词；推荐仍将完整提示词直接连接到 `prompt`。
 - 在 `prompt` 输入框键入 `@` 可选择已连接的图像或字符串；图像会按连接顺序写入 `@Image1`、`@Image2` 等引用，字符串使用 `@string`、`@string_1` 等输入名。
 - 示例提示词：`以 @Image1 中的人物为主体，参考 @Image2 的色彩与光影；人物描述：@string；整体风格：@string_1。`
 - 不接参考图时为文生图；接入任意参考图时为多图参考生图。
@@ -305,6 +321,8 @@ pip install torchaudio
 
 - 可选输入 `Markdown文件` 用于连接 `kkMarkdown上传`；每次执行都会把 Markdown 内容保存或更新到本地 Skills 模板库。
 - 可选输入 `Tag` 为 Skill 写入分类标签；标签会保存到模板库、显示在卡片上，并支持搜索。
+- 卡片区提供 5 个分类 Tab：`全部`、`图像`、`视频`、`文案`、`其他`；每个 Tab 显示当前数量。
+- 常见的 Tag 别名会自动归类，空 Tag 或未匹配的自定义 Tag 归入 `其他`。
 - 可选输入 `封面图` 会保存为 Skill 卡片封面；图片自动缩放到最长边 512 像素并保存为 JPEG。
 - 不连接 Markdown 时，可从节点内的卡片选择已有 Skill 并输出。
 - 卡片界面支持搜索、刷新、重命名和删除；相同 Markdown 内容会更新原记录，不会重复入库。

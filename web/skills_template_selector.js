@@ -2,6 +2,27 @@ import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
 const NODE_CLASS = "kkSkills模板选择器";
+const SKILL_TABS = [
+  { id: "", label: "全部" },
+  { id: "图像", label: "图像" },
+  { id: "视频", label: "视频" },
+  { id: "文案", label: "文案" },
+  { id: "其他", label: "其他" },
+];
+const SKILL_TAB_ALIASES = new Map([
+  ["图像", ["图像", "图片", "绘画", "摄影", "设计"]],
+  ["视频", ["视频", "短视频", "动画"]],
+  ["文案", ["文案", "文本", "写作", "提示词"]],
+]);
+
+function skillTab(item) {
+  const tag = String(item?.tag || "").trim().toLowerCase();
+  if (!tag) return "其他";
+  for (const [tab, aliases] of SKILL_TAB_ALIASES) {
+    if (aliases.includes(tag)) return tab;
+  }
+  return "其他";
+}
 
 function addStyles() {
   if (document.getElementById("kk-skills-selector-style")) return;
@@ -16,9 +37,11 @@ function addStyles() {
     .kk-skills-selector button { padding:3px 7px; cursor:pointer; }
     .kk-skills-selector__status { color:var(--descrip-text); font-size:11px; }
     .kk-skills-selector__status:empty { display:none; }
-    .kk-skills-selector__tags { display:flex; flex-wrap:wrap; gap:5px; max-height:58px; overflow-y:auto; }
-    .kk-skills-selector__tags button { min-height:23px; padding:2px 7px; border-radius:12px; font-size:11px; }
-    .kk-skills-selector__tags button.selected { border-color:#6aa9ff; background:rgba(106,169,255,.2); color:#c5ddff; }
+    .kk-skills-selector__tabs { display:flex; gap:3px; overflow-x:auto; border-bottom:1px solid var(--border-color); scrollbar-width:thin; }
+    .kk-skills-selector__tabs button { flex:0 0 auto; min-height:28px; padding:3px 8px; border:0; border-bottom:2px solid transparent; border-radius:6px 6px 0 0; background:transparent; color:var(--descrip-text); font-size:11px; }
+    .kk-skills-selector__tabs button:hover { background:rgba(106,169,255,.1); color:var(--fg-color); }
+    .kk-skills-selector__tabs button:focus-visible { outline:2px solid #6aa9ff; outline-offset:-2px; }
+    .kk-skills-selector__tabs button.selected { border-bottom-color:#6aa9ff; background:rgba(106,169,255,.16); color:#c5ddff; }
     .kk-skills-selector__content { flex:1; min-height:180px; overflow-y:auto; }
     .kk-skills-selector__grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:8px; }
     .kk-skill-card { position:relative; overflow:hidden; border:1px solid var(--border-color); border-radius:7px; background:var(--comfy-menu-bg); cursor:pointer; }
@@ -89,11 +112,14 @@ function setup(node) {
   bar.append(search, refreshButton, importButton, exportButton, fileInput);
   const status = document.createElement("div");
   status.className = "kk-skills-selector__status";
-  const tags = document.createElement("div");
-  tags.className = "kk-skills-selector__tags";
+  const tabs = document.createElement("div");
+  tabs.className = "kk-skills-selector__tabs";
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", "Skill 分类");
   const content = document.createElement("div");
   content.className = "kk-skills-selector__content";
-  root.append(bar, status, tags, content);
+  content.setAttribute("role", "tabpanel");
+  root.append(bar, status, tabs, content);
 
   function select(id) {
     state.selectedId = id;
@@ -163,7 +189,10 @@ function setup(node) {
     blank.value = "";
     blank.textContent = "不使用 Tag";
     select.appendChild(blank);
-    [...new Set(state.skills.map((skill) => String(skill.tag || "").trim()).filter(Boolean))]
+    [...new Set([
+      ...SKILL_TABS.slice(1).map((tab) => tab.id),
+      ...state.skills.map((skill) => String(skill.tag || "").trim()).filter(Boolean),
+    ])]
       .sort((a, b) => a.localeCompare(b, "zh-CN"))
       .forEach((tag) => { const option = document.createElement("option"); option.value = tag; option.textContent = tag; select.appendChild(option); });
     const input = document.createElement("input");
@@ -257,30 +286,44 @@ function setup(node) {
   function render() {
     const query = state.query.toLowerCase();
     const items = state.skills.filter((item) => {
-      const matchesTag = !state.selectedTag || item.tag === state.selectedTag;
+      const matchesTag = !state.selectedTag || skillTab(item) === state.selectedTag;
       const matchesQuery = [item.name, item.tag, item.description, item.sourceFilename].join(" ").toLowerCase().includes(query);
       return matchesTag && matchesQuery;
     });
     status.textContent = state.loading ? "正在读取 Skills 模板库..." : state.message || "";
-    const tagCounts = new Map();
+    const tagCounts = new Map(SKILL_TABS.slice(1).map((tab) => [tab.id, 0]));
     state.skills.forEach((item) => {
-      const tag = String(item.tag || "未分类");
+      const tag = skillTab(item);
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
     });
-    tags.innerHTML = "";
-    const allTags = ["", ...Array.from(tagCounts.keys()).sort((a, b) => a.localeCompare(b, "zh-CN"))];
-    allTags.forEach((tag) => {
+    tabs.innerHTML = "";
+    SKILL_TABS.forEach((tab, index) => {
       const button = document.createElement("button");
-      button.textContent = tag ? `${tag} ${tagCounts.get(tag)}` : `全部 ${state.skills.length}`;
-      button.className = state.selectedTag === tag ? "selected" : "";
-      button.onclick = (event) => { event.stopPropagation(); state.selectedTag = tag; render(); };
-      tags.appendChild(button);
+      const count = tab.id ? tagCounts.get(tab.id) || 0 : state.skills.length;
+      button.type = "button";
+      button.textContent = `${tab.label} ${count}`;
+      button.dataset.tab = tab.id;
+      button.className = state.selectedTag === tab.id ? "selected" : "";
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", String(state.selectedTag === tab.id));
+      button.tabIndex = state.selectedTag === tab.id ? 0 : -1;
+      button.onclick = (event) => { event.stopPropagation(); state.selectedTag = tab.id; render(); };
+      button.onkeydown = (event) => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const offset = event.key === 'ArrowRight' ? 1 : -1;
+        const next = (index + offset + SKILL_TABS.length) % SKILL_TABS.length;
+        state.selectedTag = SKILL_TABS[next].id;
+        render();
+        requestAnimationFrame(() => tabs.querySelector(`[data-tab="${CSS.escape(state.selectedTag)}"]`)?.focus());
+      };
+      tabs.appendChild(button);
     });
     content.innerHTML = "";
     if (!items.length) {
       const empty = document.createElement("div");
       empty.className = "kk-skills-selector__empty";
-      empty.textContent = "暂无 Skill。连接 kkMarkdown上传 后执行此节点即可入库。";
+      empty.textContent = state.skills.length ? "当前分类暂无 Skill。" : "暂无 Skill。连接 kkMarkdown上传 后执行此节点即可入库。";
       content.appendChild(empty);
       return;
     }

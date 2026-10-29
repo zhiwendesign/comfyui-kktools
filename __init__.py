@@ -21,6 +21,7 @@ DISABLED_NODE_CLASSES = {"kkimage2_GAPI", "kkLingsiNativePromptImage", "kkImageA
 NODE_CHINESE_NAME_MAPPINGS = {
     "kkAudioMerge4": "音频四合一",
     "kkBatchImageLoader": "批量图像加载",
+    "kcanvas": "HTML渲染",
     "kkBatchPrompt": "批量提示词",
     "kkGetImage": "获取图像尺寸",
     "kkImageGridMerge": "图像宫格合并",
