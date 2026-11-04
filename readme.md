@@ -15,7 +15,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
 - 前端扩展 [web/skills_template_selector.js](web/skills_template_selector.js) 为 `kkSkills模板选择器` 提供 Skill 卡片管理
-- 前端扩展 [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js) 为 `kcanvas` 提供最多 9 路动态 `IMAGE` 输入，并清理旧工作流残留的错误连线
+- 前端扩展 [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js) 为 `kcanvas` 提供最多 9 组动态 `IMAGE` / `MASK` 配对输入，并清理旧工作流残留的错误连线
 - 前端扩展 [web/imagen_theme.js](web/imagen_theme.js) 参考 PPT 工具风格，为不同节点分类提供独立配色
 - 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
@@ -72,7 +72,7 @@ pip install torchaudio
 - [web/kkllm.js](web/kkllm.js)：`kkLLM` / `kkStoryboardScriptLLM` 的模型联动前端脚本
 - [web/kk_markdown_upload.js](web/kk_markdown_upload.js)：`kkMarkdown上传` 的文件选择和上传前端脚本
 - [web/skills_template_selector.js](web/skills_template_selector.js)：`kkSkills模板选择器` 的卡片选择、搜索、改名和删除界面
-- [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js)：`kcanvas` 的动态图片输入和无效链接清理
+- [web/kcanvas_dynamic_inputs.js](web/kcanvas_dynamic_inputs.js)：`kcanvas` 的动态图片/蒙版配对输入和无效链接清理
 - [web/imagen_theme.js](web/imagen_theme.js)：PPT、模板及其他节点分类的主题配色
 - [web/runtime_manager.js](web/runtime_manager.js)：顶部运行资源监控与原生运行工具栏吸附交互
 - [runtime_manager_routes.py](runtime_manager_routes.py)：本机 CPU、内存、GPU 与显存统计接口
@@ -151,7 +151,8 @@ pip install torchaudio
 
 - 输入 HTML 或 HTML 片段，使用本机 Chrome/Edge headless 截图渲染，支持内联 CSS 和脚本。
 - 提供 `image1` 到 `image9` 共 9 个可选 `IMAGE` 输入；在 HTML 中用 `${image1}`、`${image2}` …… `${image9}` 调用对应图片。每个输入支持批次图片，短批次会复用最后一张。
-- `mask` 可为 RGB `image1`（含 `${img}` 别名）添加透明度：Mask 值 `1`（白色）保留、`0`（黑色）透明，尺寸和批次会自动匹配 `image1`；如果 `image1` 已是 RGBA，则优先保留图像自带的 Alpha，避免背景移除节点的 Alpha 被重复应用。
+- `image1` 对应 `mask1`、`image2` 对应 `mask2`，依次支持最多 9 组；连接任一图片或蒙版后会自动增加下一组空输入，断开末尾输入后自动收起多余组。
+- 每个 Mask 值 `1`（白色）保留、`0`（黑色）透明，尺寸和批次会自动匹配同编号 IMAGE；如果 IMAGE 已是 RGBA，则优先保留图像自带的 Alpha，避免背景移除节点的 Alpha 被重复应用。
 - 图片输入默认显示 `image1`，连接后自动显示下一个输入，断开后自动移除尾部空输入，最多到 `image9`。
 - `${img}` 是 `image1` 的兼容别名；未连接图片时使用透明占位图。
 - `font-family` 指定的字体会自动匹配插件 `fonts` 目录中的 `.otf`、`.ttf`、`.ttc` 文件并内联加载，例如 `font-family: 'DouyinSansBold'` 可直接使用 `fonts/DouyinSansBold.otf`。

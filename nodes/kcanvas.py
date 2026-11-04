@@ -135,16 +135,21 @@ def mask_batch_size(mask):
     return int(mask.shape[0]) if mask is not None and mask.ndim >= 3 else 1
 
 
-def template_values(html, images, batch_index, mask=None):
+def template_values(html, images, batch_index, mask=None, masks=None):
     values = extract_variables(html)
     values.setdefault("texttitle", "标题")
     values.setdefault("textcontext", "内容")
+    paired_masks = list(masks) if masks is not None else []
+    paired_masks.extend([None] * (MAX_IMAGES - len(paired_masks)))
+    paired_masks = paired_masks[:MAX_IMAGES]
+    if mask is not None and paired_masks[0] is None:
+        paired_masks[0] = mask
 
     for index in range(1, MAX_IMAGES + 1):
         key = f"image{index}"
         image = images[index - 1]
         if image is not None:
-            values[key] = image_to_data_url(image, batch_index, mask if index == 1 else None)
+            values[key] = image_to_data_url(image, batch_index, paired_masks[index - 1])
         else:
             values.setdefault(key, TRANSPARENT_IMAGE)
 
@@ -297,31 +302,40 @@ def render_document(document, width, height):
 class kcanvas:
     @classmethod
     def INPUT_TYPES(cls):
+        optional = {}
+        for index in range(1, MAX_IMAGES + 1):
+            optional[f"image{index}"] = ("IMAGE",)
+            optional[f"mask{index}"] = (
+                "MASK",
+                {"tooltip": f"作为 image{index} 的透明度：白色保留、黑色透明；RGBA 图像优先使用自身 Alpha。"},
+            )
         return {
             "required": {
                 "html": ("STRING", {"default": DEFAULT_HTML, "multiline": True}),
             },
-            "optional": {
-                "image1": ("IMAGE",),
-                "mask": ("MASK", {"tooltip": "作为 image1 的透明度：白色保留、黑色透明；RGBA 图像优先使用自身 Alpha。"}),
-                **{f"image{index}": ("IMAGE",) for index in range(2, MAX_IMAGES + 1)},
-            },
+            "optional": optional,
         }
 
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("image",)
     FUNCTION = "render"
     CATEGORY = "🌟kktools/图像"
-    DESCRIPTION = "使用本机 Chrome 或 Edge 将 HTML 渲染为图像；mask 可为 image1 添加透明度。"
+    DESCRIPTION = "使用本机 Chrome 或 Edge 将 HTML 渲染为图像；image1-mask1、image2-mask2 依次配对透明度。"
 
-    def render(self, html, image1=None, mask=None, **kwargs):
+    def render(self, html, image1=None, mask1=None, **kwargs):
         images = [image1, *[kwargs.get(f"image{index}") for index in range(2, MAX_IMAGES + 1)]]
+        legacy_mask = kwargs.get("mask")
+        masks = [
+            mask1 if mask1 is not None else legacy_mask,
+            *[kwargs.get(f"mask{index}") for index in range(2, MAX_IMAGES + 1)],
+        ]
         batch_size = max((image_batch_size(image) for image in images if image is not None), default=1)
-        if image1 is not None and mask is not None and not image_has_alpha(image1):
-            batch_size = max(batch_size, mask_batch_size(mask))
+        for image, paired_mask in zip(images, masks):
+            if image is not None and paired_mask is not None and not image_has_alpha(image):
+                batch_size = max(batch_size, mask_batch_size(paired_mask))
         outputs = []
         for batch_index in range(batch_size):
-            resolved = replace_placeholders(html, template_values(html, images, batch_index, mask))
+            resolved = replace_placeholders(html, template_values(html, images, batch_index, masks=masks))
             document, width, height = prepare_document(resolved)
             outputs.append(render_document(document, width, height))
         return (torch.cat(outputs, dim=0),)
