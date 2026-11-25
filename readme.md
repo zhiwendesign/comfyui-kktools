@@ -5,10 +5,10 @@
 
 ## 📋 概述
 
-kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接、分镜生成，以及 OpenMAIC 独立课件视频流程等常见工作流场景。
+kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`，覆盖图像处理、数学与正则、提示词处理、尺寸生成、字符串处理、随机选择、视频处理、音频拼接、分镜生成、MiniCPM 模型调用，以及 OpenMAIC 独立课件视频流程等常见工作流场景。
 
 当前版本的几个统一规则：
-- 节点显示名默认使用 `英文名（中文名）`
+- 节点显示名通常使用 `英文名（中文名）`；MiniCPM 节点使用简洁英文名称
 - 节点分类统一在 `🌟kktools/...`
 - 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
 - `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
@@ -45,6 +45,7 @@ pip install torchaudio
 - 可选依赖：`torchaudio`
   - 当 `kkAudioMerge4` 处理不同采样率音频时，会尝试调用 `torchaudio` 自动重采样
 - LLM 节点支持多厂商 API：DeepSeek、OpenAI、Gemini、豆包
+- MiniCPM 节点通过已启动的 Ollama 或 llama.app 兼容接口调用模型，模型名和服务地址可配置，不随插件下载模型或启动服务
 - 图像 API 节点：
   - `kk_API配置`：集中保存 Base URL 和 API Key，可同时连接 `kkGPT-image_API` 与 `kkLLM`。
   - `kkGPT-image_API`：支持普通多图参考、模板束与 PPT束；可直接填写接口信息，也可连接 `kk_API配置`。
@@ -92,11 +93,31 @@ pip install torchaudio
 | 随机 | `🌟kktools/随机` | [RandomSelector.py](nodes/RandomSelector.py) |
 | 视频 | `🌟kktools/视频` | [video.py](nodes/video.py) |
 | 音频 | `🌟kktools/音频` | [audio.py](nodes/audio.py) |
+| MiniCPM | `🌟kktools/MiniCPM` | [kk_minicpm.py](nodes/kk_minicpm.py) |
 | 分镜 | `🌟kktools/分镜` | [StoryboardScript.py](nodes/StoryboardScript.py) |
 | 模板工具 | `🌟kktools/模板工具` | [imagen_studio.py](nodes/imagen_studio.py) |
 | PPT 工具 | `🌟kktools/PPT工具` | [imagen_ppt.py](nodes/imagen_ppt.py) |
 | 兼容 | `🌟kktools/兼容` | [compat_text.py](nodes/compat_text.py) |
 | OpenMAIC | `OpenMAIC/导入`、`OpenMAIC/独立版`、`OpenMAIC/导出`、`OpenMAIC/音频`、`OpenMAIC/工具` | [openmaic_nodes.py](nodes/openmaic_nodes.py)、[openmaic](nodes/openmaic) |
+
+## 🧠 MiniCPM 模型节点
+
+`KK MiniCPM Loader` 连接已运行的模型服务，输出 `connection` 给其他 MiniCPM 节点。模型名称由用户填写，支持服务端可用的模型；图片和视频功能需要支持视觉输入的模型。
+
+1. 启动 Ollama 或 llama.app 模型服务，并在服务端准备模型。
+2. 在 Loader 中选择 `backend`，填写服务地址和 `model`：Ollama 常用 `http://127.0.0.1:11434`；llama.app 常用 `http://127.0.0.1:9931/v1`，实际以服务设置为准。
+3. 将 `connection` 接到所需节点，选择图片、视频或输入文本后运行。模型或素材不会随插件自动下载，数据会发送到填写的服务地址。
+
+| 节点 | 功能 |
+|---|---|
+| `KK MiniCPM Vision` / `Video` | 理解图片，或均匀采样视频帧并分析画面。视频不包含音频转录，长视频建议先裁短。 |
+| `KK MiniCPM Text` / `Prompt` | 文本处理与提示词优化。 |
+| `KK MiniCPM Caption` | 批量图片描述，可选保存同名 TXT，已有文件不会被覆盖。 |
+| `KK MiniCPM OCR` / `QA` | 提取图片文字，或按标准生成质检报告。重要结果需人工复核。 |
+| `KK MiniCPM Router` / `JSON` | 输出任务路由标记，或解析 JSON 与字段；路由需配合条件节点控制分支。 |
+| `KK MiniCPM Unload` | 请求 Ollama 卸载模型；llama.app 的模型由服务端管理。 |
+
+`keep_alive_seconds` 和 `context_length` 适用于 Ollama，llama.app 的资源和上下文配置由服务管理。旧版 `KK MiniCPM Local Loader` 保留在兼容分类中，预设会转到本机 Ollama；旧版自定义 GGUF 需要改用当前 Loader 和服务中的模型名。更多参数见 [MiniCPM 节点说明](<KK MiniCPM 节点说明.md>)，示例见 [Ollama 工作流](<workflows/KK MiniCPM 通用 Ollama.json>)、[llama.app 工作流](<workflows/KK MiniCPM 通用 llama.app.json>) 和 [工作流索引](workflows/README.md)。
 
 ## 🖥️ 运行管理
 
@@ -115,7 +136,7 @@ pip install torchaudio
 
 ## 🧾 全部节点与分类
 
-当前代码共提供 74 个可注册节点标识，分布在 17 个分类中。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
+实际注册的节点标识以运行时为准。`OpenMAIC_导入课件独立版` 是 `OpenMAIC_PPTX导入独立版` 的兼容标识，两者使用同一个实现。
 
 | 分类 | 节点标识（界面显示名） |
 |---|---|
@@ -127,6 +148,7 @@ pip install torchaudio
 | `🌟kktools/随机` | `kkRandomSelector`（随机选择器） |
 | `🌟kktools/视频` | `kkVideoFirstLastFrames`（视频首尾帧提取）、`kkVideoFramesAdvanced`（视频抽帧高级）、`kkVideoDepth`（视频转深度视频）、`kkVideoPose`（视频转人体骨骼视频）、`kkVideoCompare`（视频对比）、`kkMergeVideos`（视频合并） |
 | `🌟kktools/音频` | `kkAudioMerge4`（音频四合一） |
+| `🌟kktools/MiniCPM` | `KK MiniCPM Loader`、`Vision`、`Video`、`Text`、`Caption`、`Prompt`、`OCR`、`QA`、`Router`、`JSON`、`Unload` |
 | `🌟kktools/分镜` | `kkStoryboardScript`（默认分镜）、`kkStoryboardScriptLLM`（LLM分镜）、`kkStoryboardShotOutput`（分镜输出） |
 | `🌟kktools/模板工具` | `ImagenStudioTemplateDistiller`（模板蒸馏）、`ImagenStudioTemplateIngest`（模板入库）、`ImagenStudioTemplateSelector`（模板选择器）、`ImagenStudioTemplateComposer`（模板拼装）、`ImagenStudioRunningHubRHArtG2`（RunningHub 生图） |
 | `🌟kktools/PPT工具` | `ImagenStudioPPTOutlineDraft`（PPT 大纲草拟）、`ImagenStudioPPTOutlinePlan`（PPT 大纲规划）、`ImagenStudioPPTDesignBrief`（PPT 设计规范）、`ImagenStudioPPTPageComposer`（PPT 页面拼装）、`ImagenStudioPPTRunningHubBatch`（PPT RunningHub 批量生图）、`ImagenStudioPPTPipeUnpack`（PPT 束拆包）、`ImagenStudioPPTImageWriteback`（PPT 图像写回）、`ImagenStudioPPTExport`（PPT 导出） |
@@ -139,7 +161,7 @@ pip install torchaudio
 
 ### 已停用节点
 
-- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用，不计入上述 74 个现役节点标识。
+- `kkimage2_GAPI`、`kkLingsiNativePromptImage` 和 `kkImageAPI` 已从菜单注册中停用。
 
 ---
 

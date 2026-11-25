@@ -2,9 +2,9 @@
 
 ## 📋 概述
 
-`workflows` 目录提供了按模块划分的示例工作流，每个工作流收录对应模块下所有节点的最小演示。
+`workflows` 目录提供按模块或任务划分的示例工作流。
 
-所有示例都遵循根目录 [readme.md](../readme.md) 的模块划分与说明风格，每个节点都配有一张 `Note` 说明卡，包含功能描述、关键参数和最小演示方式。
+模块示例遵循根目录 [readme.md](../readme.md) 的模块划分；具体输入要求请参阅各工作流及其说明。
 
 当前示例已全部切换到 `kk...` 前缀节点名。
 
@@ -23,6 +23,15 @@
   - Imagen Studio：`kktools_imagen_studio_template_pipe_runninghub.workflow.json`
   - Imagen Studio PPT：`kktools_imagen_studio_ppt_pipe.workflow.json`
   - Imagen Studio PPT kaka 转接：`kktools_imagen_studio_ppt_lingsi_bridge.workflow.json`
+  - MiniCPM：`KK MiniCPM 通用 Ollama.json`、`KK MiniCPM 通用 llama.app.json`
+
+### MiniCPM 工作流
+
+- [Ollama 通用示例](<KK MiniCPM 通用 Ollama.json>)：图片理解，需启动 Ollama、填写可用模型名并上传图片。
+- [llama.app 通用示例](<KK MiniCPM 通用 llama.app.json>)：文本与提示词处理，需启动兼容服务、填写其地址和模型名。
+- 另有 `KK MiniCPM 01` 至 `07` 示例，分别演示图片、视频、文本、批量打标、OCR、质检与路由。示例中预填的模型名仅作示例，请按服务实际模型修改；图片和视频请自行选择。
+
+服务不会随工作流启动，模型也不会自动下载。更多信息见 [MiniCPM 节点说明](<../KK MiniCPM 节点说明.md>)。
 
 ## 🎯 工作流索引
 
