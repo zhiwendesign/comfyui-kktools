@@ -69,7 +69,7 @@ function removeInvalidLinks(node) {
     const origin = (node.graph || app.graph)?.getNodeById?.(originId);
     const outputType = origin?.outputs?.[originSlot]?.type;
     const expectedType = IMAGE_NAMES.includes(input.name) ? "IMAGE" : "MASK";
-    if (outputType && outputType !== expectedType) {
+    if (outputType && outputType !== "*" && outputType !== expectedType) {
       node.disconnectInput?.(index);
       changed = true;
     }

@@ -5,6 +5,15 @@
 import json
 import random
 
+_INPUT_PORTS = tuple(f"input_{index}" for index in range(1, 10))
+
+
+def _pick_input(seed, inputs):
+    connected = [name for name in _INPUT_PORTS if name in inputs]
+    selected = random.Random(seed).choice(connected) if connected else None
+    return selected, connected
+
+
 class kkRandomSelector:
     """随机选择器"""
     
@@ -30,19 +39,30 @@ class kkRandomSelector:
             },
             "optional": {
                 "Markdown文件": ("KK_MARKDOWN_FILE", {
+                    "lazy": True,
                     "tooltip": "连接 kkMarkdown上传；包含多个文件时按 seed 随机选择一个"
                 }),
+                **{name: ("*", {"lazy": True}) for name in _INPUT_PORTS},
             },
         }
     
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "KK_MARKDOWN_FILE")
+    RETURN_TYPES = ("*", "STRING", "STRING", "KK_MARKDOWN_FILE")
     RETURN_NAMES = ("selected_value", "selected_group", "all_groups", "Markdown文件")
     FUNCTION = "random_select"
     CATEGORY = "🌟kktools/随机"
+    DESCRIPTION = "按 seed 从已连接的 input_1 至 input_9 中抽取一路并原样输出。通用输入留空时，从 Markdown 文件或 JSON 候选项中抽取。"
+
+    def check_lazy_status(self, seed, **inputs):
+        selected, _ = _pick_input(seed, inputs)
+        source = selected or "Markdown文件"
+        return [source] if source in inputs and inputs[source] is None else []
     
-    def random_select(self, json_config, target_groups="", seed=0, Markdown文件=None):
-        """从JSON配置中随机选择一个值"""
+    def random_select(self, json_config, target_groups="", seed=0, Markdown文件=None, **inputs):
         empty_markdown = {"filename": "", "content": "", "items": []}
+        selected_input, connected = _pick_input(seed, inputs)
+        if selected_input is not None:
+            return (inputs[selected_input], selected_input, ",".join(connected), empty_markdown)
+
         try:
             rng = random.Random(seed)
 

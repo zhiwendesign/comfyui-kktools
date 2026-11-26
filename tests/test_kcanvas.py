@@ -2,6 +2,7 @@ import base64
 import importlib.util
 import io
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -25,6 +26,34 @@ def load_kcanvas():
 
 
 class KCanvasTests(unittest.TestCase):
+    def test_font_loader_selection_embeds_chinese_family(self):
+        module = load_kcanvas()
+        loader = module.NODE_CLASS_MAPPINGS["kkFontLoader"]()
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(module, "FONT_DIR", Path(directory)):
+            (module.FONT_DIR / "字体 A.OTF").write_bytes(b"selected font")
+            (module.FONT_DIR / "readme.txt").touch()
+            self.assertEqual(loader.INPUT_TYPES()["required"]["font_file"][0], ["字体 A.OTF"])
+            family, = loader.load_font("字体 A.OTF")
+            self.assertEqual(family, "字体 A")
+            html = f'<html><head></head><body style="font-family:\'{family}\'">标题</body></html>'
+            document, _, _ = module.prepare_document(html)
+            self.assertIn('@font-face{font-family:"字体 A";src:url(data:font/otf;base64,c2VsZWN0ZWQgZm9udA==)', document)
+
+    def test_font_loader_distinguishes_duplicate_stems_and_detects_removal(self):
+        module = load_kcanvas()
+        loader = module.kkFontLoader()
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(module, "FONT_DIR", Path(directory)):
+            (module.FONT_DIR / "Demo.ttf").write_bytes(b"one")
+            other = module.FONT_DIR / "Demo.woff2"
+            other.write_bytes(b"two")
+            family, = loader.load_font(other.name)
+            self.assertEqual(family, other.name)
+            self.assertIn('font-family:"Demo.woff2";src:url(data:font/woff2;base64,dHdv)', module._font_css(family))
+            other.unlink()
+            self.assertEqual(loader.INPUT_TYPES()["required"]["font_file"][0], ["Demo.ttf"])
+            with self.assertRaises(ValueError):
+                loader.load_font(other.name)
+
     def test_input_types_pair_images_and_masks_by_index(self):
         module = load_kcanvas()
         optional_names = list(module.kcanvas.INPUT_TYPES()["optional"])

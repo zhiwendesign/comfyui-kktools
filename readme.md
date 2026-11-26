@@ -440,6 +440,8 @@ pip install torchaudio
 
 ### kkRandomSelector（随机选择器）
 
+- 可将字符串、图像、蒙版或自定义类型分别接到 `input_1` 至 `input_9`。输入口随接线逐个增加，最多九路。只要接入其中一路，节点就按 `seed` 从已接线的端口中抽取一路，优先于 Markdown 和 JSON。只有抽中的通用输入需要执行。
+- 此时 `selected_value` 原样输出选中的数据，`selected_group` 表示选中的端口名，`all_groups` 列出已连接的端口。
 - 从 JSON 配置的多组候选项中随机选择一个值。
 - 支持用 `target_groups` 限定候选组，用 `seed` 保证可复现。
 - 可选连接 `kkMarkdown上传` 的 `Markdown文件`；输入包含多个 Markdown 文件时，会按 `seed` 随机选择一个文件，且无需解析 JSON 候选项。

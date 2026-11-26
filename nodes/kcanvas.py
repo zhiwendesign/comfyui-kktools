@@ -16,6 +16,14 @@ from PIL import Image
 MAX_IMAGES = 9
 DEFAULT_WIDTH = 220
 DEFAULT_HEIGHT = 80
+FONT_DIR = Path(__file__).resolve().parents[1] / "fonts"
+FONT_TYPES = {
+    ".otf": ("font/otf", "opentype"),
+    ".ttf": ("font/ttf", "truetype"),
+    ".ttc": ("font/collection", "collection"),
+    ".woff": ("font/woff", "woff"),
+    ".woff2": ("font/woff2", "woff2"),
+}
 TRANSPARENT_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+Xw3cWQAAAABJRU5ErkJggg=="
 DEFAULT_HTML = """<div style="width:220px;height:80px;display:flex;align-items:center;justify-content:center;background:#171717;color:#ffffff;font-family:Arial,sans-serif;font-size:18px;">
   ${texttitle}
@@ -162,27 +170,55 @@ def template_values(html, images, batch_index, mask=None, masks=None):
     return values
 
 
-def _font_css(html):
-    font_dir = Path(__file__).resolve().parents[1] / "fonts"
-    if not font_dir.is_dir():
-        return ""
+def _font_files():
+    if not FONT_DIR.is_dir():
+        return []
+    return sorted(
+        (path for path in FONT_DIR.iterdir() if path.suffix.lower() in FONT_TYPES and path.is_file()),
+        key=lambda path: path.name.casefold(),
+    )
 
-    lowered = html.lower()
+
+class kkFontLoader:
+    @classmethod
+    def INPUT_TYPES(cls):
+        names = [path.name for path in _font_files()]
+        return {"required": {"font_file": (names or ["（fonts 目录中没有字体）"],)}}
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("font_family",)
+    FUNCTION = "load_font"
+    CATEGORY = "🌟kktools/字符串"
+    DESCRIPTION = "从插件的 fonts 目录选择字体，输出可用于 kcanvas 的 CSS font-family 名称。"
+
+    def load_font(self, font_file):
+        files = _font_files()
+        for path in files:
+            if path.name == font_file:
+                same_stem = sum(other.stem.casefold() == path.stem.casefold() for other in files)
+                return (path.name if same_stem > 1 else path.stem,)
+        raise ValueError(f"未找到所选字体。请检查 {FONT_DIR} 并刷新节点列表。")
+
+
+def _font_css(html):
+    lowered = html.casefold()
     rules = []
-    font_types = {
-        ".otf": ("font/otf", "opentype"),
-        ".ttf": ("font/ttf", "truetype"),
-        ".ttc": ("font/collection", "collection"),
-    }
-    for path in font_dir.iterdir():
-        suffix = path.suffix.lower()
-        if suffix not in font_types or path.stem.lower() not in lowered:
+    for path in _font_files():
+        filename = path.name.casefold()
+        families = []
+        if filename in lowered:
+            families.append(path.name)
+        if path.stem.casefold() in lowered.replace(filename, ""):
+            families.append(path.stem)
+        if not families:
             continue
-        mime_type, format_name = font_types[suffix]
+        mime_type, format_name = FONT_TYPES[path.suffix.lower()]
         encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-        rules.append(
-            f"@font-face{{font-family:{json.dumps(path.stem)};src:url(data:{mime_type};base64,{encoded}) format('{format_name}');font-style:normal;}}"
-        )
+        for family in families:
+            css_name = json.dumps(family, ensure_ascii=False)
+            rules.append(
+                f"@font-face{{font-family:{css_name};src:url(data:{mime_type};base64,{encoded}) format('{format_name}');font-style:normal;}}"
+            )
     return "".join(rules)
 
 
@@ -195,9 +231,9 @@ def prepare_document(html):
     style = f"<style>{css}</style>"
     if re.search(r"<html\b", html, re.IGNORECASE):
         if re.search(r"</head\s*>", html, re.IGNORECASE):
-            document = re.sub(r"</head\s*>", f"{style}</head>", html, count=1, flags=re.IGNORECASE)
+            document = re.sub(r"</head\s*>", lambda _: f"{style}</head>", html, count=1, flags=re.IGNORECASE)
         else:
-            document = re.sub(r"(<html\b[^>]*>)", rf"\1<head><meta charset=\"utf-8\">{style}</head>", html, count=1, flags=re.IGNORECASE)
+            document = re.sub(r"(<html\b[^>]*>)", lambda m: f'{m[0]}<head><meta charset="utf-8">{style}</head>', html, count=1, flags=re.IGNORECASE)
     else:
         document = f"<!doctype html><html><head><meta charset=\"utf-8\">{style}</head><body>{html}</body></html>"
     return document, width, height
@@ -341,5 +377,5 @@ class kcanvas:
         return (torch.cat(outputs, dim=0),)
 
 
-NODE_CLASS_MAPPINGS = {"kcanvas": kcanvas}
-NODE_DISPLAY_NAME_MAPPINGS = {"kcanvas": "kcanvas（HTML渲染）"}
+NODE_CLASS_MAPPINGS = {"kcanvas": kcanvas, "kkFontLoader": kkFontLoader}
+NODE_DISPLAY_NAME_MAPPINGS = {"kcanvas": "kcanvas（HTML渲染）", "kkFontLoader": "kkFontLoader（字体加载器）"}
