@@ -8,6 +8,7 @@ import io
 import json
 import math
 import re
+import socket
 import time
 import urllib.error
 import urllib.request
@@ -56,6 +57,8 @@ IMAGE_EDITS_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, IMAGE_EDITS_ROUTE)
 BANANA_GENERATE_ENDPOINT = api_endpoint(DEFAULT_BASE_URL, BANANA_GENERATE_ROUTE)
 ENDPOINT = CHAT_ENDPOINT
 REQUEST_TIMEOUT_SECONDS = 300
+DNS_RETRY_ATTEMPTS = 3
+DNS_RETRY_BASE_SECONDS = 1
 IMAGE_DOWNLOAD_RETRIES = 3
 MAX_PIXELS = 8_294_400
 DEFAULT_LINGSI_PPT_CONCURRENCY = 3
@@ -142,6 +145,52 @@ class MindAPINetworkError(RuntimeError):
     def __init__(self, message, attempts):
         super().__init__(message)
         self.attempts = attempts
+
+
+def _is_dns_resolution_error(error):
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, socket.gaierror):
+        return True
+    text = str(reason or error).lower()
+    return any(marker in text for marker in (
+        "getaddrinfo failed",
+        "name or service not known",
+        "nodename nor servname provided",
+        "temporary failure in name resolution",
+    ))
+
+
+def _urlopen_with_dns_retries(request):
+    attempts = []
+    for attempt in range(1, DNS_RETRY_ATTEMPTS + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS)
+        except urllib.error.HTTPError:
+            raise
+        except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
+            is_dns_error = _is_dns_resolution_error(exc)
+            record = {
+                "attempt": attempt,
+                "type": "dns" if is_dns_error else "network",
+                "error": str(exc),
+            }
+            attempts.append(record)
+            if not is_dns_error or attempt >= DNS_RETRY_ATTEMPTS:
+                if is_dns_error:
+                    message = (
+                        f"MindAPI DNS 解析失败，已尝试 {attempt} 次：{exc}。"
+                        "请检查网络、DNS、VPN/代理，或稍后重试。"
+                    )
+                else:
+                    message = f"MindAPI request failed: {exc}."
+                raise MindAPINetworkError(message, attempts) from exc
+            wait_seconds = DNS_RETRY_BASE_SECONDS * attempt
+            record["retry_in_seconds"] = wait_seconds
+            print(
+                f"[kaka] DNS lookup failed, retrying {attempt}/{DNS_RETRY_ATTEMPTS} "
+                f"in {wait_seconds}s: {exc}"
+            )
+            time.sleep(wait_seconds)
 
 
 def _json_dumps(value):
@@ -386,7 +435,7 @@ def _http_post_json(api_key, body, stream=False, endpoint=CHAT_ENDPOINT):
 
     request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        with _urlopen_with_dns_retries(request) as response:
             content_type = response.headers.get("Content-Type", "")
             status = getattr(response, "status", None) or response.getcode()
             response_headers = dict(response.headers.items())
@@ -397,6 +446,8 @@ def _http_post_json(api_key, body, stream=False, endpoint=CHAT_ENDPOINT):
         raw = exc.read().decode("utf-8", "replace")
         attempts = [{"attempt": 1, "type": "http", "status": exc.code, "body": raw}]
         raise MindAPIHttpError(exc.code, raw, attempts) from exc
+    except MindAPINetworkError:
+        raise
     except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
         attempts = [{"attempt": 1, "error": str(exc)}]
         message = f"MindAPI request failed: {exc}."
@@ -439,13 +490,15 @@ def _http_post_multipart(api_key, endpoint, fields, files):
 
     request = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        with _urlopen_with_dns_retries(request) as response:
             status = getattr(response, "status", None) or response.getcode()
             return _read_json_response(response, status, dict(response.headers.items()))
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", "replace")
         attempts = [{"attempt": 1, "type": "http", "status": exc.code, "body": raw}]
         raise MindAPIHttpError(exc.code, raw, attempts) from exc
+    except MindAPINetworkError:
+        raise
     except (urllib.error.URLError, TimeoutError, ConnectionResetError, OSError) as exc:
         attempts = [{"attempt": 1, "error": str(exc)}]
         message = f"MindAPI request failed: {exc}."

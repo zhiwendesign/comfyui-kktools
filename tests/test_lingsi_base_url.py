@@ -34,6 +34,56 @@ def load_ppt():
 
 
 class LingsiBaseUrlTests(unittest.TestCase):
+    def test_multipart_request_retries_temporary_dns_failures(self):
+        module = load_lingsi()
+
+        class Response:
+            status = 200
+            headers = {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def getcode(self):
+                return self.status
+
+            def read(self):
+                return b'{"data": []}'
+
+        dns_error = module.urllib.error.URLError(module.socket.gaierror(11001, "getaddrinfo failed"))
+        with mock.patch.object(
+            module.urllib.request,
+            "urlopen",
+            side_effect=[dns_error, dns_error, Response()],
+        ) as urlopen:
+            with mock.patch.object(module.time, "sleep") as sleep:
+                result = module._http_post_multipart(
+                    "secret",
+                    "https://example.com/v1/images/edits",
+                    {"model": "test"},
+                    [],
+                )
+        self.assertEqual(urlopen.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 2])
+        self.assertEqual(result["status"], 200)
+
+    def test_non_dns_network_failure_is_not_retried(self):
+        module = load_lingsi()
+        error = module.urllib.error.URLError(ConnectionRefusedError(10061, "connection refused"))
+        with mock.patch.object(module.urllib.request, "urlopen", side_effect=error) as urlopen:
+            with self.assertRaises(module.MindAPINetworkError) as cm:
+                module._http_post_multipart(
+                    "secret",
+                    "https://example.com/v1/images/edits",
+                    {"model": "test"},
+                    [],
+                )
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(cm.exception.attempts[0]["type"], "network")
+
     def test_generated_image_download_retries_timeout(self):
         module = load_lingsi()
 

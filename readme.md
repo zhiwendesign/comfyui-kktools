@@ -10,7 +10,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 当前版本的几个统一规则：
 - 节点显示名通常使用 `英文名（中文名）`；MiniCPM 节点使用简洁英文名称
 - 节点分类统一在 `🌟kktools/...`
-- 所有节点类名统一增加 `kk` 前缀，便于和官方节点或第三方节点区分
+- 自有工具节点多使用 `kk` 前缀；`kcanvas`、模板/PPT、OpenMAIC 和兼容节点保留各自标识
 - `nodes/` 目录下的节点文件由 [__init__.py](__init__.py) 自动发现并注册
 - 前端扩展 [web/kkllm.js](web/kkllm.js) 会为 `kkLLM` 和 `kkStoryboardScriptLLM` 提供 `provider` / `model` 联动
 - 前端扩展 [web/kk_markdown_upload.js](web/kk_markdown_upload.js) 为 `kkMarkdown上传` 提供本地 `.md` 文件选择与上传
@@ -20,7 +20,7 @@ kktools 是一组面向 ComfyUI 的实用节点集合，当前版本为 `v3.5.0`
 - 顶部“运行管理”实时显示 CPU、系统内存、GPU 与显存使用情况，并支持原生运行工具栏靠近顶部时自动吸附
 - 示例工作流已经同步到当前节点名
 
-发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；kaka 生图统一使用 `kkGPT-image_API`。
+近期更新见 [CHANGELOG.md](CHANGELOG.md)，历史发布说明见 [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)。模板与 PPT 节点分别位于 `🌟kktools/模板工具`、`🌟kktools/PPT工具`；kaka 生图统一使用 `kkGPT-image_API`。
 
 ## 🚀 安装
 
@@ -60,7 +60,7 @@ pip install torchaudio
 - OpenMAIC 独立版课件到视频流程可直接加载 [workflows/OpenMAIC独立版-从课件到视频.workflow.json](workflows/OpenMAIC独立版-从课件到视频.workflow.json)。
 - 图像、视频、音频类节点建议先接入你自己的 `IMAGE`、`VIDEO`、`AUDIO` 输入再运行。
 - 如果你手里有旧工作流，请留意：
-  - 当前全部节点都已切换为 `kk...` 前缀命名
+  - 大多数自有工具节点使用 `kk...` 前缀，旧名称可能需要替换
   - 旧工作流里的旧节点名需要重新选择或替换
   - `kkLingsiNativePromptImage` 已移除菜单注册；请使用 `kkGPT-image_API`。
   - 旧工作流如果使用过 `kkVideoTextOCR`，需要手动移除或改用其他文本提取方案
@@ -79,7 +79,8 @@ pip install torchaudio
 - [runtime_manager_routes.py](runtime_manager_routes.py)：本机 CPU、内存、GPU 与显存统计接口
 - [workflows](workflows)：总览与分模块示例工作流
 - [fonts](fonts)：可选字体资源
-- [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：当前版本更新说明
+- [CHANGELOG.md](CHANGELOG.md)：近期节点更新与修复记录
+- [RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)：v3.5.0 历史发布说明
 
 ## 🧩 源码入口
 
@@ -91,6 +92,8 @@ pip install torchaudio
 | 尺寸 | `🌟kktools/尺寸` | [size.py](nodes/size.py) |
 | 字符串 | `🌟kktools/字符串` | [kkstring.py](nodes/kkstring.py) |
 | 随机 | `🌟kktools/随机` | [RandomSelector.py](nodes/RandomSelector.py) |
+| 逻辑 | `🌟kktools/逻辑` | [switch_case.py](nodes/switch_case.py)、[if_else.py](nodes/if_else.py)、[compare.py](nodes/compare.py)、[string_length.py](nodes/string_length.py) |
+| 颜色 | `🌟kktools/颜色` | [color_picker.py](nodes/color_picker.py) |
 | 视频 | `🌟kktools/视频` | [video.py](nodes/video.py) |
 | 音频 | `🌟kktools/音频` | [audio.py](nodes/audio.py) |
 | MiniCPM | `🌟kktools/MiniCPM` | [kk_minicpm.py](nodes/kk_minicpm.py) |
@@ -144,8 +147,10 @@ pip install torchaudio
 | `🌟kktools/数学计算` | `kkMathExpressionNode`（数学表达式）、`kkRegexNode`（正则表达式）、`kkRegexNodeAdvanced`（正则表达式高级） |
 | `🌟kktools/提示词` | `kkBatchPrompt`（批量提示词）、`kkMarkdown上传`、`kkSkills模板选择器`、`kkLLM`（多厂商LLM） |
 | `🌟kktools/尺寸` | `kkSizeNode`（尺寸生成） |
-| `🌟kktools/字符串` | `kkStringNode`（字符串裁剪）、`kkStringNodeAdvanced`（字符串裁剪高级）、`kkStringMergeNode`（字符串合并）、`kkStringToIntNode`（字符串转整数）、`kkMarkdownToString`（MD转字符串）、`kkInputNode`（多类型输入）、`kkReplaceNode`（字符串替换）、`kkSomethingToAny`（任意类型转换） |
+| `🌟kktools/字符串` | `kkStringNode`（字符串裁剪）、`kkStringNodeAdvanced`（字符串裁剪高级）、`kkStringMergeNode`（字符串合并）、`kkStringToIntNode`（字符串转整数）、`kkMarkdownToString`（MD转字符串）、`kkInputNode`（多类型输入）、`kkReplaceNode`（字符串替换）、`kkSomethingToAny`（任意类型转换）、`kkFontLoader`（字体加载器） |
 | `🌟kktools/随机` | `kkRandomSelector`（随机选择器） |
+| `🌟kktools/逻辑` | `kkSwitchCase`（条件分支选择）、`kkIfElse`（布尔分支选择）、`kkCompare`（比较）、`kkStringLength`（字数统计） |
+| `🌟kktools/颜色` | `kkColorPicker`（颜色选择器） |
 | `🌟kktools/视频` | `kkVideoFirstLastFrames`（视频首尾帧提取）、`kkVideoFramesAdvanced`（视频抽帧高级）、`kkVideoDepth`（视频转深度视频）、`kkVideoPose`（视频转人体骨骼视频）、`kkVideoCompare`（视频对比）、`kkMergeVideos`（视频合并） |
 | `🌟kktools/音频` | `kkAudioMerge4`（音频四合一） |
 | `🌟kktools/MiniCPM` | `KK MiniCPM Loader`、`Vision`、`Video`、`Text`、`Caption`、`Prompt`、`OCR`、`QA`、`Router`、`JSON`、`Unload` |
@@ -211,6 +216,7 @@ pip install torchaudio
 - 同时调整图像和对应蒙版尺寸，保证两者始终对齐。
 - 支持 `stretch`、`scale_width`、`scale_height`、`scale_long`、`scale_short`、`fit_padding`、`fill_crop`
 - 支持 `nearest`、`bilinear`、`bicubic`、`lanczos`
+- 标准蒙版输入和输出采用 `[批次, 高, 宽]`；兼容单张蒙版及带单通道维度的旧格式。
 - 输出：`IMAGE`、`MASK`
 
 ### kkGetImage（获取图像尺寸）
@@ -283,11 +289,12 @@ pip install torchaudio
 - 可选的 `ratio` 字符串输入可连接 `kkSizeNode.ratio`，连接后会覆盖 `aspect_ratio` 下拉框；传入比例仍须属于生图节点支持的比例列表。
 - 参考图输入默认显示 `image`；连接后自动增加下一个，最多 `image_1` 至 `image_8`（共 9 张）。断开尾部连接后多余输入会自动收起；不同尺寸图片会按第一张图片尺寸统一后再合并。
 - 字符串输入默认显示 `string`；连接后同样自动增加 `string_1` 至 `string_8`（共 9 个），可把人物、风格或其他提示词片段接入节点。
-- 如果 `prompt` 为空，节点会自动使用第一个非空的字符串输入作为完整提示词；推荐仍将完整提示词直接连接到 `prompt`。
+- 如果 `prompt` 为空，节点会自动使用第一个非空的字符串输入作为完整提示词，编辑区也会显示相应提示。
 - 在 `prompt` 输入框键入 `@` 可选择已连接的图像或字符串；图像会按连接顺序写入 `@Image1`、`@Image2` 等引用，字符串使用 `@string`、`@string_1` 等输入名。
 - 示例提示词：`以 @Image1 中的人物为主体，参考 @Image2 的色彩与光影；人物描述：@string；整体风格：@string_1。`
 - 不接参考图时为文生图；接入任意参考图时为多图参考生图。
-- `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。
+- `raw_json` 会输出请求摘要、响应解析、图片候选信息和错误排查信息，便于定位接口返回异常。DNS 解析失败会短暂重试；读取超时等其他网络错误不会自动重复提交生图请求。
+- 出现 `api_key is required` 时，请检查本节点的 `api_key`，或连接并填写 `kk_API配置`。
 - 输出：`IMAGE`、`raw_json`、`PPT束`、`日志`、`Prompt`。`Prompt` 输出已展开所有图像和字符串引用后的完整提示词；内容审核失败时，日志会提示修改提示词或上传参考图像。
 
 ### kkimage2_GAPI（已停用）
@@ -431,6 +438,45 @@ pip install torchaudio
 
 - 接收 `kkMarkdown上传` 输出的 `Markdown文件`。
 - 输出 Markdown 文件全文的标准 `STRING`，方便连接普通字符串节点。
+
+---
+
+### kkFontLoader（字体加载器）
+
+- 从插件的 `fonts` 文件夹下拉选择字体，支持 `.otf`、`.ttf`、`.ttc`、`.woff`、`.woff2`；添加字体后刷新节点列表。
+- 输出适用于 `kcanvas` 的字体名称字符串；同名不同扩展名的字体会输出完整文件名。
+- 可以通过 `kkReplaceNode` 把字体名替换进 HTML 的 `font-family`。
+
+---
+
+## 🔀 逻辑模块
+
+### kkSwitchCase（条件分支选择）
+
+- 将任意类型的数据接到 `input_1` 起的输入口；接入后自动显示下一路，最多 9 路。
+- 设置对应的 `case_1` 等标签，让 `switch_condition` 精确匹配标签；仅执行选中分支并原样输出其数据。条件区分大小写；没有匹配或匹配的输入未连接时会报错。
+
+### kkIfElse（布尔分支选择）
+
+- `boolean` 为 True 时输出 `on_true`，为 False 时输出 `on_false`。两路可以是不同类型，输出保持所选输入的类型，仅执行所选分支。
+
+### kkCompare（比较）
+
+- `a`、`b` 接收整数，使用下拉菜单选择等于、不等于、大于、小于及与零的比较；未连接的输入按 0 处理。
+- 输出 `BOOLEAN`，可连接 `kkIfElse.boolean`。
+
+### kkStringLength（字数统计）
+
+- 输入 `STRING`，输出 Unicode 字符数 `INT`；空格、标点和换行也会计入。可连接 `kkCompare` 使用。
+
+---
+
+## 🎨 颜色模块
+
+### kkColorPicker（颜色选择器）
+
+- 使用节点内色板、色相滑条或快捷色块选择颜色，也可直接输入十六进制颜色。
+- 输出统一为大写 `#RRGGBB` 字符串，例如 `#0089FF`；快捷色块与色板和滑条同步。
 
 ---
 
@@ -886,7 +932,7 @@ workflows/kktools_imagen_studio_ppt_pipe.workflow.json
 ## 📄 版本与版权
 
 - 当前版本：3.5.0（见 [__init__.py](__init__.py)）
-- 更新说明：[RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)
+- 近期更新：[CHANGELOG.md](CHANGELOG.md)；历史版本说明：[RELEASE_NOTES_3.5.0.md](RELEASE_NOTES_3.5.0.md)
 - 作者：kktools
 - 共创：KK HL
 - 仅用于学习与研究，请遵循 ComfyUI 与相关依赖的许可证要求。

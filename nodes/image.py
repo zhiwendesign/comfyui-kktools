@@ -656,21 +656,25 @@ class kkResize:
         """将蒙版张量转换为 PIL 图像"""
         if mask_tensor is None:
             return None
-            
-        if len(mask_tensor.shape) == 4:  # Batch of masks
-            batch_size, height, width, _ = mask_tensor.shape
-            masks = []
-            for i in range(batch_size):
-                mask_np = mask_tensor[i].cpu().numpy() * 255.0
-                mask_np = np.clip(mask_np, 0, 255).astype(np.uint8)
-                mask_np = mask_np.reshape(height, width)
-                mask = Image.fromarray(mask_np)
-                masks.append(mask)
-            return masks
-        else:
-            mask_np = mask_tensor.cpu().numpy() * 255.0
-            mask_np = np.clip(mask_np, 0, 255).astype(np.uint8)
-            return [Image.fromarray(mask_np)]
+
+        # ComfyUI MASK normally has shape [batch, height, width].
+        # Also accept a single [height, width] mask and legacy singleton channels.
+        if mask_tensor.ndim == 2:
+            mask_tensor = mask_tensor.unsqueeze(0)
+        elif mask_tensor.ndim == 4:
+            if mask_tensor.shape[-1] == 1:
+                mask_tensor = mask_tensor[..., 0]
+            elif mask_tensor.shape[1] == 1:
+                mask_tensor = mask_tensor[:, 0, :, :]
+            else:
+                raise ValueError("蒙版必须为 [B,H,W]、[B,H,W,1] 或 [B,1,H,W]。")
+        if mask_tensor.ndim != 3:
+            raise ValueError("蒙版必须为 [H,W] 或 [B,H,W]。")
+
+        return [
+            Image.fromarray(np.clip(frame.detach().cpu().numpy() * 255.0, 0, 255).astype(np.uint8))
+            for frame in mask_tensor
+        ]
 
     def pil_to_tensor(self, pil_images):
         """将 PIL 图像列表转换回 ComfyUI 图像张量"""
@@ -689,8 +693,7 @@ class kkResize:
             
         tensors = []
         for mask in pil_masks:
-            mask_np = np.array(mask).astype(np.float32) / 255.0
-            mask_np = mask_np.reshape(mask_np.shape[0], mask_np.shape[1], 1)
+            mask_np = np.array(mask.convert("L")).astype(np.float32) / 255.0
             tensor = torch.from_numpy(mask_np)[None,]
             tensors.append(tensor)
         return torch.cat(tensors, dim=0)
@@ -710,8 +713,8 @@ class kkResize:
         if batch_size == 0:
             # 如果没有输入，返回空张量
             empty_image = torch.zeros((1, height, width, 3))
-            empty_mask = torch.zeros((1, height, width, 1)) if mask is not None else None
-            return (empty_image, empty_mask) if empty_mask is not None else (empty_image,)
+            empty_mask = torch.zeros((1, height, width))
+            return empty_image, empty_mask
         
         # 设置插值方法
         interpolation_map = {
@@ -871,7 +874,7 @@ class kkResize:
         
         # 如果没有蒙版输入，返回空的蒙版张量
         if output_mask is None:
-            output_mask = torch.zeros((batch_size, height, width, 1))
+            output_mask = torch.zeros(output_image.shape[:3])
         
         return (output_image, output_mask)
 

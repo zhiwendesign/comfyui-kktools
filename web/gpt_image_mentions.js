@@ -10,12 +10,12 @@ function addStyles() {
   const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
-    .kk-image-mentions { position:relative; box-sizing:border-box; display:flex; flex-direction:column; gap:7px; width:100%; min-height:150px; padding:2px 4px 4px; color:var(--fg-color); font:12px/1.45 sans-serif; }
-    .kk-image-mentions__refs { display:flex; flex-wrap:wrap; gap:5px; min-height:0; }
+    .kk-image-mentions { position:relative; box-sizing:border-box; display:flex; flex-direction:column; gap:7px; width:100%; height:100%; min-width:0; min-height:0; overflow:hidden; padding:2px 4px 4px; color:var(--fg-color); font:12px/1.45 sans-serif; }
+    .kk-image-mentions__refs { display:flex; flex-wrap:wrap; gap:5px; flex:0 0 auto; min-width:0; min-height:0; max-height:48px; overflow:auto; }
     .kk-image-mentions__refs:empty { display:none; }
     .kk-image-mentions__chip { max-width:100%; overflow:hidden; padding:3px 7px; border:1px solid color-mix(in srgb, #a855f7 65%, var(--border-color)); border-radius:7px; background:color-mix(in srgb, #a855f7 16%, var(--comfy-input-bg, #111)); color:var(--fg-color); text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
     .kk-image-mentions__chip:hover { background:color-mix(in srgb, #a855f7 28%, var(--comfy-input-bg, #111)); }
-    .kk-image-mentions__editor { box-sizing:border-box; flex:1; min-height:112px; overflow:auto; padding:9px; border:1px solid var(--border-color); border-radius:7px; outline:none; background:var(--comfy-input-bg, #111); color:var(--input-text, var(--fg-color)); white-space:pre-wrap; word-break:break-word; cursor:text; }
+    .kk-image-mentions__editor { box-sizing:border-box; flex:1; width:100%; min-width:0; max-width:100%; min-height:0; overflow:auto; padding:9px; border:1px solid var(--border-color); border-radius:7px; outline:none; background:var(--comfy-input-bg, #111); color:var(--input-text, var(--fg-color)); white-space:pre-wrap; overflow-wrap:anywhere; cursor:text; }
     .kk-image-mentions__editor:focus { border-color:#6aa9ff; box-shadow:0 0 0 1px #6aa9ff; }
     .kk-image-mentions__editor:empty::before { color:var(--descrip-text); content:attr(data-placeholder); pointer-events:none; }
     .kk-image-mentions__mention { display:inline-block; margin:1px 2px; padding:2px 6px; border-radius:6px; background:rgba(35, 181, 78, .2); color:#55df72; white-space:nowrap; user-select:all; }
@@ -140,6 +140,7 @@ function setup(node) {
   if ((node.comfyClass || node.type) !== NODE_CLASS || typeof node.addDOMWidget !== "function") return;
   if (node.__kkImageMentionEditor) {
     node.__kkImageMentionEditor.refresh();
+    node.__kkImageMentionEditor.updateEditorWidth();
     return;
   }
 
@@ -289,6 +290,9 @@ function setup(node) {
   function refresh() {
     const value = editorValue(editor) || String(promptWidget.value || "");
     state.references = connectedReferences(node);
+    editor.dataset.placeholder = state.references.some((reference) => STRING_INPUT_RE.test(reference.inputName))
+      ? "留空时使用第一路已连接的字符串；输入 @ 可引用其他内容"
+      : "输入提示词；输入 @ 可引用已连接的图像或字符串";
     renderChips();
     if (document.activeElement !== editor) renderEditorValue(editor, value, state.references);
     if (menu.classList.contains("open")) renderMenu();
@@ -338,13 +342,26 @@ function setup(node) {
     return result;
   };
 
-  node.__kkImageMentionEditor = { refresh };
+  node.__kkImageMentionEditor = { refresh, updateEditorWidth };
   node.addDOMWidget("prompt", "kk-image-mentions", root, {
     serialize: false,
     hideOnZoom: false,
     getMinHeight: () => 150,
     getMaxHeight: () => 280,
   });
+  function updateEditorWidth(size = node.size) {
+    const width = Number(size?.[0]);
+    if (Number.isFinite(width) && width > 0) {
+      root.style.maxWidth = `${Math.max(0, width - 20)}px`;
+    }
+  }
+  const originalResize = node.onResize;
+  node.onResize = function (size, ...args) {
+    const result = originalResize?.call(this, size, ...args);
+    updateEditorWidth(size);
+    return result;
+  };
+  updateEditorWidth();
   state.references = connectedReferences(node);
   renderChips();
   renderEditorValue(editor, promptWidget.value, state.references);
